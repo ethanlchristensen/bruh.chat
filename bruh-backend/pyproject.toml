@@ -1,0 +1,23 @@
+[project]
+name = "bruh-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "ethanlchristensen",email = "ethanlchristensen@outlook.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django (>=5.2.8,<6.0.0)",
+    "django-ninja (>=1.5.0,<2.0.0)",
+    "django-ninja-jwt (>=5.4.2,<6.0.0)",
+    "django-cors-headers (>=4.9.0,<5.0.0)",
+    "openrouter (>=0.0.19,<0.0.20)",
+    "pillow (>=12.0.0,<13.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
