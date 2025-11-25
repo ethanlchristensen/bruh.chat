@@ -1,6 +1,6 @@
 export type BaseEntity = {
   id: string;
-  createdAt: number;
+  created_at: number;
 };
 
 export type Entity<T> = {
@@ -13,17 +13,79 @@ export type Meta = {
   totalPages: number;
 };
 
-export type User = Entity<{
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'ADMIN' | 'USER';
-  teamId: string;
+export interface UserProfile {
   bio: string;
-}>;
+  profile_image: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_staff: boolean;
+  is_superuser: boolean;
+  date_joined: string;
+  profile: UserProfile;
+}
+
+export interface AuthTokens {
+  access: string;
+  refresh: string;
+  expires_at: number;
+}
 
 export type AuthResponse = {
   username: string;
   refresh: string;
   access: string;
+};
+
+export type ChatRequest = {
+  conversation_id?: string;
+  message?: string;
+  model?: string;
+};
+
+export type ChatUsageResponse = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost?: number;
+};
+
+export type ChatSuccessResponse = {
+  success: boolean;
+  conversation_id: string;
+  message: string;
+  usage: ChatUsageResponse;
+};
+
+export type ChatErrorResponse = {
+  success: boolean;
+  error: string;
+  conversation_id?: string;
+};
+
+export type Conversation = Entity<{
+  title: string;
+  updated_at: string;
+}>;
+
+export type ConversationsResponse = {
+  conversations: Conversation[];
+};
+
+export type Message = Entity<{
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+  updated_at: string;
+}>;
+
+export type ConversationDetailResponse = {
+  conversation: Conversation;
+  messages: Message[];
 };

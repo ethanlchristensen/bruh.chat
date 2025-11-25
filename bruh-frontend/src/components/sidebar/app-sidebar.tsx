@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { MessageCircle, Info, Command } from "lucide-react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { MessageCircle, Info, Command, Trash2, Pencil } from "lucide-react";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
 import { NavUser } from "@/components/sidebar/nav-user";
 import { Label } from "@/components/ui/label";
@@ -21,14 +22,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
+import { TimeAgo } from "@/features/chat/components/time-ago";
 
-// This is sample data
+import { useConversations } from "@/features/chat/api/conversation";
+
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Conversations",
@@ -43,110 +41,62 @@ const data = {
       isActive: false,
     },
   ],
-  conversations: [
-    {
-      id: "1",
-      title: "Help with React components",
-      model: "GPT-4",
-      timestamp: "09:34 AM",
-      messageCount: 12,
-      preview:
-        "I need help understanding how to create reusable components in React.\nCan you explain the best practices for component composition?",
-    },
-    {
-      id: "2",
-      title: "TypeScript type safety",
-      model: "GPT-4",
-      timestamp: "Yesterday",
-      messageCount: 8,
-      preview:
-        "What's the difference between interface and type in TypeScript?\nI want to make sure I'm using the right approach for my project.",
-    },
-    {
-      id: "3",
-      title: "API integration patterns",
-      model: "Claude",
-      timestamp: "2 days ago",
-      messageCount: 15,
-      preview:
-        "I'm building a REST API client and need advice on error handling.\nWhat are some common patterns for managing API state?",
-    },
-    {
-      id: "4",
-      title: "Performance optimization",
-      model: "GPT-4",
-      timestamp: "2 days ago",
-      messageCount: 10,
-      preview:
-        "My React app is running slow with large lists.\nCan you suggest some optimization techniques like virtualization?",
-    },
-    {
-      id: "5",
-      title: "Database design discussion",
-      model: "Claude",
-      timestamp: "1 week ago",
-      messageCount: 20,
-      preview:
-        "I'm designing a relational database schema for an e-commerce platform.\nWhat are the best practices for modeling products and orders?",
-    },
-    {
-      id: "6",
-      title: "CSS styling strategies",
-      model: "GPT-4",
-      timestamp: "1 week ago",
-      messageCount: 6,
-      preview:
-        "Should I use CSS modules, Tailwind, or styled-components?\nI want to understand the trade-offs of each approach.",
-    },
-    {
-      id: "7",
-      title: "Authentication implementation",
-      model: "GPT-4",
-      timestamp: "1 week ago",
-      messageCount: 18,
-      preview:
-        "I need to implement JWT authentication in my Next.js app.\nWhat's the recommended way to handle tokens and refresh logic?",
-    },
-    {
-      id: "8",
-      title: "Testing strategies",
-      model: "Claude",
-      timestamp: "1 week ago",
-      messageCount: 9,
-      preview:
-        "What's the difference between unit, integration, and e2e tests?\nI want to set up a comprehensive testing strategy for my project.",
-    },
-    {
-      id: "9",
-      title: "Git workflow questions",
-      model: "GPT-4",
-      timestamp: "1 week ago",
-      messageCount: 7,
-      preview:
-        "I'm confused about when to rebase vs merge in Git.\nCan you explain the pros and cons of each approach?",
-    },
-    {
-      id: "10",
-      title: "Deployment configuration",
-      model: "Claude",
-      timestamp: "1 week ago",
-      messageCount: 11,
-      preview:
-        "I'm deploying my app to Vercel for the first time.\nWhat environment variables do I need to configure for production?",
-    },
-  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { user } = useAuth();
-  const [conversations, setConversations] = React.useState(data.conversations);
-  const { setOpen } = useSidebar();
+  const { setOpen, open } = useSidebar();
+  const params = useParams({ strict: false });
+
+  const { data: conversationsData, isLoading } = useConversations();
+  const conversations = conversationsData?.conversations || [];
+
+  const currentConversationId = (params as any)?.conversationId;
+
+  const [showRecentOnly, setShowRecentOnly] = React.useState(() => {
+    const saved = localStorage.getItem("sidebar-show-recent");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  React.useEffect(() => {
+    localStorage.setItem("sidebar-open", JSON.stringify(open));
+  }, [open]);
+
+  React.useEffect(() => {
+    localStorage.setItem("sidebar-show-recent", JSON.stringify(showRecentOnly));
+  }, [showRecentOnly]);
+
+  const filteredConversations = React.useMemo(() => {
+    let filtered = conversations;
+
+    if (showRecentOnly) {
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      filtered = filtered.filter((conversation) => {
+        const updatedAt = new Date(conversation.updated_at);
+        return updatedAt >= twentyFourHoursAgo;
+      });
+    }
+
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((conversation) =>
+        conversation.title.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+
+    return filtered;
+  }, [conversations, showRecentOnly, searchQuery]);
 
   const activeItem = React.useMemo(
-    () => data.navMain.find((item) => item.url === location.pathname) || data.navMain[0],
-    [location.pathname]
-  )
+    () =>
+      data.navMain.find((item) => item.url === location.pathname) ||
+      data.navMain[0],
+    [location.pathname],
+  );
 
   return (
     <Sidebar
@@ -163,14 +113,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                <Link to="/">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Command className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Acme Inc</span>
-                    <span className="truncate text-xs">Enterprise</span>
-                  </div>
+                <Link to="/" className="relative overflow-hidden">
+                  <img
+                    src="/bruh.chat.png"
+                    alt="Company Logo"
+                    className="h-8 w-full object-cover rounded-lg"
+                  />
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -191,7 +139,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       isActive={activeItem?.title === item.title}
                       className="px-2.5 md:px-2"
                     >
-                      <Link to={item.url} onClick={() => setOpen(true)}>
+                      <Link to={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
@@ -202,52 +150,121 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
-          { user && <NavUser user={user} /> }
-        </SidebarFooter>
+        <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
       </Sidebar>
 
       {/* This is the second sidebar */}
-      <Sidebar collapsible="none" className="hidden flex-1 md:flex">
+      <Sidebar
+        collapsible="none"
+        className="hidden flex-1 md:flex overflow-hidden border-none!"
+      >
         <SidebarHeader className="gap-3.5 border-b p-4">
           <div className="flex w-full items-center justify-between">
             <div className="text-foreground text-base font-medium">
-              {activeItem?.title}
+              Conversations
             </div>
             <Label className="flex items-center gap-2 text-sm">
               <span>Recent</span>
-              <Switch className="shadow-none" />
+              <Switch
+                className="shadow-none"
+                checked={showRecentOnly}
+                onCheckedChange={setShowRecentOnly}
+              />
             </Label>
           </div>
-          <SidebarInput placeholder="Search conversations..." />
+          <SidebarInput
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />{" "}
+          <Link
+            to="/"
+            className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
+          >
+            <MessageCircle className="h-4 w-4" />
+            New Chat
+          </Link>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="px-0">
-            <SidebarGroupContent>
-              {conversations.map((conversation) => (
-                <Link
-                  to="/"
-                  key={conversation.id}
-                  className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <span className="font-medium">{conversation.title}</span>
-                    <span className="ml-auto text-xs">{conversation.timestamp}</span>
-                  </div>
-                  <div className="flex w-full items-center gap-2 text-xs text-muted-foreground">
-                    <span>{conversation.model}</span>
-                    <span>•</span>
-                    <span>{conversation.messageCount} messages</span>
-                  </div>
-                  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces text-muted-foreground">
-                    {conversation.preview}
-                  </span>
-                </Link>
-              ))}
+            <SidebarGroupContent className="overflow-hidden">
+              {isLoading ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading conversations...
+                </div>
+              ) : filteredConversations.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  {showRecentOnly
+                    ? "No recent conversations in the last 24 hours."
+                    : "No conversations yet. Start a new chat!"}
+                </div>
+              ) : (
+                filteredConversations.map((conversation) => {
+                  const isActive = currentConversationId === conversation.id;
+
+                  return (
+                    <div
+                      key={conversation.id}
+                      className={cn(
+                        "group/item relative border-b last:border-b-0",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      )}
+                    >
+                      <Link
+                        to="/chat/$conversationId"
+                        params={{ conversationId: conversation.id }}
+                        className="flex items-center p-4 text-sm min-w-0"
+                      >
+                        <div className="flex w-full items-center gap-2 min-w-0">
+                          <span className="font-medium truncate min-w-0">
+                            {conversation.title}
+                          </span>
+                          <span className="text-xs shrink-0 whitespace-nowrap ml-auto group-hover/item:opacity-0 transition-opacity">
+                            <TimeAgo isoDate={conversation.updated_at} />
+                          </span>
+                        </div>
+                      </Link>
+
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden group-hover/item:flex items-center gap-1 pr-2 pl-8 bg-gradient-to-r from-transparent via-sidebar-accent/80 to-sidebar-accent">
+                        <button
+                          className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5 relative z-10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(
+                              "Rename conversation:",
+                              conversation.id,
+                            );
+                          }}
+                          aria-label="Rename conversation"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="hover:bg-destructive/10 rounded-sm p-1.5 text-destructive relative z-10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(
+                              "Delete conversation:",
+                              conversation.id,
+                            );
+                          }}
+                          aria-label="Delete conversation"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
     </Sidebar>
-  )
+  );
 }

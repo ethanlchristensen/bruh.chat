@@ -19,8 +19,13 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     () =>
       new QueryClient({
         defaultOptions: queryConfig,
-      })
+      }),
   );
+
+  const [defaultOpen] = React.useState(() => {
+    const saved = localStorage.getItem("sidebar-open");
+    return saved ? JSON.parse(saved) : true;
+  });
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="bruh-ui-theme">
@@ -33,15 +38,16 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       >
         <ErrorBoundary FallbackComponent={MainErrorFallback}>
           <QueryClientProvider client={queryClient}>
-              <SidebarProvider
-                style={
-                  {
-                    "--sidebar-width": "350px",
-                  } as React.CSSProperties
-                }
-              >
-                {children}
-              </SidebarProvider>
+            <SidebarProvider
+              style={
+                {
+                  "--sidebar-width": "350px",
+                } as React.CSSProperties
+              }
+              defaultOpen={defaultOpen}
+            >
+              {children}
+            </SidebarProvider>
             <ReactQueryDevtools />
           </QueryClientProvider>
         </ErrorBoundary>

@@ -9,11 +9,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,10 +48,12 @@ export function NavUser({ user }: { user: User }) {
     navigate({ to: "/login" });
   };
 
-  const fullName = `${user.first_name} ${user.last_name}`.trim() || user.username;
-  const initials = user.first_name && user.last_name
-    ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
-    : user.username.substring(0, 2).toUpperCase();
+  const fullName =
+    `${user.first_name} ${user.last_name}`.trim() || user.username;
+  const initials =
+    user.first_name && user.last_name
+      ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+      : user.username.substring(0, 2).toUpperCase();
 
   return (
     <SidebarMenu>
@@ -68,7 +66,9 @@ export function NavUser({ user }: { user: User }) {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.profile.profile_image} alt={fullName} />
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{fullName}</span>
@@ -86,8 +86,13 @@ export function NavUser({ user }: { user: User }) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.profile.profile_image} alt={fullName} />
-                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  <AvatarImage
+                    src={user.profile.profile_image}
+                    alt={fullName}
+                  />
+                  <AvatarFallback className="rounded-lg">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{fullName}</span>

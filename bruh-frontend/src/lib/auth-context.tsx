@@ -1,29 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import { api } from "./api-client";
-
-interface UserProfile {
-  bio: string;
-  profile_image: string;
-}
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  is_staff: boolean;
-  is_superuser: boolean;
-  date_joined: string;
-  profile: UserProfile;
-}
-
-interface AuthTokens {
-  access: string;
-  refresh: string;
-  expiresAt: number;
-}
+import type { AuthTokens, User } from "@/types/api";
 
 interface AuthContextType {
   user: User | null;
@@ -58,9 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsedTokens = JSON.parse(storedTokens);
 
         if (parsedTokens.expiresAt > Date.now()) {
-          console.log("[AuthProvider] Access token is still valid, using existing token");
+          console.log(
+            "[AuthProvider] Access token is still valid, using existing token",
+          );
           setTokens(parsedTokens);
-          
+
           try {
             const userData = await api.get<User>("/users/me");
             setUser(userData);
@@ -70,30 +50,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem("auth_tokens");
           }
         } else if (parsedTokens.refresh) {
-          console.log("[AuthProvider] Access token expired, attempting refresh...");
+          console.log(
+            "[AuthProvider] Access token expired, attempting refresh...",
+          );
           try {
-            const refreshData = await api.post<{ access: string, refresh: string }>("/token/refresh", { refresh: parsedTokens.refresh });
+            const refreshData = await api.post<{
+              access: string;
+              refresh: string;
+            }>("/token/refresh", { refresh: parsedTokens.refresh });
             const expiresAt = getTokenExpiry(refreshData.access);
             const newTokens: AuthTokens = {
               access: refreshData.access,
               refresh: refreshData.refresh,
-              expiresAt
+              expires_at: expiresAt,
             };
 
             setTokens(newTokens);
             localStorage.setItem("auth_tokens", JSON.stringify(newTokens));
-            console.log("[AuthProvider] Token refresh successful! New expiry:", new Date(expiresAt).toLocaleString());
+            console.log(
+              "[AuthProvider] Token refresh successful! New expiry:",
+              new Date(expiresAt).toLocaleString(),
+            );
 
             const userData = await api.get<User>("/users/me");
             setUser(userData);
             console.log("[AuthProvider] User data loaded after token refresh");
-
           } catch (error) {
             console.error("[AuthProvider] Token refresh failed:", error);
-            localStorage.removeItem("auth_tokens")
+            localStorage.removeItem("auth_tokens");
           }
         } else {
-          console.log("[AuthProvider] No refresh token available, clearing tokens");
+          console.log(
+            "[AuthProvider] No refresh token available, clearing tokens",
+          );
           localStorage.removeItem("auth_tokens");
         }
       } else {
@@ -119,12 +108,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const authTokens: AuthTokens = {
       access: data.access,
       refresh: data.refresh,
-      expiresAt,
+      expires_at: expiresAt,
     };
 
     setTokens(authTokens);
     localStorage.setItem("auth_tokens", JSON.stringify(authTokens));
-    console.log("[AuthProvider] Login successful! Token expires:", new Date(expiresAt).toLocaleString());
+    console.log(
+      "[AuthProvider] Login successful! Token expires:",
+      new Date(expiresAt).toLocaleString(),
+    );
 
     const userData = await api.get<User>("/users/me");
     setUser(userData);

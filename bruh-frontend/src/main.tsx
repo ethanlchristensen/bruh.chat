@@ -1,16 +1,15 @@
-import { StrictMode } from 'react'
-import ReactDOM from 'react-dom/client'
-import './index.css'
+import { StrictMode } from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
 
-import { App } from './app'
+import { App } from "./app";
 
-// Render the app
-const rootElement = document.getElementById('root')!
+const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement)
+  const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
       <App />
     </StrictMode>,
-  )
+  );
 }

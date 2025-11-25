@@ -1,5 +1,5 @@
-import { Palette, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Palette, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +7,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import { useTheme } from "./theme-provider"
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "./theme-provider";
 
 const colorThemes = [
   { value: "neutral", label: "Neutral", color: "bg-neutral-500" },
@@ -19,15 +19,15 @@ const colorThemes = [
   { value: "green", label: "Green", color: "bg-green-500" },
   { value: "blue", label: "Blue", color: "bg-blue-500" },
   { value: "violet", label: "Violet", color: "bg-violet-500" },
-] as const
+] as const;
 
 export function ColorThemeToggle() {
-  const { setColorTheme, colorTheme } = useTheme()
+  const { setColorTheme, colorTheme } = useTheme();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="ghost" size="sm">
           <Palette className="h-[1.2rem] w-[1.2rem]" />
           <span className="sr-only">Toggle color theme</span>
         </Button>
@@ -47,12 +47,16 @@ export function ColorThemeToggle() {
                 colorTheme === theme.value ? "opacity-100" : "opacity-0"
               }`}
             />
-            <span className={colorTheme === theme.value ? "font-semibold" : "font-normal"}>
+            <span
+              className={
+                colorTheme === theme.value ? "font-semibold" : "font-normal"
+              }
+            >
               {theme.label}
             </span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

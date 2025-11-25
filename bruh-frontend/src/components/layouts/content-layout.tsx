@@ -6,23 +6,31 @@ import { ColorThemeToggle } from "../theme/color-theme-toggle";
 
 type ContentLayoutProps = {
   children: React.ReactNode;
+  fullHeight?: boolean;
 };
 
-export const ContentLayout = ({ children }: ContentLayoutProps) => {
+export const ContentLayout = ({
+  children,
+  fullHeight = false,
+}: ContentLayoutProps) => {
   return (
-    <>
-      <header className="bg-background sticky top-0 flex shrink-0 items-center justify-between gap-2 border-b p-2">
+    <div className="flex flex-col h-screen">
+      <header className="bg-sidebar flex shrink-0 items-center justify-between gap-1 p-1 border-b">
         <SidebarTrigger />
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <ColorThemeToggle />
         </div>
       </header>
-      <div className="py-6">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:px-8">
-          {children}
+      {fullHeight ? (
+        <div className="flex-1 overflow-hidden">{children}</div>
+      ) : (
+        <div className="flex-1 overflow-auto py-6">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:px-8">
+            {children}
+          </div>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
