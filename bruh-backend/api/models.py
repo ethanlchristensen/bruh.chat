@@ -1,3 +1,3 @@
-from .conversations.models import *
-from .ai.models import *
-from .users.models import *
+from .features.conversations.models import *
+from .features.ai.models import *
+from .features.users.models import *

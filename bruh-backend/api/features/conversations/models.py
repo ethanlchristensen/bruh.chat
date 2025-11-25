@@ -1,13 +1,22 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
 
 class Conversation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
+
+    if TYPE_CHECKING:
+        messages: QuerySet["Message"]
 
     class Meta:
         ordering = ['-updated_at']
@@ -16,6 +25,7 @@ class Conversation(models.Model):
         return f"{self.user.username} - {self.title}"
 
 class Message(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     conversation = models.ForeignKey(Conversation, related_name='messages', on_delete=models.CASCADE)
     role = models.CharField(max_length=50)
     content = models.TextField()
