@@ -18,23 +18,20 @@ from .schemas import (
 class ConversationController:
     @route.post("", response={201: ConversationSchema})
     async def create_conversation(self, request, payload: CreateConversationRequest):
-        """Create a new conversation"""
         conversation = await ConversationService.create_conversation(
             user=request.auth, title=payload.title
         )
-        return 201, conversation  # Just return the model instance!
+        return 201, conversation
 
     @route.get("", response=ConversationListResponse)
     async def get_conversations(self, request):
-        """Get all conversations for the authenticated user"""
         conversations = await ConversationService.get_user_conversations(
             user=request.auth, include_deleted=False
         )
-        return {"conversations": conversations}  # ModelSchema handles serialization
+        return {"conversations": conversations}
     
     @route.get("/{conversation_id}", response=ConversationDetailSchema)
     async def get_conversation(self, request, conversation_id: UUID):
-        """Get a single conversation with all its messages"""
         conversation = await ConversationService.get_conversation(
             conversation_id=conversation_id,
             user=request.auth

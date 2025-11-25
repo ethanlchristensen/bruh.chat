@@ -28,18 +28,6 @@ class OpenRouterService:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None
     ) -> str:
-        """
-        Send a chat completion request to OpenRouter API
-        
-        Args:
-            content: The user message content
-            model: Optional model override (uses default_model if not specified)
-            temperature: Optional temperature parameter
-            max_tokens: Optional max tokens parameter
-            
-        Returns:
-            The assistant's response content
-        """
         url = f"{self.base_url}/chat/completions"
         
         payload = {
@@ -52,7 +40,6 @@ class OpenRouterService:
             ]
         }
         
-        # Add optional parameters if provided
         if temperature is not None:
             payload["temperature"] = temperature
         if max_tokens is not None:

@@ -54,10 +54,8 @@ class UserController:
 
     @route.get("/", response=List[UserSchema], permissions=[IsAdmin])
     def list_users(self, request):
-        """List all users"""
         return User.objects.all()
     
     @route.get("/{user_id}", response=UserSchema, permissions=[IsAdmin])
     def get_user(self, request, user_id: int):
-        """Get user by ID"""
         return User.objects.get(id=user_id)

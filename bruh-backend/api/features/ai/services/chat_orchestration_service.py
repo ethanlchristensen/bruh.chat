@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class ChatSuccessResponse(BaseModel):
-    """Internal service response - contains Django models"""
     success: bool = Field(default=True)
     conversation_id: UUID
     user_message: Message
@@ -29,7 +28,6 @@ class ChatSuccessResponse(BaseModel):
 
 
 class ChatErrorResponse(BaseModel):
-    """Internal service response"""
     success: bool = Field(default=False)
     conversation_id: UUID | None = None
     user_message: Message | None = None
@@ -72,7 +70,6 @@ class ChatOrchestrationService:
 
             assistant_content = open_router_response["choices"][0]["message"]["content"]
 
-            # Create a sync function that wraps the transaction
             @sync_to_async
             def create_assistant_response():
                 with transaction.atomic():
