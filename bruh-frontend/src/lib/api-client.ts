@@ -75,13 +75,53 @@ class ApiClient {
     };
   }
 
+  private isTokenValid(): boolean {
+    const tokens = localStorage.getItem("auth_tokens");
+    if (!tokens) {
+      return false;
+    }
+
+    try {
+      const authTokens = JSON.parse(tokens);
+      const expiresAt = authTokens.expiresAt || authTokens.expires_at;
+
+      if (!expiresAt) {
+        return false;
+      }
+
+      // Add 30 second buffer to refresh before actual expiry
+      const isValid = expiresAt > Date.now() + 30000;
+
+      if (!isValid) {
+        console.log("[ApiClient] Token is expired or expiring soon");
+      }
+
+      return isValid;
+    } catch {
+      return false;
+    }
+  }
+
+  private async ensureValidToken(): Promise<void> {
+    // Skip validation for auth endpoints
+    if (this.isRefreshing) {
+      await this.refreshPromise;
+      return;
+    }
+
+    if (!this.isTokenValid()) {
+      console.log("[ApiClient] Token invalid, refreshing proactively...");
+      await this.refreshToken();
+    }
+  }
+
   private async refreshToken(): Promise<string | null> {
     if (this.isRefreshing && this.refreshPromise) {
       console.log("[ApiClient] Token refresh already in progress, waiting...");
       return this.refreshPromise;
     }
 
-    console.log("[ApiClient] Starting token refresh due to 401 error...");
+    console.log("[ApiClient] Starting token refresh...");
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
       try {
@@ -174,7 +214,7 @@ class ApiClient {
   ) {
     if (response.status === 401 && retryRequest) {
       console.log(
-        "[ApiClient] Received 401 error, attempting token refresh...",
+        "[ApiClient] Received 401 error, attempting token refresh as fallback...",
       );
       const newToken = await this.refreshToken();
 
@@ -226,6 +266,11 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
+    // Skip token check for auth endpoints
+    if (!endpoint.includes("/token/")) {
+      await this.ensureValidToken();
+    }
+
     const url = new URL(this.getFullURL(endpoint));
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -236,7 +281,7 @@ class ApiClient {
     const makeRequest = () =>
       fetch(url.toString(), {
         method: "GET",
-        headers: authRequestHeaders(),
+        headers: this.getHeaders(),
         credentials: "include",
       });
 
@@ -251,20 +296,27 @@ class ApiClient {
     config: RequestConfig = {},
   ): Promise<T> {
     try {
-      const headers = this.getHeaders(config);
-
-      const isFormData = data instanceof FormData;
-      if (isFormData) {
-        headers.delete("Content-Type");
+      // Skip token check for auth endpoints
+      if (!endpoint.includes("/token/")) {
+        await this.ensureValidToken();
       }
 
-      const makeRequest = () =>
-        fetch(this.getFullURL(endpoint), {
+      const isFormData = data instanceof FormData;
+
+      const makeRequest = () => {
+        const headers = this.getHeaders(config);
+
+        if (isFormData) {
+          headers.delete("Content-Type");
+        }
+
+        return fetch(this.getFullURL(endpoint), {
           method: "POST",
           headers: headers,
           credentials: "include",
           body: isFormData ? data : JSON.stringify(data),
         });
+      };
 
       const response = await makeRequest();
 
@@ -283,10 +335,12 @@ class ApiClient {
   }
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
+    await this.ensureValidToken();
+
     const makeRequest = () =>
       fetch(this.getFullURL(endpoint), {
         method: "PUT",
-        headers: authRequestHeaders(),
+        headers: this.getHeaders(),
         credentials: "include",
         body: JSON.stringify(data),
       });
@@ -297,10 +351,12 @@ class ApiClient {
   }
 
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+    await this.ensureValidToken();
+
     const makeRequest = () =>
       fetch(this.getFullURL(endpoint), {
         method: "PATCH",
-        headers: authRequestHeaders(),
+        headers: this.getHeaders(),
         credentials: "include",
         body: JSON.stringify(data),
       });
@@ -311,112 +367,18 @@ class ApiClient {
   }
 
   async delete<T>(endpoint: string): Promise<T> {
+    await this.ensureValidToken();
+
     const makeRequest = () =>
       fetch(this.getFullURL(endpoint), {
         method: "DELETE",
-        headers: authRequestHeaders(),
+        headers: this.getHeaders(),
         credentials: "include",
       });
 
     const response = await makeRequest();
     const finalResponse = await this.handleResponse(response, makeRequest);
     return finalResponse.json();
-  }
-
-  async streamCompletion(
-    data: unknown,
-    onChunk: (chunk: string | StreamChunk) => void,
-    signal?: AbortSignal,
-  ): Promise<void> {
-    try {
-      const response = await fetch(this.getFullURL("/completions/chat"), {
-        method: "POST",
-        headers: this.getHeaders({
-          headers: {
-            Accept: "text/event-stream",
-            "Content-Type": "application/json",
-          },
-        }),
-        credentials: "include",
-        body: JSON.stringify(data),
-        signal,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Stream response error:", response.status, errorText);
-        throw new Error(
-          `HTTP error! status: ${response.status} - ${errorText}`,
-        );
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        console.error("No reader available from response");
-        return;
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      if (signal) {
-        signal.addEventListener("abort", () => {
-          reader.cancel("User cancelled the request").catch((err) => {
-            console.error("Error cancelling reader:", err);
-          });
-        });
-      }
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        buffer += text;
-
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-
-          if (line.startsWith("data: ")) {
-            try {
-              const jsonStr = line.slice(6);
-              if (!jsonStr.trim()) continue;
-
-              const data = JSON.parse(jsonStr);
-              onChunk(data);
-
-              if (data.status === "cancelled") {
-                console.log("Received cancellation status from server");
-              }
-            } catch (e) {
-              console.error("Error parsing SSE data:", e, "Line:", line);
-            }
-          }
-        }
-      }
-
-      if (buffer.trim() && buffer.startsWith("data: ")) {
-        try {
-          const jsonStr = buffer.slice(6);
-          if (jsonStr.trim()) {
-            const data = JSON.parse(jsonStr);
-            onChunk(data);
-          }
-        } catch (e) {
-          console.error("Error parsing final SSE data:", e);
-        }
-      }
-    } catch (error: any) {
-      console.error("Stream error:", error);
-      if (error.name === "AbortError") {
-        console.log("Stream aborted by client");
-        throw error;
-      }
-      throw error;
-    }
   }
 }
 

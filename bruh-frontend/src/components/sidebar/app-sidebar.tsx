@@ -74,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     if (showRecentOnly) {
       const now = new Date();
-      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const twentyFourHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 
       filtered = filtered.filter((conversation) => {
         const updatedAt = new Date(conversation.updated_at);

@@ -27,10 +27,10 @@ export const MessageInput = ({
 
   return (
     <div className="p-2">
-      <div className="max-w-4xl mx-auto space-y-2 p-2 rounded-lg bg-card">
+      <div className="max-w-4xl mx-auto space-y-2 p-2 rounded-lg bg-sidebar">
         <form
           onSubmit={handleSubmit}
-          className="flex gap-2 items-center bg-card rounded-lg p-2"
+          className="flex gap-2 items-center bg-transparent rounded-lg p-2"
         >
           <input
             type="text"

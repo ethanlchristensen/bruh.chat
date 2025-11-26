@@ -91,3 +91,7 @@ export type ConversationDetailResponse = {
   conversation: Conversation;
   messages: Message[];
 };
+
+export type ConversationCreateRequest = {
+  title?: string;
+};

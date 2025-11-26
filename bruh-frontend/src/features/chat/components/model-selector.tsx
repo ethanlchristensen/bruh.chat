@@ -51,7 +51,7 @@ export const ModelSelector = ({
     });
   };
 
-  // Filter and organize models based on search
+  // filter models on search
   const filteredModelsByProvider = useMemo(() => {
     if (!modelsByProvider || !searchQuery.trim()) {
       return modelsByProvider;
@@ -76,7 +76,7 @@ export const ModelSelector = ({
     return filtered;
   }, [modelsByProvider, searchQuery]);
 
-  // Auto-expand all providers when searching
+  // expand providers when searching
   useMemo(() => {
     if (searchQuery.trim() && filteredModelsByProvider) {
       setExpandedProviders(new Set(Object.keys(filteredModelsByProvider)));
@@ -87,7 +87,7 @@ export const ModelSelector = ({
     return <div className="text-sm text-muted-foreground">Loading models...</div>;
   }
 
-  // If user has no models, show the add model interface
+  // add model interface
   if (!userModels || userModels.length === 0) {
     return (
       <div className="relative">
@@ -208,7 +208,7 @@ export const ModelSelector = ({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm border rounded-lg hover:bg-accent min-w-[200px]"
+        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg hover:bg-accent min-w-[200px]"
       >
         <span className="flex-1 text-left truncate">
           {selectedModel ? selectedModel.name : "Select a model"}
