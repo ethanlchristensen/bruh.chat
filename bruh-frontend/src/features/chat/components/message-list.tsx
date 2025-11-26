@@ -1,8 +1,11 @@
 import { useEffect, useRef } from "react";
+import { Message } from "./message";
 
 type Message = {
   role: string;
   content: string;
+  id: string;
+  isStreaming?: boolean;
 };
 
 type MessageListProps = {
@@ -19,30 +22,21 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-4xl mx-auto p-4 space-y-4">
+      <div className="max-w-6xl mx-auto p-4 space-y-4">
         {messages.length === 0 && !isLoading && (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             Start a conversation by sending a message
           </div>
         )}
 
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground ml-auto"
-                  : "bg-muted mr-auto"
-              }`}
-            >
-              <div className="whitespace-pre-wrap wrap-break-word text-sm">
-                {message.content}
-              </div>
-            </div>
-          </div>
+        {messages.map((message) => (
+          <Message
+            key={message.id}
+            content={message.content}
+            role={message.role}
+            id={message.id}
+            isStreaming={message.isStreaming}
+          />
         ))}
 
         {isLoading && (

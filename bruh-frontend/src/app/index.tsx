@@ -17,7 +17,7 @@ export const App = () => {
     <AppProvider>
       <AuthProvider>
         <RouterProvider router={router} />
-      </AuthProvider>{" "}
+      </AuthProvider>
     </AppProvider>
   );
 };

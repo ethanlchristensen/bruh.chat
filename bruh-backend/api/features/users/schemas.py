@@ -1,6 +1,7 @@
-from ninja import Schema
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+
+from ninja import Schema
 
 
 class ProfileSchema(Schema):
@@ -9,15 +10,17 @@ class ProfileSchema(Schema):
 
     @staticmethod
     def resolve_profile_image(obj):
-        if hasattr(obj, '_image_full_url'):
+        if hasattr(obj, "_image_full_url"):
             return obj._image_full_url
-        
+
         if obj.profile_image:
             return obj.profile_image.url
         return None
 
+
 class ProfileUpdateSchema(Schema):
     bio: Optional[str] = None
+
 
 class UserSchema(Schema):
     id: int
@@ -30,7 +33,31 @@ class UserSchema(Schema):
     date_joined: datetime
     profile: Optional[ProfileSchema] = None
 
+
 class UserUpdateSchema(Schema):
     email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+
+
+class UserAddedModelSchema(Schema):
+    id: int
+    model_id: str
+    added_at: datetime
+
+
+class AddModelSchema(Schema):
+    model_id: str
+
+
+class BulkAddModelsSchema(Schema):
+    model_ids: List[str]
+
+
+class RemoveModelSchema(Schema):
+    model_id: str
+
+
+class BulkOperationResponseSchema(Schema):
+    added: int
+    skipped: int

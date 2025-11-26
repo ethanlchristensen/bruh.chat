@@ -11,13 +11,13 @@ type RequestConfig = {
 interface StreamChunk {
   content?: string;
   status?:
-    | "generating"
-    | "cancelled"
-    | "error"
-    | "tool_call"
-    | "done"
-    | "waiting"
-    | "created";
+  | "generating"
+  | "cancelled"
+  | "error"
+  | "tool_call"
+  | "done"
+  | "waiting"
+  | "created";
   error?: string;
   conversation_uuid?: string;
   tool_calls?: Array<{
@@ -269,7 +269,9 @@ class ApiClient {
       const response = await makeRequest();
 
       if (config.headers?.Accept === "text/event-stream") {
-        return response.body as unknown as T;
+        const finalResponse = await this.handleResponse(response, makeRequest);
+        console.log("[ApiClient] Returning streaming response body");
+        return finalResponse.body as unknown as T;
       }
 
       const finalResponse = await this.handleResponse(response, makeRequest);

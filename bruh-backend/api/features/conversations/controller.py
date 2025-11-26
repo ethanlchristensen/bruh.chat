@@ -1,17 +1,16 @@
+from uuid import UUID
+
 from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
-from ninja import Schema
-from typing import List
-from uuid import UUID
-from datetime import datetime
 
-from .services import ConversationService, MessageService
 from .schemas import (
-    CreateConversationRequest,
-    ConversationSchema,
-    ConversationListResponse,
     ConversationDetailSchema,
+    ConversationListResponse,
+    ConversationSchema,
+    CreateConversationRequest,
+    ConversationTitleUpdateRequest
 )
+from .services import ConversationService
 
 
 @api_controller("/conversations", auth=JWTAuth(), tags=["Conversations"])
@@ -29,12 +28,35 @@ class ConversationController:
             user=request.auth, include_deleted=False
         )
         return {"conversations": conversations}
-    
+
     @route.get("/{conversation_id}", response=ConversationDetailSchema)
     async def get_conversation(self, request, conversation_id: UUID):
         conversation = await ConversationService.get_conversation(
-            conversation_id=conversation_id,
-            user=request.auth
+            conversation_id=conversation_id, user=request.auth
         )
-        
+
         return conversation
+
+    @route.delete("/{conversation_id}", response={
+        204: None
+    })
+    async def delete_conversation(self, request, conversation_id: UUID):
+        user = request.auth
+
+        deleted = await ConversationService.mark_conversation_as_deleted(conversation_id=conversation_id, user=user)
+
+        if not deleted:
+            return 404, {"detail": "Conversation not found"}
+        else:
+            return 204, None
+    
+    @route.patch("/", response=ConversationSchema)
+    async def update_conversation_title(self, request, data: ConversationTitleUpdateRequest):
+        user = request.auth
+        
+        updated, conversation = await ConversationService.update_conversation_title(conversation_id=data.conversation_id, user=user, title=data.title)
+
+        if not updated:
+            return 404, {"detail": "Conversation not found"}
+        else:
+            return 200, conversation

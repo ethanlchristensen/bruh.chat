@@ -59,6 +59,8 @@ export type ChatSuccessResponse = {
   success: boolean;
   conversation_id: string;
   message: string;
+  user_message_id: string;
+  assistant_message_id: string;
   usage: ChatUsageResponse;
 };
 

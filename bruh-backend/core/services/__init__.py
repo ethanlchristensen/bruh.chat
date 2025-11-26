@@ -1,3 +1,3 @@
-from .config_service import get_config, Config, ConfigService
+from .config_service import Config, ConfigService, get_config
 
 __all__ = ["get_config", "Config", "ConfigService"]
