@@ -11,7 +11,7 @@ export const Message = ({ message }: MessageProps) => {
 
   const displayDate = created_at
     ? new Date(created_at).toLocaleDateString([], {
-        dateStyle: "long"
+        dateStyle: "full"
       })
     : "";
   
@@ -43,27 +43,25 @@ export const Message = ({ message }: MessageProps) => {
       </div>
 
       {/* Message Content */}
-      <div className="flex flex-col gap-1 max-w-[70%] min-w-0">
+      <div className="flex flex-col gap-1 max-w-[70%]">
         <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse" : ""}`}>
-          <span className="font-bold text-foreground">
+          <span className="font-medium">
             {isUser ? "You" : model_id || "Assistant"}
           </span>
           <span>{displayDate} at {displayTime}</span>
         </div>
 
-        <div className={isUser ? "flex justify-end" : ""}>
-          <div
-            className={`rounded-lg px-4 py-2.5 inline-block ${
-              isUser
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground"
-            }`}
-          >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
-            {isStreaming && (
-              <span className="inline-block w-1 h-4 ml-1 bg-current animate-pulse" />
-            )}
-          </div>
+        <div
+          className={`rounded-lg px-4 py-2.5 ${
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground"
+          }`}
+        >
+          <p className="text-sm leading-relaxed">{content}</p>
+          {isStreaming && (
+            <span className="inline-block w-1 h-4 ml-1 bg-current animate-pulse" />
+          )}
         </div>
       </div>
     </div>

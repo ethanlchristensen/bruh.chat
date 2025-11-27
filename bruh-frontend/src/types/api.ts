@@ -87,6 +87,7 @@ export type Message = Entity<{
   content: string;
   model_id?: string;
   isStreaming?: boolean;
+  chunks?: string[];
 }>;
 
 export type ConversationDetailResponse = {
