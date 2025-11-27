@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  bruhbackend:
+    build:
+      context: ./bruh-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./bruh-backend:/app
+    networks:
+      - app-network
+
+  bruhfrontend:
+    build:
+      context: ./bruh-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - bruhbackend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

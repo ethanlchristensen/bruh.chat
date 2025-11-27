@@ -1,10 +1,7 @@
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";

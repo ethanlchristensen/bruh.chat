@@ -64,8 +64,7 @@ export const useUpdateConversationTitle = () => {
 
   return useMutation({
     mutationFn: updateConversationTitle,
-    onSuccess: (data, variables) => {
-      // Optimistic update
+    onSuccess: (_, variables) => {
       queryClient.setQueryData<ConversationsResponse>(
         ["conversations"],
         (old) => {
@@ -95,15 +94,12 @@ export const useDeleteConversation = () => {
   return useMutation({
     mutationFn: deleteConversation,
     onMutate: async (conversationId) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["conversations"] });
 
-      // Snapshot the previous value
       const previousConversations = queryClient.getQueryData<ConversationsResponse>(
         ["conversations"]
       );
 
-      // Optimistically update to remove the conversation
       queryClient.setQueryData<ConversationsResponse>(
         ["conversations"],
         (old) => {
@@ -122,8 +118,7 @@ export const useDeleteConversation = () => {
     onSuccess: () => {
       toast.success("Conversation deleted successfully");
     },
-    onError: (error, conversationId, context) => {
-      // Rollback on error
+    onError: (_, __, context) => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           ["conversations"],

@@ -2,7 +2,6 @@ import * as React from "react";
 import {
   MessageCircle,
   Info,
-  Command,
   Trash2,
   Pencil,
   Check,
@@ -73,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setOpen, open } = useSidebar();
+  const { open } = useSidebar();
   const params = useParams({ strict: false });
 
   const { data: conversationsData, isLoading } = useConversations();

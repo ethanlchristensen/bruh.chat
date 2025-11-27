@@ -8,33 +8,6 @@ type RequestConfig = {
   maxBodyLength?: number;
 };
 
-interface StreamChunk {
-  content?: string;
-  status?:
-  | "generating"
-  | "cancelled"
-  | "error"
-  | "tool_call"
-  | "done"
-  | "waiting"
-  | "created";
-  error?: string;
-  conversation_uuid?: string;
-  tool_calls?: Array<{
-    id: string;
-    function: {
-      name: string;
-      arguments: string;
-    };
-  }>;
-  tool_results?: Array<{
-    tool_call_id: string;
-    name?: string;
-    result?: any;
-    error?: string;
-  }>;
-}
-
 function getTokenExpiry(token: string): number {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -43,36 +16,13 @@ function getTokenExpiry(token: string): number {
     return Date.now();
   }
 }
-
-function authRequestHeaders(): Headers {
-  const headers = new Headers({
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  });
-
-  const tokens = localStorage.getItem("auth_tokens");
-  if (tokens) {
-    const authTokens = JSON.parse(tokens);
-    headers.set("Authorization", `Bearer ${authTokens.access}`);
-  }
-
-  return headers;
-}
-
 class ApiClient {
   private baseURL: string;
-  private defaultConfig: RequestConfig;
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<string | null> | null = null;
 
-  constructor(baseURL: string, config: RequestConfig = {}) {
+  constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.defaultConfig = {
-      withCredentials: true,
-      maxContentLength: 200 * 1024 * 1024,
-      maxBodyLength: 200 * 1024 * 1024,
-      ...config,
-    };
   }
 
   private isTokenValid(): boolean {
