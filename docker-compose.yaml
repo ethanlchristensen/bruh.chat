@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   bruhbackend:
     build:
@@ -7,8 +5,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin}
+      - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
+      - SECRET_KEY=${SECRET_KEY:-temp-secret-key-change-in-production}
     volumes:
-      - ./bruh-backend:/app
+      - db_data:/app/db
+      - media_data:/app/media
     networks:
       - app-network
 
@@ -26,3 +30,7 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  db_data:
+  media_data:

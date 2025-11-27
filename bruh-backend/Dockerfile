@@ -41,8 +41,19 @@ ENV DJANGO_SETTINGS_MODULE=config.settings \
 RUN mkdir -p /app/staticfiles && \
     python manage.py collectstatic --noinput
 
+# Create entrypoint script
+RUN echo '#!/bin/sh\n\
+set -e\n\
+echo "Running database migrations..."\n\
+python manage.py migrate --noinput\n\
+echo "Ensuring superuser exists..."\n\
+python manage.py ensure_superuser\n\
+echo "Starting gunicorn..."\n\
+exec gunicorn --bind 0.0.0.0:8000 --workers 4 config.wsgi:application\n' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
 # Expose port
 EXPOSE 8000
 
-# Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "config.wsgi:application"]
+# Use entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
