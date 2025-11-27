@@ -20,6 +20,7 @@ class OpenRouterConfig(BaseModel):
 class Config(BaseModel):
     open_router: OpenRouterConfig
     allowed_hosts: List[str]
+    media_root: str
 
 
 class ConfigService:
