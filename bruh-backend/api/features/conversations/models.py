@@ -34,6 +34,7 @@ class Message(models.Model):
     )
     role = models.CharField(max_length=50)
     content = models.TextField()
+    model_id = models.TextField(max_length=350, null=True, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField(default=False)

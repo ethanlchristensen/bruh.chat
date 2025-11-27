@@ -120,3 +120,15 @@ class AIController:
         """Get all models organized by provider"""
         service = get_open_router_service()
         return await service.models()
+
+    @route.get("/models/openrouter/structured", response=List[OpenRouterModelSchema])
+    async def get_structured_output_models(self, request):
+        """Get all models that support structured outputs"""
+        service = get_open_router_service()
+        return await service.get_all_structured_output_models()
+    
+    @route.get("/models/openrouter/structured/by-provider", response=dict)
+    async def get_structured_output_models_by_provider(self, request):
+        """Get models with structured outputs organized by provider"""
+        service = get_open_router_service()
+        return await service.models_with_structured_outputs()

@@ -16,6 +16,8 @@ export type Meta = {
 export interface UserProfile {
   bio: string;
   profile_image: string;
+  default_model: string;
+  default_aux_model: string;
 }
 
 export interface User {
@@ -80,11 +82,11 @@ export type ConversationsResponse = {
 };
 
 export type Message = Entity<{
-  id: string;
   conversation_id: string;
   role: string;
   content: string;
-  updated_at: string;
+  model_id?: string;
+  isStreaming?: boolean;
 }>;
 
 export type ConversationDetailResponse = {

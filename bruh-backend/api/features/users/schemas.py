@@ -7,6 +7,8 @@ from ninja import Schema
 class ProfileSchema(Schema):
     bio: Optional[str] = None
     profile_image: Optional[str] = None
+    default_model: Optional[str] = None
+    default_aux_model: Optional[str] = None
 
     @staticmethod
     def resolve_profile_image(obj):
@@ -20,6 +22,8 @@ class ProfileSchema(Schema):
 
 class ProfileUpdateSchema(Schema):
     bio: Optional[str] = None
+    default_model: Optional[str] = None
+    default_aux_model: Optional[str] = None
 
 
 class UserSchema(Schema):

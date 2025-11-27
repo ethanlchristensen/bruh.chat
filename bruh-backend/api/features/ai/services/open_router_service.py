@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class OpenRouterService:
     MODELS_CACHE_KEY = "openrouter_all_models_data"
+    STRUCTURED_MODELS_CACHE_KEY = "openrouter_structured_models_data"
     CACHE_TIMEOUT = 60 * 60
 
     def __init__(self):
@@ -142,6 +143,22 @@ class OpenRouterService:
 
             return models_data
 
+    async def get_all_structured_output_models(self, use_cache: bool = True) -> list[dict]:
+        """Get all models that support structured outputs"""
+        if use_cache:
+            cached_structured_models = cache.get(self.STRUCTURED_MODELS_CACHE_KEY)
+            if cached_structured_models:
+                return cached_structured_models
+        
+        all_models = await self.get_all_models_flat(use_cache=use_cache)
+
+        structueed_models = [model for model in all_models if "structured_outputs" in model.get("supported_parameters", [])]
+
+        if use_cache:
+            cache.set(self.STRUCTURED_MODELS_CACHE_KEY, structueed_models, self.CACHE_TIMEOUT)
+        
+        return structueed_models
+
     async def models(self, use_cache: bool = True) -> dict:
         """
         Get all models organized by provider
@@ -229,9 +246,39 @@ class OpenRouterService:
         
         return valid, invalid
 
+    async def models_with_structured_outputs(self, use_cache: bool = True) -> dict:
+        """
+        Get models organized by provider, filtered to only those supporting structured outputs
+        """
+        structured_models = await self.get_all_structured_output_models(use_cache=use_cache)
+        
+        models = {}
+        
+        for model in structured_models:
+            model_id = model.get("id")
+            model_name = model.get("name")
+            
+            if model_id:
+                provider = model_id.split("/")[0]
+                if provider:
+                    if provider in models:
+                        models[provider].append({"id": model_id, "name": model_name})
+                    else:
+                        models[provider] = [{"id": model_id, "name": model_name}]
+        
+        return models
+
+    async def supports_structured_outputs(self, model_id: str, use_cache: bool = True) -> bool:
+        model = await self.get_model_by_id(model_id=model_id, use_cache=use_cache)
+        if not model:
+            return False
+
+        return "structured_outputs" in model.get("supported_parameters", [])
+
     def clear_cache(self):
         """Clear the models cache"""
         cache.delete(self.MODELS_CACHE_KEY)
+        cache.delete(self.STRUCTURED_MODELS_CACHE_KEY)
 
     async def providers(self) -> list[dict]:
         url = f"{self.base_url}/providers"

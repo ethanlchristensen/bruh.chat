@@ -64,6 +64,10 @@ class OpenRouterModelSchema(Schema):
     context_length: Optional[int] = None
     architecture: Optional[dict] = None
     top_provider: Optional[dict] = None
+    supported_parameters: Optional[list[str]] = None
+    default_parameters: Optional[dict] = None
+    canonical_slug: Optional[str] = None
+    created: Optional[int] = None
 
 
 class GetOpenRouterModelRequestSchema(Schema):

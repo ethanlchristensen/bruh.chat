@@ -353,13 +353,22 @@ class ApiClient {
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
     await this.ensureValidToken();
 
-    const makeRequest = () =>
-      fetch(this.getFullURL(endpoint), {
+    const isFormData = data instanceof FormData;
+
+    const makeRequest = () => {
+      const headers = this.getHeaders();
+
+      if (isFormData) {
+        headers.delete("Content-Type");
+      }
+
+      return fetch(this.getFullURL(endpoint), {
         method: "PATCH",
-        headers: this.getHeaders(),
+        headers: headers,
         credentials: "include",
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
       });
+    };
 
     const response = await makeRequest();
     const finalResponse = await this.handleResponse(response, makeRequest);
@@ -367,19 +376,21 @@ class ApiClient {
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-    await this.ensureValidToken();
+  await this.ensureValidToken();
 
-    const makeRequest = () =>
-      fetch(this.getFullURL(endpoint), {
-        method: "DELETE",
-        headers: this.getHeaders(),
-        credentials: "include",
-      });
+  const makeRequest = () =>
+    fetch(this.getFullURL(endpoint), {
+      method: "DELETE",
+      headers: this.getHeaders(),
+      credentials: "include",
+    });
 
-    const response = await makeRequest();
-    const finalResponse = await this.handleResponse(response, makeRequest);
-    return finalResponse.json();
-  }
+  const response = await makeRequest();
+  const finalResponse = await this.handleResponse(response, makeRequest);
+  
+  const text = await finalResponse.text();
+  return text ? JSON.parse(text) : (undefined as T);
+}
 }
 
 export const api = new ApiClient(urlJoin("/", env.BACKEND_API_VERSION));

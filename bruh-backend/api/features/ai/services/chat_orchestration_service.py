@@ -195,6 +195,7 @@ class ChatOrchestrationService:
                         conversation=conversation,
                         role="assistant",
                         content=full_content,
+                        model_id=model_used
                     )
                 
                     pricing_data = model_data.get("pricing")

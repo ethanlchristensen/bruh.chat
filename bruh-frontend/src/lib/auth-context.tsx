@@ -8,6 +8,7 @@ interface AuthContextType {
   tokens: AuthTokens | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -27,6 +28,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      console.log("[AuthProvider] Refetching user data...");
+      const userData = await api.get<User>("/users/me");
+      setUser(userData);
+      console.log("[AuthProvider] User data refetched successfully");
+    } catch (error) {
+      console.error("[AuthProvider] Failed to refetch user data:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -137,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tokens,
         login,
         logout,
+        refreshUser,
         isAuthenticated: !!user && !!tokens,
         isLoading,
       }}

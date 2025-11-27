@@ -50,11 +50,11 @@ class ConversationController:
         else:
             return 204, None
     
-    @route.patch("/", response=ConversationSchema)
-    async def update_conversation_title(self, request, data: ConversationTitleUpdateRequest):
+    @route.patch("/{conversation_id}", response=ConversationSchema)
+    async def update_conversation_title(self, request, conversation_id: UUID, data: ConversationTitleUpdateRequest):
         user = request.auth
         
-        updated, conversation = await ConversationService.update_conversation_title(conversation_id=data.conversation_id, user=user, title=data.title)
+        updated, conversation = await ConversationService.update_conversation_title(conversation_id=conversation_id, user=user, title=data.title)
 
         if not updated:
             return 404, {"detail": "Conversation not found"}

@@ -1,5 +1,6 @@
 from typing import List
 
+from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
 from ninja import File
 from ninja.files import UploadedFile
@@ -17,6 +18,7 @@ from .schemas import (
     RemoveModelSchema,
     BulkOperationResponseSchema,
 )
+from .models import Profile
 from api.features.ai.schemas import OpenRouterModelSchema
 from .services.user_helper_service import UserHelperService
 from api.features.ai.services.open_router_service import get_open_router_service
@@ -44,16 +46,30 @@ class UserController:
 
         return self._add_full_image_url(request, request.user)
 
-    @route.patch("/me/profile", response=UserSchema)
-    def update_current_user_profile(self, request, data: ProfileUpdateSchema):
+    @route.patch("/me/profile", response={200: UserSchema, 400: dict})
+    async def update_current_user_profile(self, request, data: ProfileUpdateSchema):
         user = request.user
-        profile = user.profile
+        profile = await sync_to_async(lambda: user.profile)()
+        
+        data_dict = data.dict(exclude_unset=True)
+        open_router_service = get_open_router_service()
+        
+        if 'default_model' in data_dict and data_dict['default_model']:
+            is_valid = await open_router_service.validate_model_id(data_dict['default_model'])
+            if not is_valid:
+                return 400, {"detail": f"Invalid model ID: {data_dict['default_model']}"}
+        
+        if 'default_aux_model' in data_dict and data_dict['default_aux_model']:
+            is_valid = await open_router_service.validate_model_id(data_dict['default_aux_model'])
+            if not is_valid:
+                return 400, {"detail": f"Invalid auxiliary model ID: {data_dict['default_aux_model']}"}
 
-        for attr, value in data.dict(exclude_unset=True).items():
+        for attr, value in data_dict.items():
             setattr(profile, attr, value)
-        profile.save()
+        
+        await sync_to_async(profile.save)()
 
-        return self._add_full_image_url(request, request.user)
+        return 200, self._add_full_image_url(request, request.user)
 
     @route.post("/me/profile/image", response=UserSchema)
     def update_profile_image(self, request, profile_image: UploadedFile = File(...)):  # type: ignore

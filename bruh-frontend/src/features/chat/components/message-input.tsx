@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
-import { ModelSelector } from "./model-selector";
+import { ModelSelector } from "../../../components/shared/model-selector/model-selector";
 
 type MessageInputProps = {
   onSend: (message: string) => void;

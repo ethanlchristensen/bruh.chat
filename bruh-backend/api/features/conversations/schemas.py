@@ -19,7 +19,7 @@ class ConversationSchema(ModelSchema):
 class MessageSchema(ModelSchema):
     class Meta:
         model = Message
-        fields = ["id", "role", "content", "created_at"]
+        fields = ["id", "role", "content", "created_at", "model_id"]
 
 
 class ConversationDetailSchema(ModelSchema):
@@ -36,4 +36,3 @@ class ConversationListResponse(Schema):
 
 class ConversationTitleUpdateRequest(Schema):
     title: str
-    conversation_id: UUID
