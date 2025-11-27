@@ -12,9 +12,6 @@ class ProfileSchema(Schema):
 
     @staticmethod
     def resolve_profile_image(obj):
-        if hasattr(obj, "_image_full_url"):
-            return obj._image_full_url
-
         if obj.profile_image:
             return obj.profile_image.url
         return None

@@ -35,7 +35,7 @@ class UserController:
 
     @route.get("/me", response=UserSchema)
     def get_current_user(self, request):
-        return self._add_full_image_url(request, request.user)
+        return request.user
 
     @route.patch("/me", response=UserSchema)
     def update_current_user(self, request, data: UserUpdateSchema):
@@ -44,32 +44,40 @@ class UserController:
             setattr(user, attr, value)
         user.save()
 
-        return self._add_full_image_url(request, request.user)
+        return request.user
 
     @route.patch("/me/profile", response={200: UserSchema, 400: dict})
     async def update_current_user_profile(self, request, data: ProfileUpdateSchema):
         user = request.user
         profile = await sync_to_async(lambda: user.profile)()
-        
+
         data_dict = data.dict(exclude_unset=True)
         open_router_service = get_open_router_service()
-        
-        if 'default_model' in data_dict and data_dict['default_model']:
-            is_valid = await open_router_service.validate_model_id(data_dict['default_model'])
+
+        if "default_model" in data_dict and data_dict["default_model"]:
+            is_valid = await open_router_service.validate_model_id(
+                data_dict["default_model"]
+            )
             if not is_valid:
-                return 400, {"detail": f"Invalid model ID: {data_dict['default_model']}"}
-        
-        if 'default_aux_model' in data_dict and data_dict['default_aux_model']:
-            is_valid = await open_router_service.validate_model_id(data_dict['default_aux_model'])
+                return 400, {
+                    "detail": f"Invalid model ID: {data_dict['default_model']}"
+                }
+
+        if "default_aux_model" in data_dict and data_dict["default_aux_model"]:
+            is_valid = await open_router_service.validate_model_id(
+                data_dict["default_aux_model"]
+            )
             if not is_valid:
-                return 400, {"detail": f"Invalid auxiliary model ID: {data_dict['default_aux_model']}"}
+                return 400, {
+                    "detail": f"Invalid auxiliary model ID: {data_dict['default_aux_model']}"
+                }
 
         for attr, value in data_dict.items():
             setattr(profile, attr, value)
-        
+
         await sync_to_async(profile.save)()
 
-        return 200, self._add_full_image_url(request, request.user)
+        return 200, request.user
 
     @route.post("/me/profile/image", response=UserSchema)
     def update_profile_image(self, request, profile_image: UploadedFile = File(...)):  # type: ignore
@@ -82,7 +90,7 @@ class UserController:
         profile.profile_image = profile_image
         profile.save()
 
-        return self._add_full_image_url(request, request.user)
+        return request.user
 
     @route.get("/", response=List[UserSchema], permissions=[IsAdmin])
     def list_users(self, request):
@@ -106,8 +114,7 @@ class UserController:
     async def add_model(self, request, data: AddModelSchema):
         """Add a model to user's collection"""
         model, error = await UserHelperService.add_model_for_user(
-            request.user,
-            data.model_id
+            request.user, data.model_id
         )
         if error:
             return 400, {"detail": error}
@@ -122,8 +129,7 @@ class UserController:
     async def remove_model(self, request, model_id: str):
         """Remove a model from user's collection"""
         success, error = await UserHelperService.remove_model_for_user(
-            request.user,
-            model_id
+            request.user, model_id
         )
         if not success:
             return 404, {"detail": error}
