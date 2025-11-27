@@ -11,14 +11,16 @@ export const Message = ({ message }: MessageProps) => {
 
   const displayDate = created_at
     ? new Date(created_at).toLocaleDateString([], {
-        dateStyle: "full"
+        dateStyle: "full",
       })
     : "";
-  
+
   const displayTime = created_at
     ? new Date(created_at).toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit"
-    }) : "";
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
 
   return (
     <div
@@ -34,28 +36,28 @@ export const Message = ({ message }: MessageProps) => {
               : "bg-muted text-muted-foreground"
           }`}
         >
-          {isUser ? (
-            <User className="h-4 w-4" />
-          ) : (
-            <Bot className="h-4 w-4" />
-          )}
+          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
         </div>
       </div>
 
       {/* Message Content */}
-      <div className="flex flex-col gap-1 max-w-[70%]">
-        <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse" : ""}`}>
+      <div className="flex flex-col gap-1 max-w-[70%] items-start">
+        <div
+          className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse self-end" : "self-start"}`}
+        >
           <span className="font-medium">
             {isUser ? "You" : model_id || "Assistant"}
           </span>
-          <span>{displayDate} at {displayTime}</span>
+          <span>
+            {displayDate} at {displayTime}
+          </span>
         </div>
 
         <div
           className={`rounded-lg px-4 py-2.5 ${
             isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground"
+              ? "bg-primary text-primary-foreground self-end"
+              : "bg-muted text-foreground self-start"
           }`}
         >
           <p className="text-sm leading-relaxed">{content}</p>
