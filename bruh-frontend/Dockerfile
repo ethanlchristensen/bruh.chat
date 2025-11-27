@@ -3,13 +3,21 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
+# Accept build arguments
+ARG VITE_APP_BACKEND_API_URL
+ARG VITE_APP_BACKEND_API_VERSION
+
+# Set as environment variables for Vite
+ENV VITE_APP_BACKEND_API_URL=$VITE_APP_BACKEND_API_URL
+ENV VITE_APP_BACKEND_API_VERSION=$VITE_APP_BACKEND_API_VERSION
+
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
 RUN npm ci
 
-# Copy source code and .env
+# Copy source code
 COPY . .
 
 # Build the Vite app

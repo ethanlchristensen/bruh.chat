@@ -23,6 +23,9 @@ services:
     build:
       context: ./bruh-frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_APP_BACKEND_API_URL=${VITE_APP_BACKEND_API_URL:-http://localhost:8000}
+        - VITE_APP_BACKEND_API_VERSION=${VITE_APP_BACKEND_API_VERSION:-api}
     restart: unless-stopped
     ports:
       - "80:80"
