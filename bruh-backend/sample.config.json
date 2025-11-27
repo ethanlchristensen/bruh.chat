@@ -2,5 +2,9 @@
     "open_router": {
         "open_router_api_key": "sk-...",
         "open_router_default_model": "openai/gpt-5-nano"
-    }
+    },
+    "allowed_hosts": [
+        "localhost",
+        "127.0.0.1"
+    ]
 }

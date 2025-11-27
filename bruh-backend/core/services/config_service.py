@@ -1,7 +1,7 @@
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,6 +19,7 @@ class OpenRouterConfig(BaseModel):
 
 class Config(BaseModel):
     open_router: OpenRouterConfig
+    allowed_hosts: List[str]
 
 
 class ConfigService:
