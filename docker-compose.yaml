@@ -28,7 +28,7 @@ services:
         - VITE_APP_BACKEND_API_VERSION=${VITE_APP_BACKEND_API_VERSION:-api}
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "5173:80"
     depends_on:
       - bruhbackend
     networks:
