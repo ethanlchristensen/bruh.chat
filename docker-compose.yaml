@@ -1,8 +1,10 @@
 services:
   bruhbackend:
+    container_name: bruh.chat.backend
     build:
       context: ./bruh-backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -17,9 +19,11 @@ services:
       - app-network
 
   bruhfrontend:
+    container_name: bruh.chat.frontend
     build:
       context: ./bruh-frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:

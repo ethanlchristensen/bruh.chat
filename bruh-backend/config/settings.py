@@ -31,7 +31,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = CONFIG.allowed_hosts if CONFIG else []
 
-
 # Application definition
 
 INSTALLED_APPS = [
