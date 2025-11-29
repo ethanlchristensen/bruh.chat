@@ -9,16 +9,22 @@ type MessageListProps = {
 };
 
 export const MessageList = ({ messages, isLoading }: MessageListProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    });
   }, [messages, isLoading]);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Empty State */}
+    <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
+      <div className="max-w-6xl mx-auto px-6 py-6">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">

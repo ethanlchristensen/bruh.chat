@@ -34,7 +34,7 @@ export const ModelSelector = ({
   const [showAddModel, setShowAddModel] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const { data: userModels, isLoading: isLoadingUserModels } =
@@ -271,7 +271,7 @@ export const ModelSelector = ({
                             )}
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 )}
@@ -406,7 +406,7 @@ export const ModelSelector = ({
                             )}
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 )}
@@ -583,7 +583,7 @@ export const ModelSelector = ({
                           )}
                         </div>
                       );
-                    }
+                    },
                   )}
                 </div>
               )}

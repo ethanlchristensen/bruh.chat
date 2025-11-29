@@ -10,5 +10,5 @@ function RouteComponent() {
     <div className="overflow-y-scroll h-full w-full flex justrify-start">
       <ProfileCard />
     </div>
-  )
+  );
 }

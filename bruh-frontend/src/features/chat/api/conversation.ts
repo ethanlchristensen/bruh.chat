@@ -74,10 +74,10 @@ export const useUpdateConversationTitle = () => {
             conversations: old.conversations.map((conv) =>
               conv.id === variables.conversationId
                 ? { ...conv, title: variables.title }
-                : conv
+                : conv,
             ),
           };
-        }
+        },
       );
       toast.success("Conversation renamed successfully");
     },
@@ -96,9 +96,8 @@ export const useDeleteConversation = () => {
     onMutate: async (conversationId) => {
       await queryClient.cancelQueries({ queryKey: ["conversations"] });
 
-      const previousConversations = queryClient.getQueryData<ConversationsResponse>(
-        ["conversations"]
-      );
+      const previousConversations =
+        queryClient.getQueryData<ConversationsResponse>(["conversations"]);
 
       queryClient.setQueryData<ConversationsResponse>(
         ["conversations"],
@@ -107,10 +106,10 @@ export const useDeleteConversation = () => {
           return {
             ...old,
             conversations: old.conversations.filter(
-              (conv) => conv.id !== conversationId
+              (conv) => conv.id !== conversationId,
             ),
           };
-        }
+        },
       );
 
       return { previousConversations };
@@ -122,7 +121,7 @@ export const useDeleteConversation = () => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           ["conversations"],
-          context.previousConversations
+          context.previousConversations,
         );
       }
       toast.error("Failed to delete conversation");

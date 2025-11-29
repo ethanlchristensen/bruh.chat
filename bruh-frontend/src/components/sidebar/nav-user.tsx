@@ -1,10 +1,8 @@
-import {
-  BadgeCheck,
-  ChevronsUpDown,
-  LogOut,
-} from "lucide-react";
+import { BadgeCheck, ChevronsUpDown, LogOut } from "lucide-react";
+
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { useCachedProfileImage } from "@/hooks/use-cached-profile-image";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -40,6 +38,10 @@ export function NavUser({ user }: { user: User }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
+  const { data: cachedImageUrl } = useCachedProfileImage(
+    user.profile.profile_image,
+  );
+
   const handleLogout = () => {
     logout();
     navigate({ to: "/login" });
@@ -62,7 +64,10 @@ export function NavUser({ user }: { user: User }) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.profile.profile_image} alt={fullName} />
+                <AvatarImage
+                  src={cachedImageUrl || user.profile.profile_image}
+                  alt={fullName}
+                />
                 <AvatarFallback className="rounded-lg">
                   {initials}
                 </AvatarFallback>
@@ -84,7 +89,7 @@ export function NavUser({ user }: { user: User }) {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
-                    src={user.profile.profile_image}
+                    src={cachedImageUrl || user.profile.profile_image}
                     alt={fullName}
                   />
                   <AvatarFallback className="rounded-lg">

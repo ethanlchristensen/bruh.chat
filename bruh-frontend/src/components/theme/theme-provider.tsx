@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "dark" | "light" | "system";
+type EffectiveTheme = "dark" | "light";
+type Theme = EffectiveTheme | "system";
 type ColorTheme =
   | "neutral"
   | "red"
@@ -21,6 +22,7 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   theme: Theme;
+  effectiveTheme: EffectiveTheme;
   colorTheme: ColorTheme;
   setTheme: (theme: Theme) => void;
   setColorTheme: (colorTheme: ColorTheme) => void;
@@ -28,6 +30,7 @@ type ThemeProviderState = {
 
 const initialState: ThemeProviderState = {
   theme: "system",
+  effectiveTheme: "dark",
   colorTheme: "neutral",
   setTheme: () => null,
   setColorTheme: () => null,
@@ -53,6 +56,8 @@ export function ThemeProvider({
       defaultColorTheme,
   );
 
+  const [effectiveTheme, setEffectiveTheme] = useState<EffectiveTheme>("dark");
+
   useEffect(() => {
     const root = window.document.documentElement;
 
@@ -65,10 +70,12 @@ export function ThemeProvider({
         : "light";
 
       root.classList.add(systemTheme);
+      setEffectiveTheme(systemTheme);
       return;
     }
 
     root.classList.add(theme);
+    setEffectiveTheme(theme);
   }, [theme]);
 
   useEffect(() => {
@@ -89,6 +96,7 @@ export function ThemeProvider({
 
   const value = {
     theme,
+    effectiveTheme,
     colorTheme,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);

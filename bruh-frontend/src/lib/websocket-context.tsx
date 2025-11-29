@@ -12,7 +12,7 @@ interface WebSocketContextType {
   isConnected: boolean;
   onMessage: (handler: (data: WebSocketMessage) => void) => () => void;
   onConversationUpdate: (
-    handler: (data: ConversationUpdateMessage) => void
+    handler: (data: ConversationUpdateMessage) => void,
   ) => () => void;
 }
 
@@ -31,7 +31,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
       console.log(
         "[WebSocketProvider] Initializing WebSocket with path:",
-        wsPath
+        wsPath,
       );
       wsClientRef.current = new WebSocketClient(wsPath);
 
@@ -43,12 +43,12 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     if (isAuthenticated && tokens?.access) {
       console.log(
-        "[WebSocketProvider] User authenticated, connecting WebSocket..."
+        "[WebSocketProvider] User authenticated, connecting WebSocket...",
       );
       wsClient.connect(tokens.access);
     } else {
       console.log(
-        "[WebSocketProvider] User not authenticated, disconnecting WebSocket..."
+        "[WebSocketProvider] User not authenticated, disconnecting WebSocket...",
       );
       wsClient.disconnect();
       setIsConnected(false);
@@ -68,7 +68,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   };
 
   const onConversationUpdate = (
-    handler: (data: ConversationUpdateMessage) => void
+    handler: (data: ConversationUpdateMessage) => void,
   ) => {
     return (
       wsClientRef.current?.onMessage((data) => {

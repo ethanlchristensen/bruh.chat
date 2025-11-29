@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { ChatRequest } from "@/types/api";
 
-type StreamEvent = 
+type StreamEvent =
   | { type: "metadata"; conversation_id: string; user_message_id: string }
   | { type: "content"; delta: string }
   | { type: "done"; assistant_message_id: string; usage: Record<string, any> }
@@ -15,7 +15,7 @@ type StreamCallbacks = {
   onError?: (data: Extract<StreamEvent, { type: "error" }>) => void;
 };
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const createStreamingChat = async ({
   data,
@@ -30,7 +30,7 @@ export const createStreamingChat = async ({
     },
   });
 
-  if (!stream || typeof stream.getReader !== 'function') {
+  if (!stream || typeof stream.getReader !== "function") {
     throw new Error("Invalid stream received from server");
   }
 
@@ -41,7 +41,7 @@ export const createStreamingChat = async ({
   try {
     while (true) {
       const { done, value } = await reader.read();
-      
+
       if (done) break;
 
       const text = decoder.decode(value, { stream: true });
@@ -55,7 +55,7 @@ export const createStreamingChat = async ({
 
         if (line.startsWith("data: ")) {
           const jsonStr = line.slice(6);
-          
+
           try {
             const event = JSON.parse(jsonStr) as StreamEvent;
 
@@ -86,7 +86,7 @@ export const createStreamingChat = async ({
         const jsonStr = buffer.slice(6);
         if (jsonStr.trim()) {
           const event = JSON.parse(jsonStr) as StreamEvent;
-          
+
           switch (event.type) {
             case "metadata":
               callbacks.onMetadata?.(event);

@@ -1,9 +1,7 @@
-export type WebSocketMessage = 
-  | ConversationUpdateMessage
-  | UserUpdateMessage;
+export type WebSocketMessage = ConversationUpdateMessage | UserUpdateMessage;
 
 export interface ConversationUpdateMessage {
-  type: 'title_updated' | 'new_message';
+  type: "title_updated" | "new_message";
   conversation_id: string;
   data: {
     new_title?: string;
@@ -77,11 +75,17 @@ export class WebSocketClient {
       console.log("[WebSocket] Connection closed:", event.code, event.reason);
       this.disconnectionHandlers.forEach((handler) => handler());
 
-      if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+      if (
+        this.shouldReconnect &&
+        this.reconnectAttempts < this.maxReconnectAttempts
+      ) {
         this.reconnectAttempts++;
-        const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-        console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        
+        const delay =
+          this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+        console.log(
+          `[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+        );
+
         this.reconnectTimer = setTimeout(() => {
           if (this.shouldReconnect) {
             const tokens = localStorage.getItem("auth_tokens");
@@ -98,12 +102,12 @@ export class WebSocketClient {
   disconnect(): void {
     console.log("[WebSocket] Disconnecting...");
     this.shouldReconnect = false;
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;

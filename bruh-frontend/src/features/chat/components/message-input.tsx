@@ -37,9 +37,7 @@ export const MessageInput = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
-              selectedModelId
-                ? "Type a message..."
-                : "Select a model first..."
+              selectedModelId ? "Type a message..." : "Select a model first..."
             }
             disabled={disabled || !selectedModelId}
             className="flex-1 bg-transparent pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"

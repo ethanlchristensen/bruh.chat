@@ -1,5 +1,6 @@
 import { User, Bot } from "lucide-react";
 import type { Message as MessageType } from "@/types/api";
+import { MarkdownRenderer } from "@/components/markdown/markdown";
 
 type MessageProps = {
   message: MessageType;
@@ -41,7 +42,7 @@ export const Message = ({ message }: MessageProps) => {
       </div>
 
       {/* Message Content */}
-      <div className="flex flex-col gap-1 max-w-[70%] items-start">
+      <div className="flex flex-col gap-1 max-w-[70%] min-w-0 items-start">
         <div
           className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse self-end" : "self-start"}`}
         >
@@ -60,7 +61,13 @@ export const Message = ({ message }: MessageProps) => {
               : "bg-muted text-foreground self-start"
           }`}
         >
-          <p className="text-sm leading-relaxed">{content}</p>
+          {isUser ? (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {content}
+            </p>
+          ) : (
+            <MarkdownRenderer content={content} />
+          )}
           {isStreaming && (
             <span className="inline-block w-1 h-4 ml-1 bg-current animate-pulse" />
           )}

@@ -29,7 +29,9 @@ export const useUserAvailableModels = (options = {}) => {
   return useQuery({
     queryKey: ["user-available-models"],
     queryFn: async () => {
-      const response = await api.get<OpenRouterModel[]>("/users/me/models/available");
+      const response = await api.get<OpenRouterModel[]>(
+        "/users/me/models/available",
+      );
       return response;
     },
     ...options,
@@ -40,7 +42,9 @@ export const useAllOpenRouterModels = (options = {}) => {
   return useQuery({
     queryKey: ["all-openrouter-models"],
     queryFn: async () => {
-      const response = await api.get<OpenRouterModel[]>("/ai/models/openrouter");
+      const response = await api.get<OpenRouterModel[]>(
+        "/ai/models/openrouter",
+      );
       return response;
     },
     enabled: false,
@@ -82,7 +86,7 @@ export const useOpenRouterModelsByProvider = (options = {}) => {
     queryKey: ["openrouter-models-by-provider"],
     queryFn: async () => {
       const response = await api.get<Record<string, OpenRouterModel[]>>(
-        "/ai/models/openrouter/by-provider"
+        "/ai/models/openrouter/by-provider",
       );
       return response;
     },
@@ -95,7 +99,9 @@ export const useOpenRouterStructuredModels = (options = {}) => {
   return useQuery({
     queryKey: ["openrouter-structured-models"],
     queryFn: async () => {
-      const response = await api.get<OpenRouterModel[]>("/ai/models/openrouter/structured");
+      const response = await api.get<OpenRouterModel[]>(
+        "/ai/models/openrouter/structured",
+      );
       return response;
     },
     staleTime: 1000 * 60 * 5,
@@ -108,7 +114,9 @@ export const useOpenRouterStructuredModelsByProvider = (options = {}) => {
   return useQuery({
     queryKey: ["openrouter-structured-models-by-provider"],
     queryFn: async () => {
-      const response = await api.get<Record<string, OpenRouterModel[]>>("/ai/models/openrouter/structured/by-provider");
+      const response = await api.get<Record<string, OpenRouterModel[]>>(
+        "/ai/models/openrouter/structured/by-provider",
+      );
       return response;
     },
     staleTime: 1000 * 60 * 5,

@@ -1,12 +1,5 @@
 import * as React from "react";
-import {
-  MessageCircle,
-  Info,
-  Trash2,
-  Pencil,
-  Check,
-  X,
-} from "lucide-react";
+import { MessageCircle, Info, Trash2, Pencil, Check, X } from "lucide-react";
 import {
   Link,
   useLocation,
@@ -100,7 +93,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const { isConnected } = useConversationWebSocket({
     onTitleUpdate: (conversationId, newTitle) => {
-      console.log(`[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`);
+      console.log(
+        `[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`,
+      );
       toast.success("Conversation title updated", {
         description: newTitle,
       });
@@ -109,7 +104,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   React.useEffect(() => {
     console.log(`Conversation websocket status: ${isConnected}`);
-  }, [isConnected])
+  }, [isConnected]);
 
   React.useEffect(() => {
     localStorage.setItem("sidebar-open", JSON.stringify(open));
@@ -134,7 +129,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     if (searchQuery.trim()) {
       filtered = filtered.filter((conversation) =>
-        conversation.title.toLowerCase().includes(searchQuery.toLowerCase())
+        conversation.title.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -145,7 +140,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     () =>
       data.navMain.find((item) => item.url === location.pathname) ||
       data.navMain[0],
-    [location.pathname]
+    [location.pathname],
   );
 
   const handleStartEdit = (conversation: any) => {
@@ -315,7 +310,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           "group/item relative border-b last:border-b-0",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         )}
                       >
                         {isEditing ? (

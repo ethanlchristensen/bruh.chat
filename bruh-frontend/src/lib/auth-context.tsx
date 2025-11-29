@@ -1,5 +1,12 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useCallback,
+} from "react";
 import type { ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api-client";
 import type { AuthTokens, User } from "@/types/api";
 
@@ -25,21 +32,29 @@ function getTokenExpiry(token: string): number {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const refreshUser = async () => {
-    try {
-      console.log("[AuthProvider] Refetching user data...");
+  // Use TanStack Query to fetch and cache user data
+  const { data: user, isLoading: isUserLoading } = useQuery({
+    queryKey: ["auth", "user"],
+    queryFn: async () => {
+      console.log("[AuthProvider] Fetching user data...");
       const userData = await api.get<User>("/users/me");
-      setUser(userData);
-      console.log("[AuthProvider] User data refetched successfully");
-    } catch (error) {
-      console.error("[AuthProvider] Failed to refetch user data:", error);
-      throw error;
-    }
-  };
+      console.log("[AuthProvider] User data fetched successfully");
+      return userData;
+    },
+    enabled: !!tokens && isInitialized, // Only fetch when we have tokens
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    retry: false,
+  });
+
+  const refreshUser = useCallback(async () => {
+    console.log("[AuthProvider] Invalidating user cache...");
+    await queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+  }, [queryClient]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -48,20 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedTokens) {
         const parsedTokens = JSON.parse(storedTokens);
 
-        if (parsedTokens.expiresAt > Date.now()) {
+        if (parsedTokens.expires_at > Date.now()) {
           console.log(
             "[AuthProvider] Access token is still valid, using existing token",
           );
           setTokens(parsedTokens);
-
-          try {
-            const userData = await api.get<User>("/users/me");
-            setUser(userData);
-            console.log("[AuthProvider] User data loaded successfully");
-          } catch (error) {
-            console.error("[AuthProvider] Failed to fetch user data:", error);
-            localStorage.removeItem("auth_tokens");
-          }
         } else if (parsedTokens.refresh) {
           console.log(
             "[AuthProvider] Access token expired, attempting refresh...",
@@ -84,10 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               "[AuthProvider] Token refresh successful! New expiry:",
               new Date(expiresAt).toLocaleString(),
             );
-
-            const userData = await api.get<User>("/users/me");
-            setUser(userData);
-            console.log("[AuthProvider] User data loaded after token refresh");
           } catch (error) {
             console.error("[AuthProvider] Token refresh failed:", error);
             localStorage.removeItem("auth_tokens");
@@ -102,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("[AuthProvider] No stored tokens found");
       }
 
-      setIsLoading(false);
+      setIsInitialized(true);
     };
 
     loadUser();
@@ -131,28 +133,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       new Date(expiresAt).toLocaleString(),
     );
 
-    const userData = await api.get<User>("/users/me");
-    setUser(userData);
-    console.log("[AuthProvider] User data loaded after login");
+    // Invalidate and refetch user data
+    await queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
   };
 
   const logout = () => {
     console.log("[AuthProvider] Logging out user");
-    setUser(null);
     setTokens(null);
     localStorage.removeItem("auth_tokens");
+    queryClient.setQueryData(["auth", "user"], null);
+    queryClient.clear(); // Clear all cached data on logout
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user ?? null,
         tokens,
         login,
         logout,
         refreshUser,
         isAuthenticated: !!user && !!tokens,
-        isLoading,
+        isLoading: !isInitialized || isUserLoading,
       }}
     >
       {children}

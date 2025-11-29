@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { flushSync } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -21,7 +20,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
-    null
+    null,
   );
 
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>(
@@ -31,8 +30,17 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         return saved || user?.profile?.default_model;
       }
       return user?.profile?.default_model;
-    }
+    },
   );
+
+  const contentBufferRef = useRef<string>("");
+  const displayedContentRef = useRef<string>("");
+  const animationFrameRef = useRef<number | null>(null);
+  const isStreamingRef = useRef<boolean>(false);
+  const isDoneStreamingRef = useRef<boolean>(false);
+  const doneDataRef = useRef<any>(null);
+  const newConversationIdRef = useRef<string | undefined>(undefined);
+  const tempAssistantIdRef = useRef<string>("");
 
   const { data: conversationData, isLoading } = useConversation({
     conversationId: conversationId!,
@@ -70,10 +78,112 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
   const createChatMutation = useCreateStreamingChat();
 
+  const finalize = () => {
+    const data = doneDataRef.current;
+    const tempAssistantId = tempAssistantIdRef.current;
+    const newConversationId = newConversationIdRef.current;
+    const finalContent = contentBufferRef.current; // Capture content before clearing
+
+    setMessages((prev: Message[]) => {
+      const updatedMessages = prev.map((msg) =>
+        msg.id === tempAssistantId
+          ? {
+              ...msg,
+              content: finalContent, // Use captured content
+              id: data.assistant_message_id,
+              isStreaming: false,
+            }
+          : msg,
+      );
+
+      setStreamingMessageId(null);
+
+      if (!conversationId && newConversationId) {
+        queryClient.setQueryData(["conversations", newConversationId], {
+          id: newConversationId,
+          messages: updatedMessages,
+        });
+
+        // Use setTimeout to ensure state update completes before navigation
+        setTimeout(() => {
+          navigate({
+            to: "/chat/$conversationId",
+            params: { conversationId: newConversationId },
+            replace: true,
+          });
+        }, 0);
+      }
+
+      return updatedMessages;
+    });
+
+    // Clear refs after a small delay to ensure state update completes
+    setTimeout(() => {
+      contentBufferRef.current = "";
+      displayedContentRef.current = "";
+      isDoneStreamingRef.current = false;
+      doneDataRef.current = null;
+      newConversationIdRef.current = undefined;
+      tempAssistantIdRef.current = "";
+    }, 100);
+  };
+
+  const animateContent = (tempAssistantId: string) => {
+    if (!isStreamingRef.current) return;
+
+    // If there's buffered content to display
+    if (displayedContentRef.current.length < contentBufferRef.current.length) {
+      // Take 2-3 characters at a time for smooth streaming
+      const charsToAdd = Math.min(
+        3,
+        contentBufferRef.current.length - displayedContentRef.current.length,
+      );
+
+      displayedContentRef.current = contentBufferRef.current.slice(
+        0,
+        displayedContentRef.current.length + charsToAdd,
+      );
+
+      setMessages((prev: Message[]) =>
+        prev.map((msg) =>
+          msg.id === tempAssistantId
+            ? { ...msg, content: displayedContentRef.current }
+            : msg,
+        ),
+      );
+    } else if (isDoneStreamingRef.current) {
+      // All content displayed and streaming is done, finalize
+      isStreamingRef.current = false;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      finalize();
+      return;
+    }
+
+    // Continue animation
+    animationFrameRef.current = requestAnimationFrame(() =>
+      animateContent(tempAssistantId),
+    );
+  };
+
   const handleSendMessage = (message: string) => {
     const tempUserId = `temp-user-${Date.now()}`;
     const tempAssistantId = `temp-assistant-${Date.now()}`;
-    let newConversationId: string | undefined = undefined;
+    tempAssistantIdRef.current = tempAssistantId;
+    newConversationIdRef.current = undefined;
+
+    // Clear any existing animation and buffers
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    contentBufferRef.current = "";
+    displayedContentRef.current = "";
+    isStreamingRef.current = false;
+    isDoneStreamingRef.current = false;
+    doneDataRef.current = null;
 
     setMessages((prev) => [
       ...prev,
@@ -109,9 +219,8 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       },
       callbacks: {
         onMetadata: (data) => {
-          // store the id to navigate to later
           if (!conversationId && data.conversation_id) {
-            newConversationId = data.conversation_id;
+            newConversationIdRef.current = data.conversation_id;
 
             localStorage.removeItem(NEW_CHAT_MODEL_KEY);
 
@@ -135,67 +244,48 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
                 return {
                   conversations: [newConversation, ...old.conversations],
                 };
-              }
+              },
             );
           }
 
-          flushSync(() => {
-            setMessages((prev: Message[]) =>
-              prev.map((msg) =>
-                msg.id === tempUserId
-                  ? { ...msg, id: data.user_message_id }
-                  : msg
-              )
-            );
-          });
+          setMessages((prev: Message[]) =>
+            prev.map((msg) =>
+              msg.id === tempUserId
+                ? { ...msg, id: data.user_message_id }
+                : msg,
+            ),
+          );
+
+          // Start animation on first metadata
+          isStreamingRef.current = true;
+          animateContent(tempAssistantId);
         },
         onContent: (data) => {
-          flushSync(() => {
-            setMessages((prev: Message[]) =>
-              prev.map((msg) =>
-                msg.id === tempAssistantId
-                  ? { ...msg, content: msg.content + data.delta }
-                  : msg
-              )
-            );
-          });
+          // Just buffer the content, animation loop will display it
+          contentBufferRef.current += data.delta;
         },
         onDone: (data) => {
-          flushSync(() => {
-            setMessages((prev: Message[]) => {
-              const updatedMessages = prev.map((msg) =>
-                msg.id === tempAssistantId
-                  ? {
-                      ...msg,
-                      id: data.assistant_message_id,
-                      isStreaming: false,
-                    }
-                  : msg
-              );
-
-              setStreamingMessageId(null);
-
-              if (!conversationId && newConversationId) {
-                queryClient.setQueryData(["conversations", newConversationId], {
-                  id: newConversationId,
-                  messages: updatedMessages,
-                });
-
-                navigate({
-                  to: "/chat/$conversationId",
-                  params: { conversationId: newConversationId },
-                  replace: true,
-                });
-              }
-
-              return updatedMessages;
-            });
-          });
+          // Mark as done but let animation finish displaying remaining content
+          isDoneStreamingRef.current = true;
+          doneDataRef.current = data;
         },
         onError: (data) => {
+          // Clean up on error
+          isStreamingRef.current = false;
+          isDoneStreamingRef.current = false;
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+          }
+          contentBufferRef.current = "";
+          displayedContentRef.current = "";
+          doneDataRef.current = null;
+          newConversationIdRef.current = undefined;
+          tempAssistantIdRef.current = "";
+
           console.error("Streaming error:", data.error);
           setMessages((prev: Message[]) =>
-            prev.filter((msg) => msg.id !== tempAssistantId)
+            prev.filter((msg) => msg.id !== tempAssistantId),
           );
           setStreamingMessageId(null);
         },
@@ -212,23 +302,17 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-hidden">
-        <MessageList
-          messages={messages}
-          isLoading={
-            createChatMutation.isPending && streamingMessageId === null
-          }
-        />
-      </div>
-      <div className="shrink-0">
-        <MessageInput
-          onSend={handleSendMessage}
-          disabled={createChatMutation.isPending}
-          selectedModelId={selectedModelId}
-          onModelSelect={handleModelSelect}
-        />
-      </div>
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      <MessageList
+        messages={messages}
+        isLoading={createChatMutation.isPending && streamingMessageId === null}
+      />
+      <MessageInput
+        onSend={handleSendMessage}
+        disabled={createChatMutation.isPending}
+        selectedModelId={selectedModelId}
+        onModelSelect={handleModelSelect}
+      />
     </div>
   );
 };

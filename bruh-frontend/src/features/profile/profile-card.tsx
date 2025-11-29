@@ -16,21 +16,30 @@ import { toast } from "sonner";
 import { Loader2, Upload, UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { ModelSelector } from "@/components/shared/model-selector/model-selector";
-import { api } from "@/lib/api-client";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import {
+  useUpdateProfileImageMutation,
+  useUpdateProfileMutation,
+} from "@/hooks/use-profile-query";
+import { useCachedProfileImage } from "@/hooks/use-cached-profile-image";
 
 export default function ProfileCard() {
-  const { user, isLoading, refreshUser } = useAuth();
+  const { user, isLoading } = useAuth();
+  const updateProfileMutation = useUpdateProfileMutation();
+  const updateImageMutation = useUpdateProfileImageMutation();
+  const { data: cachedImageUrl } = useCachedProfileImage(
+    user?.profile?.profile_image,
+  );
 
   const [saving, setSaving] = useState(false);
   const [bio, setBio] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [defaultModel, setDefaultModel] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [defaultAuxModel, setDefaultAuxModel] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [autoGenerateTitles, setAutoGenerateTitles] = useState(false);
   const [titleGenerationFrequency, setTitleGenerationFrequency] =
@@ -47,7 +56,7 @@ export default function ProfileCard() {
   });
 
   useEffect(() => {
-    if (user?.profile) {
+    if (user) {
       const values = {
         bio: user.profile.bio || "",
         defaultModel: user.profile.default_model || undefined,
@@ -89,10 +98,7 @@ export default function ProfileCard() {
       let hasChanges = false;
 
       if (imageFile) {
-        const formData = new FormData();
-        formData.append("profile_image", imageFile);
-
-        await api.post("/users/me/profile/image", formData);
+        await updateImageMutation.mutateAsync(imageFile);
         hasChanges = true;
       }
 
@@ -124,7 +130,7 @@ export default function ProfileCard() {
       }
 
       if (Object.keys(updates).length > 0) {
-        await api.patch("/users/me/profile", updates);
+        await updateProfileMutation.mutateAsync(updates);
         hasChanges = true;
       }
 
@@ -133,12 +139,6 @@ export default function ProfileCard() {
         setSaving(false);
         return;
       }
-
-      if (refreshUser) {
-        await refreshUser();
-      }
-
-      toast.success("Profile updated successfully");
 
       setInitialValues({
         bio,
@@ -151,8 +151,7 @@ export default function ProfileCard() {
       setPreviewUrl(null);
       setImageFile(null);
     } catch (error) {
-      console.error("Failed to update profile:", error);
-      toast.error("Failed to update profile");
+      // Error handling is done in mutation
     } finally {
       setSaving(false);
     }
@@ -185,7 +184,10 @@ export default function ProfileCard() {
   }
 
   const displayImage =
-    previewUrl || profileImage || "/placeholder.svg?height=128&width=128";
+    previewUrl ||
+    cachedImageUrl ||
+    profileImage ||
+    "/placeholder.svg?height=128&width=128";
   const userInitials =
     `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase();
 

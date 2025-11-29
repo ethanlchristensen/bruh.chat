@@ -326,21 +326,21 @@ class ApiClient {
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-  await this.ensureValidToken();
+    await this.ensureValidToken();
 
-  const makeRequest = () =>
-    fetch(this.getFullURL(endpoint), {
-      method: "DELETE",
-      headers: this.getHeaders(),
-      credentials: "include",
-    });
+    const makeRequest = () =>
+      fetch(this.getFullURL(endpoint), {
+        method: "DELETE",
+        headers: this.getHeaders(),
+        credentials: "include",
+      });
 
-  const response = await makeRequest();
-  const finalResponse = await this.handleResponse(response, makeRequest);
-  
-  const text = await finalResponse.text();
-  return text ? JSON.parse(text) : (undefined as T);
-}
+    const response = await makeRequest();
+    const finalResponse = await this.handleResponse(response, makeRequest);
+
+    const text = await finalResponse.text();
+    return text ? JSON.parse(text) : (undefined as T);
+  }
 }
 
 export const api = new ApiClient(urlJoin("/", env.BACKEND_API_VERSION));

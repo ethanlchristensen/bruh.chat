@@ -6,7 +6,7 @@ const RootLayout = () => (
   <>
     <Outlet />
     <TanStackRouterDevtools position={"bottom-right"} />
-    <Toaster position={'bottom-right'} />
+    <Toaster position={"bottom-right"} />
   </>
 );
 
