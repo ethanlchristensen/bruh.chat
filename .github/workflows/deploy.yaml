@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: [self-hosted, linux, arm64, PIRONMAN]
+    runs-on: [self-hosted, linux, arm64, RPI5]
     environment: production
     
     steps:
