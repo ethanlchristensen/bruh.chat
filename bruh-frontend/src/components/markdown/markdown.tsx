@@ -14,6 +14,7 @@ import { Check, Copy } from "lucide-react";
 import type { Components } from "react-markdown";
 import "katex/dist/katex.min.css";
 import { useTheme } from "../theme/theme-provider";
+import { useClipboard } from "@/hooks/use-clipboard";
 
 interface MarkdownProps {
   content: string;
@@ -26,12 +27,10 @@ const CodeBlockWithCopy = ({
   language: string;
   code: string;
 }) => {
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useClipboard();
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copy(code);
   };
 
   const { effectiveTheme } = useTheme();
