@@ -9,6 +9,8 @@ class ProfileSchema(Schema):
     profile_image: Optional[str] = None
     default_model: Optional[str] = None
     default_aux_model: Optional[str] = None
+    auto_generate_titles: Optional[bool] = None
+    title_generation_frequency: Optional[int] = None
 
     @staticmethod
     def resolve_profile_image(obj):
@@ -21,6 +23,9 @@ class ProfileUpdateSchema(Schema):
     bio: Optional[str] = None
     default_model: Optional[str] = None
     default_aux_model: Optional[str] = None
+    auto_generate_titles: Optional[bool] = None
+    title_generation_frequency: Optional[int] = None
+
 
 
 class UserSchema(Schema):

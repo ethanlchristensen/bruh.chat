@@ -22,6 +22,16 @@ class Profile(models.Model):
     default_model = models.TextField(blank=True, null=True)
     default_aux_model = models.TextField(blank=True, null=True)
 
+    # ai title generation
+    auto_generate_titles = models.BooleanField(
+        default=False,
+        help_text="Automatically generate conversation titles using AI"
+    )
+    title_generation_frequency = models.PositiveIntegerField(
+        default=4,
+        help_text="Generate title every N messages (e.g., 4 = every 4th message)"
+    )
+
     def __str__(self):
         return f"{self.user.username}'s profile"
 

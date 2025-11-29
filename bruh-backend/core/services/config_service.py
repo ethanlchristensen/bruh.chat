@@ -21,6 +21,7 @@ class Config(BaseModel):
     open_router: OpenRouterConfig
     allowed_hosts: List[str]
     media_root: str
+    ai_title_frequency: int
 
 
 class ConfigService:

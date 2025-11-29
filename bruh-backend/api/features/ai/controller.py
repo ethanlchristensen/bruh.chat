@@ -66,28 +66,20 @@ class AIController:
         """
         user = request.auth
 
-        def sync_event_generator() -> Iterator[str]:
-            """Synchronous wrapper for the async generator"""
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                async_gen = self.chat_orchestration_service.chat_stream(
-                    user=user,
-                    user_content=data.message,
-                    model=data.model or self.open_router_service.default_model,
-                    conversation_id=data.conversation_id,
-                )
-                while True:
-                    try:
-                        chunk = loop.run_until_complete(async_gen.__anext__())
-                        yield f"data: {chunk}\n\n"
-                    except StopAsyncIteration:
-                        break
-            finally:
-                loop.close()
+        async def async_event_generator() -> AsyncIterator[str]:
+            """Native async generator - works with ASGI"""
+            async_gen = self.chat_orchestration_service.chat_stream(
+                user=user,
+                user_content=data.message,
+                model=data.model or self.open_router_service.default_model,
+                conversation_id=data.conversation_id,
+            )
+            async for chunk in async_gen:
+                yield f"data: {chunk}\n\n"
 
         response = StreamingHttpResponse(
-            streaming_content=sync_event_generator(), content_type="text/event-stream"
+            streaming_content=async_event_generator(), 
+            content_type="text/event-stream"
         )
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"

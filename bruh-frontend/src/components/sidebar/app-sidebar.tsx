@@ -51,6 +51,8 @@ import {
   useDeleteConversation,
 } from "@/features/chat/api/conversation";
 
+import { useConversationWebSocket } from "@/hooks/use-conversation-web-socket";
+
 const data = {
   navMain: [
     {
@@ -95,6 +97,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [conversationToDelete, setConversationToDelete] = React.useState<
     string | null
   >(null);
+
+  const { isConnected } = useConversationWebSocket({
+    onTitleUpdate: (conversationId, newTitle) => {
+      console.log(`[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`);
+      toast.success("Conversation title updated", {
+        description: newTitle,
+      });
+    },
+  });
+
+  React.useEffect(() => {
+    console.log(`Conversation websocket status: ${isConnected}`);
+  }, [isConnected])
 
   React.useEffect(() => {
     localStorage.setItem("sidebar-open", JSON.stringify(open));

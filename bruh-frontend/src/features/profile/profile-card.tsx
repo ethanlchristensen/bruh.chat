@@ -17,6 +17,8 @@ import { Loader2, Upload, UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { ModelSelector } from "@/components/shared/model-selector/model-selector";
 import { api } from "@/lib/api-client";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 export default function ProfileCard() {
   const { user, isLoading, refreshUser } = useAuth();
@@ -27,9 +29,12 @@ export default function ProfileCard() {
   const [defaultModel, setDefaultModel] = useState<string | undefined>(
     undefined
   );
-  const [defaultAuxModel, setDefaultAuxModel] = useState<
-    string | undefined
-  >(undefined);
+  const [defaultAuxModel, setDefaultAuxModel] = useState<string | undefined>(
+    undefined
+  );
+  const [autoGenerateTitles, setAutoGenerateTitles] = useState(false);
+  const [titleGenerationFrequency, setTitleGenerationFrequency] =
+    useState<number>(4);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -37,6 +42,8 @@ export default function ProfileCard() {
     bio: "",
     defaultModel: undefined as string | undefined,
     defaultAuxModel: undefined as string | undefined,
+    autoGenerateTitles: false,
+    titleGenerationFrequency: 4,
   });
 
   useEffect(() => {
@@ -45,11 +52,15 @@ export default function ProfileCard() {
         bio: user.profile.bio || "",
         defaultModel: user.profile.default_model || undefined,
         defaultAuxModel: user.profile.default_aux_model || undefined,
+        autoGenerateTitles: user.profile.auto_generate_titles ?? false,
+        titleGenerationFrequency: user.profile.title_generation_frequency ?? 4,
       };
       setBio(values.bio);
       setProfileImage(user.profile.profile_image || "");
       setDefaultModel(values.defaultModel);
       setDefaultAuxModel(values.defaultAuxModel);
+      setAutoGenerateTitles(values.autoGenerateTitles);
+      setTitleGenerationFrequency(values.titleGenerationFrequency);
       setInitialValues(values);
     }
   }, [user]);
@@ -102,6 +113,16 @@ export default function ProfileCard() {
         hasChanges = true;
       }
 
+      if (autoGenerateTitles !== initialValues.autoGenerateTitles) {
+        updates.auto_generate_titles = autoGenerateTitles;
+        hasChanges = true;
+      }
+
+      if (titleGenerationFrequency !== initialValues.titleGenerationFrequency) {
+        updates.title_generation_frequency = titleGenerationFrequency;
+        hasChanges = true;
+      }
+
       if (Object.keys(updates).length > 0) {
         await api.patch("/users/me/profile", updates);
         hasChanges = true;
@@ -123,6 +144,8 @@ export default function ProfileCard() {
         bio,
         defaultModel,
         defaultAuxModel,
+        autoGenerateTitles,
+        titleGenerationFrequency,
       });
 
       setPreviewUrl(null);
@@ -139,6 +162,8 @@ export default function ProfileCard() {
     setBio(initialValues.bio);
     setDefaultModel(initialValues.defaultModel);
     setDefaultAuxModel(initialValues.defaultAuxModel);
+    setAutoGenerateTitles(initialValues.autoGenerateTitles);
+    setTitleGenerationFrequency(initialValues.titleGenerationFrequency);
     setPreviewUrl(null);
     setImageFile(null);
   };
@@ -282,6 +307,49 @@ export default function ProfileCard() {
                 outputs.
               </p>
             </div>
+
+            {/* Auto Generate Titles */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="auto-generate-titles">
+                    Auto-Generate Conversation Titles
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically generate titles for your conversations using
+                    AI
+                  </p>
+                </div>
+                <Switch
+                  id="auto-generate-titles"
+                  checked={autoGenerateTitles}
+                  onCheckedChange={setAutoGenerateTitles}
+                />
+              </div>
+            </div>
+
+            {/* Title Generation Frequency */}
+            {autoGenerateTitles && (
+              <div className="space-y-2">
+                <Label htmlFor="title-frequency">
+                  Title Generation Frequency
+                </Label>
+                <Input
+                  id="title-frequency"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={titleGenerationFrequency}
+                  onChange={(e) =>
+                    setTitleGenerationFrequency(Number(e.target.value))
+                  }
+                  className="max-w-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Generate a new title after this many messages (1-100)
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-4 pt-4">
               <Button

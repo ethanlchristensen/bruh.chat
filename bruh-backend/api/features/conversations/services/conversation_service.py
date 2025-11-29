@@ -6,6 +6,7 @@ from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
 
 from ..models import Conversation, Message
+from ..broadcast import ConversationBroadcaster
 
 
 class ConversationService:
@@ -38,13 +39,17 @@ class ConversationService:
 
     @staticmethod
     @sync_to_async
-    def get_conversation_with_messages(conversation_id: UUID, user, include_deleted=False):
+    def get_conversation_with_messages(
+        conversation_id: UUID, user, include_deleted=False
+    ):
         queryset = Conversation.objects.prefetch_related(
             Prefetch(
                 "messages",
-                queryset=Message.objects.filter(deleted=False)
-                if not include_deleted
-                else Message.objects.all(),
+                queryset=(
+                    Message.objects.filter(deleted=False)
+                    if not include_deleted
+                    else Message.objects.all()
+                ),
             )
         )
         return queryset.get(id=conversation_id, user=user)
@@ -67,10 +72,12 @@ class ConversationService:
         conversation.save(update_fields=["deleted", "deleted_at"])
 
         return True
-    
+
     @staticmethod
     @sync_to_async
-    def update_conversation_title(conversation_id: UUID, user, title: str) -> Tuple[bool, Conversation | None]:
+    def update_conversation_title(
+        conversation_id: UUID, user, title: str, broadcast: bool = False
+    ) -> Tuple[bool, Conversation | None]:
         conversation = Conversation.objects.get(id=conversation_id, user=user)
 
         if conversation is None:
@@ -78,5 +85,10 @@ class ConversationService:
 
         conversation.title = title[:50]
         conversation.save(update_fields=["title"])
+
+        if broadcast: # should be false for api updates by the user since we update this ourselves in the ui
+            ConversationBroadcaster.broadcast_title_update(
+                user_id=user.id, conversation_id=conversation_id, new_title=title
+            )
 
         return True, conversation

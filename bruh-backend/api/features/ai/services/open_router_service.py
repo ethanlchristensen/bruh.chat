@@ -113,12 +113,49 @@ class OpenRouterService:
             ) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
-                    logger.info(f"[OpenRouterService] - streaming chunmk from open router: {line}")
                     if line.startswith("data: "):
                         data = line[6:]
                         if data.strip() == "[DONE]":
                             break
                         yield data
+
+    async def chat_with_structured_output(
+        self,
+        messages: list[dict],
+        response_format: dict,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> dict:
+        """
+        Chat with structured output using JSON schema
+        
+        Args:
+            messages: List of message dicts
+            response_format: JSON schema definition for structured output
+            model: Model ID (should support structured outputs)
+            temperature: Optional temperature
+            max_tokens: Optional max tokens
+        """
+        url = f"{self.base_url}/chat/completions"
+
+        payload = {
+            "model": model or self.default_model,
+            "messages": messages,
+            "response_format": response_format
+        }
+
+        if temperature is not None:
+            payload["temperature"] = temperature
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url, json=payload, headers=self._get_headers(), timeout=60.0
+            )
+            response.raise_for_status()
+            return response.json()
 
     async def get_all_models_flat(self, use_cache: bool = True) -> list[dict]:
         """

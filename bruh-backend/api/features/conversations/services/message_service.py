@@ -24,3 +24,9 @@ class MessageService:
         for message in conversation.messages.filter(deleted=False).order_by("created_at"):
             messages.append({"role": message.role, "content": message.content})
         return messages
+
+    @staticmethod
+    @sync_to_async
+    def get_message_count(conversation) -> int:
+        """Get the total number of non-deleted messages in a conversation"""
+        return conversation.messages.filter(deleted=False).count()

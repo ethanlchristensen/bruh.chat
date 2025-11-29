@@ -18,6 +18,8 @@ export interface UserProfile {
   profile_image: string;
   default_model: string;
   default_aux_model: string;
+  auto_generate_titles: boolean;
+  title_generation_frequency: number;
 }
 
 export interface User {

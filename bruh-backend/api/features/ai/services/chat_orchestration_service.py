@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 from functools import lru_cache
 from uuid import UUID
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from api.features.ai.models import OpenRouterResponse
 from api.features.ai.services.open_router_service import get_open_router_service
+from api.features.ai.services.ai_title_service import get_title_generation_service
 from api.features.conversations.models import Message
 from api.features.conversations.services import ConversationService, MessageService
 
@@ -38,11 +40,15 @@ class ChatErrorResponse(BaseModel):
 
 class ChatOrchestrationService:
     @staticmethod
-    async def chat(user, user_content: str, model: str, conversation_id: UUID | None = None):
+    async def chat(
+        user, user_content: str, model: str, conversation_id: UUID | None = None
+    ):
         try:
             if conversation_id is None:
-                conversation = await ConversationService.create_conversation_from_message(
-                    user=user, first_message=user_content
+                conversation = (
+                    await ConversationService.create_conversation_from_message(
+                        user=user, first_message=user_content
+                    )
                 )
             else:
                 conversation = await ConversationService.get_conversation(
@@ -92,7 +98,9 @@ class ChatOrchestrationService:
 
             assistant_message, api_response = await create_assistant_response()
 
-            await ConversationService.update_conversation_timestamp(conversation=conversation)
+            await ConversationService.update_conversation_timestamp(
+                conversation=conversation
+            )
 
             return ChatSuccessResponse(
                 conversation_id=conversation.id,
@@ -106,7 +114,9 @@ class ChatOrchestrationService:
             return ChatErrorResponse(conversation_id=conversation_id, error=str(e))
 
     @staticmethod
-    async def chat_stream(user, user_content: str, model: str, conversation_id: UUID | None = None):
+    async def chat_stream(
+        user, user_content: str, model: str, conversation_id: UUID | None = None
+    ):
         """
         Stream chat responses with incremental updates
         Yields JSON events: metadata, content chunks, and final summary
@@ -114,8 +124,10 @@ class ChatOrchestrationService:
         try:
             # Create or get conversation
             if conversation_id is None:
-                conversation = await ConversationService.create_conversation_from_message(
-                    user=user, first_message=user_content
+                conversation = (
+                    await ConversationService.create_conversation_from_message(
+                        user=user, first_message=user_content
+                    )
                 )
             else:
                 conversation = await ConversationService.get_conversation(
@@ -155,7 +167,6 @@ class ChatOrchestrationService:
             async for chunk_data in open_router_service.chat_with_messages_stream(
                 messages=message_history, model=model
             ):
-                logger.info(f"[ChatOrchestrationService] - data chunk: {chunk_data}")
                 try:
                     chunk = json.loads(chunk_data)
 
@@ -169,7 +180,9 @@ class ChatOrchestrationService:
                             full_content += content_chunk
 
                             # Send content chunk
-                            yield json.dumps({"type": "content", "delta": content_chunk}) + "\n"
+                            yield json.dumps(
+                                {"type": "content", "delta": content_chunk}
+                            ) + "\n"
 
                         # Check for finish reason
                         if choice.get("finish_reason"):
@@ -186,7 +199,7 @@ class ChatOrchestrationService:
                 except json.JSONDecodeError:
                     logger.warning(f"Failed to parse streaming chunk: {chunk_data}")
                     continue
-            
+
             # Save assistant message and response
             @sync_to_async
             def create_assistant_response(model_data):
@@ -195,12 +208,16 @@ class ChatOrchestrationService:
                         conversation=conversation,
                         role="assistant",
                         content=full_content,
-                        model_id=model_used
+                        model_id=model_used,
                     )
-                
+
                     pricing_data = model_data.get("pricing")
-                    prompt_cost = float(pricing_data.get("prompt", 0)) * usage_data.get("prompt_tokens", 0)
-                    completion_cost = float(pricing_data.get("completion", 0)) * usage_data.get("completion_tokens", 0)
+                    prompt_cost = float(pricing_data.get("prompt", 0)) * usage_data.get(
+                        "prompt_tokens", 0
+                    )
+                    completion_cost = float(
+                        pricing_data.get("completion", 0)
+                    ) * usage_data.get("completion_tokens", 0)
 
                     api_response = OpenRouterResponse.objects.create(
                         message=assistant_message,
@@ -217,8 +234,20 @@ class ChatOrchestrationService:
                     return assistant_message, api_response
 
             model_data = await open_router_service.get_model_by_id(model_id=model_used)
-            assistant_message, api_response = await create_assistant_response(model_data=model_data)
-            await ConversationService.update_conversation_timestamp(conversation=conversation)
+            assistant_message, api_response = await create_assistant_response(
+                model_data=model_data
+            )
+            await ConversationService.update_conversation_timestamp(
+                conversation=conversation
+            )
+
+            title_service = get_title_generation_service()
+            if await title_service.should_generate_title(user=user, conversation=conversation):
+                asyncio.create_task(
+                    title_service.generate_and_update_title(
+                        user=user, conversation=conversation
+                    )
+                )
 
             # Send completion metadata
             yield (
@@ -230,12 +259,16 @@ class ChatOrchestrationService:
                             "prompt_tokens": api_response.prompt_tokens,
                             "completion_tokens": api_response.completion_tokens,
                             "total_tokens": api_response.total_tokens,
-                            "prompt_cost": api_response.estimated_prompt_cost
-                            if api_response.estimated_prompt_cost
-                            else None,
-                            "completition_cost": api_response.estimated_completion_cost
-                            if api_response.estimated_completion_cost
-                            else None
+                            "prompt_cost": (
+                                api_response.estimated_prompt_cost
+                                if api_response.estimated_prompt_cost
+                                else None
+                            ),
+                            "completition_cost": (
+                                api_response.estimated_completion_cost
+                                if api_response.estimated_completion_cost
+                                else None
+                            ),
                         },
                     }
                 )
@@ -249,7 +282,9 @@ class ChatOrchestrationService:
                     {
                         "type": "error",
                         "error": str(e),
-                        "conversation_id": str(conversation_id) if conversation_id else None,
+                        "conversation_id": (
+                            str(conversation_id) if conversation_id else None
+                        ),
                     }
                 )
                 + "\n"

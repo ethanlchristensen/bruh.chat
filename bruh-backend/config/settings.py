@@ -40,12 +40,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
     # apps
     "api",
+    
     # third-party apps
     "corsheaders",
     "ninja_jwt",
     "ninja_extra",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -80,6 +83,12 @@ TEMPLATES = [
         },
     },
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 WSGI_APPLICATION = "config.wsgi.application"
 
