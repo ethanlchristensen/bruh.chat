@@ -42,15 +42,12 @@ class ConversationService:
     def get_conversation_with_messages(
         conversation_id: UUID, user, include_deleted=False
     ):
+        message_queryset = Message.objects.prefetch_related("attachments")
+        if not include_deleted:
+            message_queryset = message_queryset.filter(deleted=False)
+        
         queryset = Conversation.objects.prefetch_related(
-            Prefetch(
-                "messages",
-                queryset=(
-                    Message.objects.filter(deleted=False)
-                    if not include_deleted
-                    else Message.objects.all()
-                ),
-            )
+            Prefetch("messages", queryset=message_queryset)
         )
         return queryset.get(id=conversation_id, user=user)
 

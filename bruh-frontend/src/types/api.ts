@@ -50,6 +50,14 @@ export type ChatRequest = {
   conversation_id?: string;
   message?: string;
   model?: string;
+  files?: File[];
+};
+
+export type ImageGenerationChatRequest = {
+  conversation_id?: string;
+  prompt: string;
+  model?: string;
+  aspect_ratio?: string;
 };
 
 export type ChatUsageResponse = {
@@ -90,7 +98,29 @@ export type Message = Entity<{
   model_id?: string;
   isStreaming?: boolean;
   chunks?: string[];
+  attachments?: MessageAttachment[];
+  generated_images?: GeneratedImage[];
 }>;
+
+export type MessageAttachment = {
+  id?: string;
+  file_url: string;
+  file_name: string;
+  file_size?: number;
+  mime_type?: string;
+  created_at?: string;
+};
+
+export type GeneratedImage = {
+  id: string;
+  image_url: string;
+  prompt: string;
+  model_used: string;
+  aspect_ratio?: string;
+  width?: number;
+  height?: number;
+  created_at: string;
+};
 
 export type ConversationDetailResponse = {
   conversation: Conversation;

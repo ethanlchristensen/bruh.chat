@@ -3,7 +3,7 @@ from typing import List
 
 from ninja import ModelSchema, Schema
 
-from .models import Conversation, Message
+from .models import Conversation, Message, MessageAttachment, GeneratedImage
 
 
 class CreateConversationRequest(Schema):
@@ -15,8 +15,38 @@ class ConversationSchema(ModelSchema):
         model = Conversation
         fields = ["id", "title", "created_at", "updated_at"]
 
+class MessageAttachmentSchema(ModelSchema):
+    file_url: str | None = None
+
+    class Meta:
+        model = MessageAttachment
+        fields = ["id", "file_name", "file_size", "mime_type", "created_at"]
+    
+    @staticmethod
+    def resolve_file_url(obj, context):
+        request = context.get("request")
+        if request and obj.file:
+            return obj.file.url
+        return None
+
+class GeneratedImageSchema(ModelSchema):
+    image_url: str | None = None
+
+    class Meta:
+        model = GeneratedImage
+        fields = ["id", "prompt", "model_used", "aspect_ratio", "width", "height", "created_at"]
+    
+    @staticmethod
+    def resolve_image_url(obj):
+        if obj.image:
+            return obj.image.url
+        return None
+
 
 class MessageSchema(ModelSchema):
+    attachments: List[MessageAttachmentSchema] = []
+    generated_images: List[GeneratedImageSchema] = []
+
     class Meta:
         model = Message
         fields = ["id", "role", "content", "created_at", "model_id"]

@@ -3,10 +3,22 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { useConversation } from "../api/conversation";
-import { useCreateStreamingChat } from "../api/chat";
+import {
+  useCreateStreamingChat,
+  useCreateStreamingImageGeneration,
+} from "../api/chat";
+import {
+  useUserAvailableModels,
+  modelSupportsImageGeneration,
+} from "@/components/shared/model-selector/models";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
-import type { ConversationsResponse, Conversation, Message } from "@/types/api";
+import type {
+  ConversationsResponse,
+  Conversation,
+  Message,
+  MessageAttachment,
+} from "@/types/api";
 
 type ChatContainerProps = {
   conversationId: string | undefined;
@@ -33,6 +45,9 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     },
   );
 
+  const { data: userModels } = useUserAvailableModels();
+  const selectedModel = userModels?.find((m) => m.id === selectedModelId);
+
   const contentBufferRef = useRef<string>("");
   const displayedContentRef = useRef<string>("");
   const animationFrameRef = useRef<number | null>(null);
@@ -52,11 +67,9 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   useEffect(() => {
     if (conversationData?.messages) {
       setMessages(conversationData.messages);
-
       const lastAssistantMessage = [...conversationData.messages]
         .reverse()
         .find((msg) => msg.role === "assistant");
-
       if (lastAssistantMessage?.model_id) {
         setSelectedModelId(lastAssistantMessage.model_id);
       } else if (user?.profile?.default_model) {
@@ -67,7 +80,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       const saved = localStorage.getItem(NEW_CHAT_MODEL_KEY);
       setSelectedModelId(saved || user?.profile?.default_model);
     }
-  }, [conversationData, conversationId, user?.profile?.default_model]);
+  }, [conversationId, conversationData, user?.profile?.default_model]);
 
   const handleModelSelect = (modelId: string) => {
     setSelectedModelId(modelId);
@@ -77,47 +90,60 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   };
 
   const createChatMutation = useCreateStreamingChat();
+  const createImageMutation = useCreateStreamingImageGeneration();
 
   const finalize = () => {
     const data = doneDataRef.current;
+    if (!data || !data.assistant_message_id) {
+      console.error("Finalize called without done data.");
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempAssistantIdRef.current
+            ? { ...msg, isStreaming: false }
+            : msg,
+        ),
+      );
+      setStreamingMessageId(null);
+      return;
+    }
+
     const tempAssistantId = tempAssistantIdRef.current;
-    const newConversationId = newConversationIdRef.current;
-    const finalContent = contentBufferRef.current; // Capture content before clearing
+    const finalContent = contentBufferRef.current;
 
     setMessages((prev: Message[]) => {
       const updatedMessages = prev.map((msg) =>
         msg.id === tempAssistantId
           ? {
               ...msg,
-              content: finalContent, // Use captured content
+              content: finalContent,
               id: data.assistant_message_id,
               isStreaming: false,
+              generated_images: data.generated_images,
             }
           : msg,
       );
 
       setStreamingMessageId(null);
 
-      if (!conversationId && newConversationId) {
-        queryClient.setQueryData(["conversations", newConversationId], {
-          id: newConversationId,
-          messages: updatedMessages,
-        });
-
-        // Use setTimeout to ensure state update completes before navigation
+      if (!conversationId && newConversationIdRef.current) {
+        queryClient.setQueryData(
+          ["conversations", newConversationIdRef.current],
+          {
+            id: newConversationIdRef.current,
+            messages: updatedMessages,
+          },
+        );
         setTimeout(() => {
           navigate({
             to: "/chat/$conversationId",
-            params: { conversationId: newConversationId },
+            params: { conversationId: newConversationIdRef.current! },
             replace: true,
           });
         }, 0);
       }
-
       return updatedMessages;
     });
 
-    // Clear refs after a small delay to ensure state update completes
     setTimeout(() => {
       contentBufferRef.current = "";
       displayedContentRef.current = "";
@@ -131,19 +157,16 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const animateContent = (tempAssistantId: string) => {
     if (!isStreamingRef.current) return;
 
-    // If there's buffered content to display
+    // Condition 1: Animate text if there is any to show.
     if (displayedContentRef.current.length < contentBufferRef.current.length) {
-      // Take 2-3 characters at a time for smooth streaming
       const charsToAdd = Math.min(
         3,
         contentBufferRef.current.length - displayedContentRef.current.length,
       );
-
       displayedContentRef.current = contentBufferRef.current.slice(
         0,
         displayedContentRef.current.length + charsToAdd,
       );
-
       setMessages((prev: Message[]) =>
         prev.map((msg) =>
           msg.id === tempAssistantId
@@ -151,53 +174,88 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
             : msg,
         ),
       );
-    } else if (isDoneStreamingRef.current) {
-      // All content displayed and streaming is done, finalize
+    }
+    // Condition 2: If text is done animating (or there was no text), and the stream is finished, finalize.
+    else if (isDoneStreamingRef.current) {
       isStreamingRef.current = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
       finalize();
-      return;
+      return; // Stop the loop
     }
 
-    // Continue animation
+    // Keep the loop going.
     animationFrameRef.current = requestAnimationFrame(() =>
       animateContent(tempAssistantId),
     );
   };
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = (message: string, files?: File[]) => {
+    const isImageGen =
+      message.trim().startsWith("/image") &&
+      modelSupportsImageGeneration(selectedModel);
+
+    if (isImageGen) {
+      const prompt = message.trim().replace(/^\/image\s*/, "");
+      if (prompt) {
+        const requestData = {
+          conversation_id: conversationId,
+          prompt,
+          model: selectedModelId,
+        };
+        initiateStream(message, undefined, createImageMutation, requestData);
+      }
+    } else {
+      const requestData = {
+        conversation_id: conversationId,
+        message,
+        model: selectedModelId,
+        files,
+      };
+      initiateStream(message, files, createChatMutation, requestData);
+    }
+  };
+
+  const initiateStream = (
+    fullMessage: string,
+    files: File[] | undefined,
+    mutation: any,
+    requestData: any,
+  ) => {
     const tempUserId = `temp-user-${Date.now()}`;
     const tempAssistantId = `temp-assistant-${Date.now()}`;
     tempAssistantIdRef.current = tempAssistantId;
     newConversationIdRef.current = undefined;
 
-    // Clear any existing animation and buffers
-    if (animationFrameRef.current) {
+    if (animationFrameRef.current)
       cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
+
     contentBufferRef.current = "";
     displayedContentRef.current = "";
     isStreamingRef.current = false;
     isDoneStreamingRef.current = false;
     doneDataRef.current = null;
 
+    const attachments = files?.map((file) => ({
+      id: `temp-${Date.now()}-${Math.random()}`,
+      file_url: URL.createObjectURL(file),
+      file_name: file.name,
+      file_size: file.size,
+      mime_type: file.type,
+    }));
+
     setMessages((prev) => [
       ...prev,
       {
         role: "user",
-        content: message,
+        content: fullMessage,
         id: tempUserId,
         conversation_id: conversationId || "",
         created_at: Date.now(),
+        attachments,
       },
-    ]);
-
-    setMessages((prev) => [
-      ...prev,
       {
         role: "assistant",
         content: "",
@@ -211,80 +269,59 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
     setStreamingMessageId(tempAssistantId);
 
-    createChatMutation.mutate({
-      data: {
-        conversation_id: conversationId,
-        message,
-        model: selectedModelId,
-      },
+    mutation.mutate({
+      data: requestData,
       callbacks: {
-        onMetadata: (data) => {
+        onMetadata: (data: any) => {
           if (!conversationId && data.conversation_id) {
             newConversationIdRef.current = data.conversation_id;
-
             localStorage.removeItem(NEW_CHAT_MODEL_KEY);
-
             queryClient.setQueryData<ConversationsResponse>(
               ["conversations"],
               (old) => {
                 if (!old) return old;
-
                 const title =
-                  message.length > 50
-                    ? message.substring(0, 50) + "..."
-                    : message;
-
+                  fullMessage.length > 50
+                    ? fullMessage.substring(0, 50) + "..."
+                    : fullMessage;
                 const newConversation: Conversation = {
                   id: data.conversation_id,
                   title,
                   created_at: Date.now(),
                   updated_at: new Date().toISOString(),
                 };
-
                 return {
                   conversations: [newConversation, ...old.conversations],
                 };
               },
             );
           }
-
-          setMessages((prev: Message[]) =>
+          setMessages((prev) =>
             prev.map((msg) =>
               msg.id === tempUserId
                 ? { ...msg, id: data.user_message_id }
                 : msg,
             ),
           );
-
-          // Start animation on first metadata
           isStreamingRef.current = true;
           animateContent(tempAssistantId);
         },
-        onContent: (data) => {
-          // Just buffer the content, animation loop will display it
+        onContent: (data: any) => {
           contentBufferRef.current += data.delta;
         },
-        onDone: (data) => {
-          // Mark as done but let animation finish displaying remaining content
+        onImageProgress: (data: any) => {
+          console.log("Image progress:", data.message);
+        },
+        onDone: (data: any) => {
           isDoneStreamingRef.current = true;
           doneDataRef.current = data;
         },
-        onError: (data) => {
-          // Clean up on error
-          isStreamingRef.current = false;
-          isDoneStreamingRef.current = false;
-          if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-          }
-          contentBufferRef.current = "";
-          displayedContentRef.current = "";
-          doneDataRef.current = null;
-          newConversationIdRef.current = undefined;
-          tempAssistantIdRef.current = "";
-
+        onError: (data: any) => {
           console.error("Streaming error:", data.error);
-          setMessages((prev: Message[]) =>
+          isStreamingRef.current = false;
+          if (animationFrameRef.current)
+            cancelAnimationFrame(animationFrameRef.current);
+          setMessages((prev) =>
             prev.filter((msg) => msg.id !== tempAssistantId),
           );
           setStreamingMessageId(null);
@@ -305,12 +342,16 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <MessageList
         messages={messages}
-        isLoading={createChatMutation.isPending && streamingMessageId === null}
+        isLoading={
+          (createChatMutation.isPending || createImageMutation.isPending) &&
+          streamingMessageId === null
+        }
       />
       <MessageInput
         onSend={handleSendMessage}
-        disabled={createChatMutation.isPending}
+        disabled={createChatMutation.isPending || createImageMutation.isPending}
         selectedModelId={selectedModelId}
+        selectedModel={selectedModel}
         onModelSelect={handleModelSelect}
       />
     </div>

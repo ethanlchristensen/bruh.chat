@@ -141,6 +141,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "/media/"
 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
 
 MEDIA_ROOT = CONFIG.media_root if CONFIG else (BASE_DIR / "media")
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

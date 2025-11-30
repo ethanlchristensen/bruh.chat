@@ -19,10 +19,33 @@ export type OpenRouterModel = {
   architecture?: {
     modality?: string;
     tokenizer?: string;
+    input_modalities?: string[];
+    output_modalities?: string[];
   };
   top_provider?: {
     max_completion_tokens?: number;
   };
+};
+
+export const modelSupportsFileUploads = (
+  model: OpenRouterModel | undefined,
+): boolean => {
+  if (!model?.architecture?.input_modalities) return false;
+  const modalities = model.architecture.input_modalities;
+  return modalities.includes("file") || modalities.includes("image");
+};
+
+export const modelSupportsImageGeneration = (
+  model: OpenRouterModel | undefined,
+): boolean => {
+  if (!model?.architecture?.output_modalities) return false;
+  return model.architecture.output_modalities.includes("image");
+};
+
+export const getModelSupportedModalities = (
+  model: OpenRouterModel | undefined,
+): string[] => {
+  return model?.architecture?.input_modalities || [];
 };
 
 export const useUserAvailableModels = (options = {}) => {
@@ -106,6 +129,20 @@ export const useOpenRouterStructuredModels = (options = {}) => {
     },
     staleTime: 1000 * 60 * 5,
     enabled: false,
+    ...options,
+  });
+};
+
+export const useOpenRouterImageGenerationModels = (options = {}) => {
+  return useQuery({
+    queryKey: ["image-generation-models"],
+    queryFn: async () => {
+      const response = await api.get<OpenRouterModel[]>(
+        "/ai/models/openrouter/image-generation",
+      );
+      return response;
+    },
+    staleTime: 1000 * 60 * 5,
     ...options,
   });
 };

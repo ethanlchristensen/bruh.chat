@@ -1,22 +1,30 @@
 import asyncio
-from typing import AsyncIterator, List, Iterator
+from uuid import UUID
+from typing import AsyncIterator, List, Optional
 
 from django.http import StreamingHttpResponse
 from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
+from ninja import Form, File
+from ninja.files import UploadedFile
 
 from .schemas import (
     ChatErrorResponseSchema,
     ChatRequest,
     ChatSuccessResponseSchema,
     OpenRouterModelSchema,
-    GetOpenRouterModelRequestSchema
+    GetOpenRouterModelRequestSchema,
+    MessageAttachmentSchema,
+    ImageGenerationRequest,
+    ImageGenerationResponseSchema,
+    GeneratedImageSchema
 )
 from .services import (
     ChatErrorResponse,
     ChatSuccessResponse,
     get_chat_orchestration_service,
     get_open_router_service,
+    get_image_generation_service
 )
 
 
@@ -25,61 +33,62 @@ class AIController:
     def __init__(self):
         self.open_router_service = get_open_router_service()
         self.chat_orchestration_service = get_chat_orchestration_service()
-
-    @route.post(
-        "/chat", response={200: ChatSuccessResponseSchema, 500: ChatErrorResponseSchema}
-    )
-    async def chat(self, request, data: ChatRequest):
-        user = request.auth
-
-        result = await self.chat_orchestration_service.chat(
-            user=user,
-            user_content=data.message,
-            model=data.model or self.open_router_service.default_model,
-            conversation_id=data.conversation_id,
-        )
-
-        if result.success and isinstance(result, ChatSuccessResponse):
-            return 200, ChatSuccessResponseSchema(
-                conversation_id=result.conversation_id,
-                message=result.assistant_message.content,
-                user_mesasge_id=result.user_message.id,
-                assistant_message_id=result.assistant_message.id,
-                usage={
-                    "prompt_tokens": result.api_response.prompt_tokens,
-                    "completion_tokens": result.api_response.completion_tokens,
-                    "total_tokens": result.api_response.total_tokens,
-                    "estimated_prompt_cost": result.api_response.estimated_prompt_cost if result.api_response.estimated_prompt_cost else None,
-                    "estimated_completition_cost": result.api_response.estimated_completion_cost if result.api_response.estimated_completion_cost else None
-                },
-            )
-        elif isinstance(result, ChatErrorResponse):
-            return 500, ChatErrorResponseSchema(
-                error=result.error, conversation_id=result.conversation_id
-            )
+        self.image_generation_service = get_image_generation_service()
 
     @route.post("/chat/stream")
-    async def chat_stream(self, request, data: ChatRequest):
+    async def chat_stream(
+        self,
+        request,
+        message: str = Form(...), # type: ignore
+        conversation_id: Optional[str] = Form(None), # type: ignore
+        model: Optional[str] = Form(None), # type: ignore
+        files: List[UploadedFile] = File(None), # type: ignore
+    ):
         """
         Stream chat responses with real-time updates.
-        Returns Server-Sent Events with metadata, content chunks, and completion info.
+        Supports file attachments for vision models.
         """
         user = request.auth
+        conv_id = UUID(conversation_id) if conversation_id else None
 
         async def async_event_generator() -> AsyncIterator[str]:
             """Native async generator - works with ASGI"""
             async_gen = self.chat_orchestration_service.chat_stream(
                 user=user,
-                user_content=data.message,
-                model=data.model or self.open_router_service.default_model,
-                conversation_id=data.conversation_id,
+                user_content=message,
+                model=model or self.open_router_service.default_model,
+                conversation_id=conv_id,
+                files=files or [], # type: ignore
             )
             async for chunk in async_gen:
                 yield f"data: {chunk}\n\n"
 
         response = StreamingHttpResponse(
-            streaming_content=async_event_generator(), 
-            content_type="text/event-stream"
+            streaming_content=async_event_generator(), content_type="text/event-stream"
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+
+        return response
+
+    @route.post("/images/generate/stream")
+    async def generate_image_stream(self, request, data: ImageGenerationRequest):
+        """Stream image generation with progress updates"""
+        user = request.auth
+
+        async def async_event_generator() -> AsyncIterator[str]:
+            async_gen = self.image_generation_service.generate_image_stream(
+                user=user,
+                prompt=data.prompt,
+                model=data.model or "google/gemini-2.0-flash-exp:free",
+                conversation_id=data.conversation_id,
+                aspect_ratio=data.aspect_ratio,
+            )
+            async for chunk in async_gen:
+                yield f"data: {chunk}\n\n"
+
+        response = StreamingHttpResponse(
+            streaming_content=async_event_generator(), content_type="text/event-stream"
         )
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
@@ -99,9 +108,11 @@ class AIController:
         """Get all available models from OpenRouter"""
         service = get_open_router_service()
         return await service.get_all_models_flat()
-    
+
     @route.post("/models/openrouter")
-    async def get_openrouter_model_by_id(self, request, data: GetOpenRouterModelRequestSchema):
+    async def get_openrouter_model_by_id(
+        self, request, data: GetOpenRouterModelRequestSchema
+    ):
         """Get a specific model from OpenRouter by its ID"""
         model_id = data.model_id
         service = get_open_router_service()
@@ -118,7 +129,12 @@ class AIController:
         """Get all models that support structured outputs"""
         service = get_open_router_service()
         return await service.get_all_structured_output_models()
-    
+
+    @route.get("/models/openrouter/image-generation", response=List[OpenRouterModelSchema])
+    async def get_image_generation_models(self, request):
+        """Get all models that support image generation"""
+        return await self.open_router_service.get_all_image_generation_models()
+
     @route.get("/models/openrouter/structured/by-provider", response=dict)
     async def get_structured_output_models_by_provider(self, request):
         """Get models with structured outputs organized by provider"""

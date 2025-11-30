@@ -1,17 +1,20 @@
+import re
 import json
 import asyncio
 import logging
 from functools import lru_cache
 from uuid import UUID
+from typing import List
 
 from asgiref.sync import sync_to_async
 from django.db import transaction
+from django.core.files.uploadedfile import UploadedFile
 from pydantic import BaseModel, Field
 
 from api.features.ai.models import OpenRouterResponse
 from api.features.ai.services.open_router_service import get_open_router_service
 from api.features.ai.services.ai_title_service import get_title_generation_service
-from api.features.conversations.models import Message
+from api.features.conversations.models import Message, MessageAttachment
 from api.features.conversations.services import ConversationService, MessageService
 
 logger = logging.getLogger(__name__)
@@ -40,8 +43,75 @@ class ChatErrorResponse(BaseModel):
 
 class ChatOrchestrationService:
     @staticmethod
+    def _sanitize_file_name(filename: str | None) -> str | None:
+        if filename:
+            name, ext = filename.rsplit('.', 1) if '.' in filename else (filename, '')
+            name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
+            name = name.replace(' ', '_')
+            name = re.sub(r'_+', '_', name)
+            name = name.strip('_')
+            return f"{name}.{ext}" if ext else name
+        return None
+
+    @staticmethod
+    async def _save_attachments(message: Message, files: List[UploadedFile]):
+        """Save uploaded files as message attachments"""
+        @sync_to_async
+        def save_files():
+            attachments = []
+            for file in files:
+                attachment = MessageAttachment.objects.create(
+                    message=message,
+                    file=file,
+                    file_name=ChatOrchestrationService._sanitize_file_name(file.name),
+                    file_size=file.size,
+                    mime_type=file.content_type or 'application/octet-stream',
+                )
+                attachments.append(attachment)
+            return attachments
+        
+        return await save_files()
+
+    @staticmethod
+    async def _build_message_with_attachments(
+        content: str, attachments: List[MessageAttachment]
+    ) -> dict:
+        """Build OpenAI-compatible message with text and images"""
+        open_router_service = get_open_router_service()
+        
+        # If no attachments, return simple text message
+        if not attachments:
+            return {"role": "user", "content": content}
+        
+        # Build multimodal content
+        content_parts = []
+        
+        # Add text content if provided
+        if content and content.strip():
+            content_parts.append({"type": "text", "text": content})
+        
+        # Add images
+        for attachment in attachments:
+            if attachment.mime_type.startswith('image/'):
+                # Read file and create image content
+                attachment.file.seek(0)
+                base64_image = open_router_service.encode_image_to_base64(attachment.file)
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{attachment.mime_type};base64,{base64_image}"
+                    }
+                })
+        
+        return {"role": "user", "content": content_parts}
+
+    @staticmethod
     async def chat(
-        user, user_content: str, model: str, conversation_id: UUID | None = None
+        user,
+        user_content: str,
+        model: str,
+        conversation_id: UUID | None = None,
+        files: List[UploadedFile] | None = None,
     ):
         try:
             if conversation_id is None:
@@ -59,9 +129,23 @@ class ChatOrchestrationService:
                 conversation=conversation, role="user", content=user_content
             )
 
+            # Save file attachments if any
+            attachments = []
+            if files:
+                attachments = await ChatOrchestrationService._save_attachments(
+                    user_message, files
+                )
+
             message_history = await MessageService.get_message_history_for_open_router(
                 conversation=conversation
             )
+
+            # Replace the last user message with multimodal version if attachments exist
+            if attachments:
+                message_with_files = await ChatOrchestrationService._build_message_with_attachments(
+                    user_content, attachments
+                )
+                message_history[-1] = message_with_files
 
             open_router_service = get_open_router_service()
             open_router_response = await open_router_service.chat_with_messages(
@@ -77,6 +161,7 @@ class ChatOrchestrationService:
                         conversation=conversation,
                         role="assistant",
                         content=assistant_content,
+                        model_id=model,
                     )
 
                     usage = open_router_response.get("usage", {})
@@ -115,12 +200,13 @@ class ChatOrchestrationService:
 
     @staticmethod
     async def chat_stream(
-        user, user_content: str, model: str, conversation_id: UUID | None = None
+        user,
+        user_content: str,
+        model: str,
+        conversation_id: UUID | None = None,
+        files: List[UploadedFile] | None = None,
     ):
-        """
-        Stream chat responses with incremental updates
-        Yields JSON events: metadata, content chunks, and final summary
-        """
+        """Stream chat responses with file attachment support"""
         try:
             # Create or get conversation
             if conversation_id is None:
@@ -139,6 +225,13 @@ class ChatOrchestrationService:
                 conversation=conversation, role="user", content=user_content
             )
 
+            # Save file attachments if any
+            attachments = []
+            if files:
+                attachments = await ChatOrchestrationService._save_attachments(
+                    user_message, files
+                )
+
             # Send initial metadata
             yield (
                 json.dumps(
@@ -146,6 +239,7 @@ class ChatOrchestrationService:
                         "type": "metadata",
                         "conversation_id": str(conversation.id),
                         "user_message_id": str(user_message.id),
+                        "has_attachments": len(attachments) > 0,
                     }
                 )
                 + "\n"
@@ -155,6 +249,13 @@ class ChatOrchestrationService:
             message_history = await MessageService.get_message_history_for_open_router(
                 conversation=conversation
             )
+
+            # Replace last user message with multimodal version if attachments exist
+            if attachments:
+                message_with_files = await ChatOrchestrationService._build_message_with_attachments(
+                    user_content, attachments
+                )
+                message_history[-1] = message_with_files
 
             # Stream the response
             open_router_service = get_open_router_service()
@@ -211,7 +312,7 @@ class ChatOrchestrationService:
                         model_id=model_used,
                     )
 
-                    pricing_data = model_data.get("pricing")
+                    pricing_data = model_data.get("pricing", {})
                     prompt_cost = float(pricing_data.get("prompt", 0)) * usage_data.get(
                         "prompt_tokens", 0
                     )

@@ -13,7 +13,6 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Use requestAnimationFrame to ensure DOM is updated
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({
         behavior: "smooth",

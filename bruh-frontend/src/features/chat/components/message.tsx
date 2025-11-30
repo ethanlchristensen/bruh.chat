@@ -1,4 +1,4 @@
-import { User, Bot } from "lucide-react";
+import { User, Bot, Download } from "lucide-react";
 import type { Message as MessageType } from "@/types/api";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
 
@@ -7,7 +7,16 @@ type MessageProps = {
 };
 
 export const Message = ({ message }: MessageProps) => {
-  const { content, role, id, model_id, created_at, isStreaming } = message;
+  const {
+    content,
+    role,
+    id,
+    model_id,
+    created_at,
+    isStreaming,
+    attachments,
+    generated_images,
+  } = message;
   const isUser = role === "user";
 
   const displayDate = created_at
@@ -22,6 +31,19 @@ export const Message = ({ message }: MessageProps) => {
         minute: "2-digit",
       })
     : "";
+
+  const getAttachmentUrl = (fileUrl: string) => {
+    if (fileUrl.startsWith("http") || fileUrl.startsWith("blob:")) {
+      return fileUrl;
+    }
+    const baseUrl = window.location.origin;
+    return `${baseUrl}${fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`}`;
+  };
+
+  const isImageAttachment = (mimeType?: string) => {
+    if (!mimeType || typeof mimeType !== "string") return false;
+    return mimeType.startsWith("image/");
+  };
 
   return (
     <div
@@ -54,6 +76,58 @@ export const Message = ({ message }: MessageProps) => {
           </span>
         </div>
 
+        {/* Attachments */}
+        {attachments && attachments.length > 0 && (
+          <div
+            className={`flex flex-wrap gap-2 mb-2 ${isUser ? "self-end" : "self-start"}`}
+          >
+            {attachments.map((attachment, idx) => {
+              if (!attachment) return null;
+
+              return (
+                <div
+                  key={attachment.id || idx}
+                  className="rounded-lg overflow-hidden border"
+                >
+                  {isImageAttachment(attachment.mime_type) ? (
+                    <img
+                      src={getAttachmentUrl(attachment.file_url)}
+                      alt={attachment.file_name || "Attachment"}
+                      className="max-w-xs max-h-64 object-contain bg-muted"
+                      onError={(e) => {
+                        console.error(
+                          "Image failed to load:",
+                          attachment.file_url,
+                        );
+                        console.error("Error event:", e);
+                      }}
+                    />
+                  ) : (
+                    <a
+                      href={getAttachmentUrl(attachment.file_url)}
+                      download={attachment.file_name}
+                      className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium truncate">
+                          {attachment.file_name || "Unknown file"}
+                        </span>
+                        {attachment.file_size && (
+                          <span className="text-xs text-muted-foreground">
+                            {(attachment.file_size / 1024).toFixed(1)} KB
+                          </span>
+                        )}
+                      </div>
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Message bubble */}
         <div
           className={`rounded-lg px-4 py-2.5 ${
             isUser
@@ -72,6 +146,40 @@ export const Message = ({ message }: MessageProps) => {
             <span className="inline-block w-1 h-4 ml-1 bg-current animate-pulse" />
           )}
         </div>
+
+        {/* Generated Images - Now after content */}
+        {generated_images && generated_images.length > 0 && (
+          <div className="flex flex-col gap-2 mt-2 self-start">
+            {generated_images.map((genImage) => {
+              if (!genImage) return null;
+
+              return (
+                <div
+                  key={genImage.id}
+                  className="rounded-lg overflow-hidden border bg-muted"
+                >
+                  <img
+                    src={getAttachmentUrl(genImage.image_url)}
+                    alt={genImage.prompt || "Generated image"}
+                    className="max-w-md max-h-96 object-contain"
+                    onError={(e) => {
+                      console.error(
+                        "Generated image failed to load:",
+                        genImage.image_url,
+                      );
+                      console.error("Error event:", e);
+                    }}
+                  />
+                  {genImage.aspect_ratio && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Aspect Ratio: {genImage.aspect_ratio}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
