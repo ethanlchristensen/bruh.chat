@@ -34,7 +34,6 @@ services:
       - bruhbackend
     volumes:
       - media_data:/usr/share/nginx/media:ro
-      - ~/certs:/certs:ro
     networks:
       - app-network
 
