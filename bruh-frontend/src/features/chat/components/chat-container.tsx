@@ -13,12 +13,7 @@ import {
 } from "@/components/shared/model-selector/models";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
-import type {
-  ConversationsResponse,
-  Conversation,
-  Message,
-  MessageAttachment,
-} from "@/types/api";
+import type { ConversationsResponse, Conversation, Message } from "@/types/api";
 
 type ChatContainerProps = {
   conversationId: string | undefined;

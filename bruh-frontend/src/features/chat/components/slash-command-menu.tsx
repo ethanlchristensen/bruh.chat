@@ -1,4 +1,4 @@
-import { Image, Sparkles } from "lucide-react";
+import { Image } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { modelSupportsImageGeneration } from "@/components/shared/model-selector/models";
 
@@ -94,16 +94,18 @@ export const SlashCommandMenu = ({
 export const getAvailableCommands = (selectedModel: any): SlashCommand[] => {
   const commands: SlashCommand[] = [];
 
-  commands.push({
-    id: "image",
-    label: "/image",
-    description: "Generate an image from a text prompt",
-    icon: <Image className="h-4 w-4" />,
-    insertText: "/image ",
-    requiresModel: (model) => {
-      return modelSupportsImageGeneration(model);
-    },
-  });
+  if (modelSupportsImageGeneration(selectedModel)) {
+    commands.push({
+      id: "image",
+      label: "/image",
+      description: "Generate an image from a text prompt",
+      icon: <Image className="h-4 w-4" />,
+      insertText: "/image ",
+      requiresModel: (model) => {
+        return modelSupportsImageGeneration(model);
+      },
+    });
+  }
 
   // commands.push({
   //   id: "prompt",
