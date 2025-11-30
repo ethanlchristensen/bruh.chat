@@ -29,10 +29,12 @@ services:
     restart: unless-stopped
     ports:
       - "5173:80"
+      - "443:443"
     depends_on:
       - bruhbackend
     volumes:
       - media_data:/usr/share/nginx/media:ro
+      - ~/certs:/certs:ro
     networks:
       - app-network
 
