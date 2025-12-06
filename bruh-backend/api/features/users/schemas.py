@@ -67,3 +67,11 @@ class RemoveModelSchema(Schema):
 class BulkOperationResponseSchema(Schema):
     added: int
     skipped: int
+
+class UserRegistrationSchema(Schema):
+    username: str
+    email: str
+    password: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    

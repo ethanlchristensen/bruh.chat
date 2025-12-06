@@ -1,3 +1,7 @@
+import type { AspectRatio } from "./image";
+import type { Intent } from "./intent";
+
+
 export type BaseEntity = {
   id: string;
   created_at: number;
@@ -46,12 +50,15 @@ export type AuthResponse = {
   access: string;
 };
 
-export type ChatRequest = {
+
+export interface ChatRequest {
+  message: string;
   conversation_id?: string;
-  message?: string;
   model?: string;
+  intent?: Intent;
+  aspect_ratio?: AspectRatio;
   files?: File[];
-};
+}
 
 export type ImageGenerationChatRequest = {
   conversation_id?: string;
@@ -116,7 +123,7 @@ export type GeneratedImage = {
   image_url: string;
   prompt: string;
   model_used: string;
-  aspect_ratio?: string;
+  aspect_ratio?: AspectRatio;
   width?: number;
   height?: number;
   created_at: string;

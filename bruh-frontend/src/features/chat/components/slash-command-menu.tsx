@@ -1,22 +1,21 @@
-import { Image } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { INTENTS, INTENT_METADATA, type Intent } from "@/types/intent";
 import { modelSupportsImageGeneration } from "@/components/shared/model-selector/models";
+import type { OpenRouterModel } from "@/components/shared/model-selector/models";
 
-export type SlashCommand = {
-  id: string;
+export type IntentCommand = {
+  intent: Intent;
   label: string;
   description: string;
   icon: React.ReactNode;
-  insertText: string;
-  requiresModel?: (model: any) => boolean;
+  requiresModel?: (model: OpenRouterModel | undefined) => boolean;
 };
 
 type SlashCommandMenuProps = {
-  commands: SlashCommand[];
-  onSelect: (command: SlashCommand) => void;
+  commands: IntentCommand[];
+  onSelect: (command: IntentCommand) => void;
   onClose: () => void;
   selectedIndex: number;
-  position?: { top: number; left: number };
 };
 
 export const SlashCommandMenu = ({
@@ -24,7 +23,6 @@ export const SlashCommandMenu = ({
   onSelect,
   onClose,
   selectedIndex,
-  position,
 }: SlashCommandMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +45,6 @@ export const SlashCommandMenu = ({
     <div
       ref={menuRef}
       className="absolute bottom-full mb-2 left-0 w-80 bg-popover border rounded-lg shadow-lg z-50 overflow-hidden"
-      style={position}
     >
       <div className="p-2 border-b bg-muted/50">
         <p className="text-xs font-medium text-muted-foreground">
@@ -57,13 +54,13 @@ export const SlashCommandMenu = ({
       <div className="max-h-64 overflow-y-auto">
         {commands.map((command, index) => (
           <button
-            key={command.id}
+            key={command.intent}
             onClick={() => onSelect(command)}
             className={`w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${
               index === selectedIndex ? "bg-muted" : ""
             }`}
           >
-            <div className="shrink-0 mt-0.5 text-muted-foreground">
+            <div className="shrink-0 mt-0.5 text-lg">
               {command.icon}
             </div>
             <div className="flex-1 min-w-0">
@@ -91,29 +88,32 @@ export const SlashCommandMenu = ({
   );
 };
 
-export const getAvailableCommands = (selectedModel: any): SlashCommand[] => {
-  const commands: SlashCommand[] = [];
+export const getAvailableIntents = (
+  selectedModel: OpenRouterModel | undefined
+): IntentCommand[] => {
+  const commands: IntentCommand[] = [];
 
-  if (modelSupportsImageGeneration(selectedModel)) {
+  // Only show non-default intents
+  Object.values(INTENTS).forEach((intent) => {
+    if (intent === INTENTS.CHAT) return; // Skip default intent
+
+    const metadata = INTENT_METADATA[intent];
+    
+    // Check if model supports this intent
+    if (intent === INTENTS.IMAGE) {
+      if (!modelSupportsImageGeneration(selectedModel)) return;
+    }
+
     commands.push({
-      id: "image",
-      label: "/image",
-      description: "Generate an image from a text prompt",
-      icon: <Image className="h-4 w-4" />,
-      insertText: "/image ",
-      requiresModel: (model) => {
-        return modelSupportsImageGeneration(model);
-      },
+      intent,
+      label: `/${intent}`,
+      description: metadata.description,
+      icon: metadata.icon,
+      requiresModel: intent === INTENTS.IMAGE 
+        ? (model) => modelSupportsImageGeneration(model)
+        : undefined,
     });
-  }
-
-  // commands.push({
-  //   id: "prompt",
-  //   label: "/prompt",
-  //   description: "Use a saved prompt template",
-  //   icon: <Sparkles className="h-4 w-4" />,
-  //   insertText: "/prompt ",
-  // });
+  });
 
   return commands;
 };

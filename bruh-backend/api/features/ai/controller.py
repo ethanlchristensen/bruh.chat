@@ -42,59 +42,40 @@ class AIController:
         message: str = Form(...), # type: ignore
         conversation_id: Optional[str] = Form(None), # type: ignore
         model: Optional[str] = Form(None), # type: ignore
+        intent: Optional[str] = Form("chat"),  # type: ignore - "chat" or "image"
+        aspect_ratio: Optional[str] = Form("1:1"), # type: ignore
         files: List[UploadedFile] = File(None), # type: ignore
     ):
         """
-        Stream chat responses with real-time updates.
-        Supports file attachments for vision models.
+        Unified streaming endpoint for chat and image generation.
+        - intent: "chat" (default) or "image"
+        - aspect_ratio: Only used for image generation
         """
         user = request.auth
         conv_id = UUID(conversation_id) if conversation_id else None
 
         async def async_event_generator() -> AsyncIterator[str]:
-            """Native async generator - works with ASGI"""
-            async_gen = self.chat_orchestration_service.chat_stream(
+            async_gen = self.chat_orchestration_service.unified_stream(
                 user=user,
-                user_content=message,
+                message=message,
                 model=model or self.open_router_service.default_model,
                 conversation_id=conv_id,
                 files=files or [], # type: ignore
+                intent=intent or "chat",
+                aspect_ratio=aspect_ratio or "1:1",
             )
             async for chunk in async_gen:
                 yield f"data: {chunk}\n\n"
 
         response = StreamingHttpResponse(
-            streaming_content=async_event_generator(), content_type="text/event-stream"
+            streaming_content=async_event_generator(), 
+            content_type="text/event-stream"
         )
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
 
         return response
-
-    @route.post("/images/generate/stream")
-    async def generate_image_stream(self, request, data: ImageGenerationRequest):
-        """Stream image generation with progress updates"""
-        user = request.auth
-
-        async def async_event_generator() -> AsyncIterator[str]:
-            async_gen = self.image_generation_service.generate_image_stream(
-                user=user,
-                prompt=data.prompt,
-                model=data.model or "google/gemini-2.0-flash-exp:free",
-                conversation_id=data.conversation_id,
-                aspect_ratio=data.aspect_ratio,
-            )
-            async for chunk in async_gen:
-                yield f"data: {chunk}\n\n"
-
-        response = StreamingHttpResponse(
-            streaming_content=async_event_generator(), content_type="text/event-stream"
-        )
-        response["Cache-Control"] = "no-cache"
-        response["X-Accel-Buffering"] = "no"
-
-        return response
-
+    
     @route.get("/models")
     async def models(self, request):
         return await self.open_router_service.models()

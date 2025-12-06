@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from api.features.ai.models import OpenRouterResponse
 from api.features.ai.services.open_router_service import get_open_router_service
 from api.features.ai.services.ai_title_service import get_title_generation_service
-from api.features.conversations.models import Message, MessageAttachment
+from api.features.conversations.models import Message, MessageAttachment, GeneratedImage
 from api.features.conversations.services import ConversationService, MessageService
 
 logger = logging.getLogger(__name__)
@@ -106,290 +106,363 @@ class ChatOrchestrationService:
         return {"role": "user", "content": content_parts}
 
     @staticmethod
-    async def chat(
+    async def unified_stream(
         user,
-        user_content: str,
+        message: str,
         model: str,
         conversation_id: UUID | None = None,
         files: List[UploadedFile] | None = None,
+        intent: str = "chat",  # "chat" or "image"
+        aspect_ratio: str = "1:1",
     ):
+        """
+        Unified streaming that routes to chat or image generation based on intent.
+        """
         try:
-            if conversation_id is None:
-                conversation = (
-                    await ConversationService.create_conversation_from_message(
-                        user=user, first_message=user_content
-                    )
-                )
-            else:
-                conversation = await ConversationService.get_conversation(
-                    conversation_id=conversation_id, user=user
-                )
-
-            user_message = await MessageService.create_message(
-                conversation=conversation, role="user", content=user_content
-            )
-
-            # Save file attachments if any
-            attachments = []
-            if files:
-                attachments = await ChatOrchestrationService._save_attachments(
-                    user_message, files
-                )
-
-            message_history = await MessageService.get_message_history_for_open_router(
-                conversation=conversation
-            )
-
-            # Replace the last user message with multimodal version if attachments exist
-            if attachments:
-                message_with_files = await ChatOrchestrationService._build_message_with_attachments(
-                    user_content, attachments
-                )
-                message_history[-1] = message_with_files
-
             open_router_service = get_open_router_service()
-            open_router_response = await open_router_service.chat_with_messages(
-                messages=message_history, model=model
-            )
-
-            assistant_content = open_router_response["choices"][0]["message"]["content"]
-
-            @sync_to_async
-            def create_assistant_response():
-                with transaction.atomic():
-                    assistant_message = Message.objects.create(
-                        conversation=conversation,
-                        role="assistant",
-                        content=assistant_content,
-                        model_id=model,
-                    )
-
-                    usage = open_router_response.get("usage", {})
-                    api_response = OpenRouterResponse.objects.create(
-                        message=assistant_message,
-                        raw_payload=open_router_response,
-                        request_id=open_router_response.get("id", ""),
-                        model_used=open_router_response.get("model", ""),
-                        finish_reason=(
-                            open_router_response["choices"][0].get("finish_reason")
-                            if open_router_response.get("choices")
-                            else None
-                        ),
-                        prompt_tokens=usage.get("prompt_tokens"),
-                        completion_tokens=usage.get("completion_tokens"),
-                        total_tokens=usage.get("total_tokens"),
-                    )
-                    return assistant_message, api_response
-
-            assistant_message, api_response = await create_assistant_response()
-
-            await ConversationService.update_conversation_timestamp(
-                conversation=conversation
-            )
-
-            return ChatSuccessResponse(
-                conversation_id=conversation.id,
-                user_message=user_message,
-                assistant_message=assistant_message,
-                api_response=api_response,
-            )
-
+            
+            # Validate aspect ratio for image generation
+            if intent == "image" and not open_router_service.validate_aspect_ratio(aspect_ratio):
+                logger.warning(f"Invalid aspect ratio '{aspect_ratio}', using default")
+                aspect_ratio = open_router_service.DEFAULT_ASPECT_RATIO
+            
+            # Send intent confirmation
+            yield json.dumps({
+                "type": "intent",
+                "intent": intent,
+                "model": model,
+                "aspect_ratio": aspect_ratio if intent == "image" else None,
+            }) + "\n"
+            
+            # Route based on intent
+            if intent == "image":
+                logger.info("Routing to image generation, image intent was recieved.")
+                async for chunk in ChatOrchestrationService._image_generation_stream(
+                    user=user,
+                    prompt=message,
+                    model=model,
+                    conversation_id=conversation_id,
+                    aspect_ratio=aspect_ratio,
+                ):
+                    yield chunk
+            else:
+                # Use chat flow
+                async for chunk in ChatOrchestrationService._chat_stream(
+                    user=user,
+                    message=message,
+                    model=model,
+                    conversation_id=conversation_id,
+                    files=files,
+                ):
+                    yield chunk
+                    
         except Exception as e:
-            logger.error(f"Chat flow error: {str(e)}", exc_info=True)
-            return ChatErrorResponse(conversation_id=conversation_id, error=str(e))
+            logger.error(f"Unified stream error: {str(e)}", exc_info=True)
+            yield json.dumps({
+                "type": "error",
+                "error": str(e),
+                "conversation_id": str(conversation_id) if conversation_id else None,
+            }) + "\n"
 
     @staticmethod
-    async def chat_stream(
+    async def _chat_stream(
         user,
-        user_content: str,
+        message: str,
         model: str,
         conversation_id: UUID | None = None,
         files: List[UploadedFile] | None = None,
     ):
-        """Stream chat responses with file attachment support"""
-        try:
-            # Create or get conversation
-            if conversation_id is None:
-                conversation = (
-                    await ConversationService.create_conversation_from_message(
-                        user=user, first_message=user_content
-                    )
+        """Internal chat streaming logic"""
+        # Create or get conversation
+        if conversation_id is None:
+            conversation = (
+                await ConversationService.create_conversation_from_message(
+                    user=user, first_message=message
                 )
-            else:
-                conversation = await ConversationService.get_conversation(
-                    conversation_id=conversation_id, user=user
-                )
-
-            # Create user message
-            user_message = await MessageService.create_message(
-                conversation=conversation, role="user", content=user_content
+            )
+        else:
+            conversation = await ConversationService.get_conversation(
+                conversation_id=conversation_id, user=user
             )
 
-            # Save file attachments if any
-            attachments = []
-            if files:
-                attachments = await ChatOrchestrationService._save_attachments(
-                    user_message, files
-                )
+        # Create user message
+        user_message = await MessageService.create_message(
+            conversation=conversation, role="user", content=message
+        )
 
-            # Send initial metadata
-            yield (
-                json.dumps(
-                    {
-                        "type": "metadata",
-                        "conversation_id": str(conversation.id),
-                        "user_message_id": str(user_message.id),
-                        "has_attachments": len(attachments) > 0,
-                    }
-                )
-                + "\n"
+        # Save file attachments if any
+        attachments = []
+        if files:
+            attachments = await ChatOrchestrationService._save_attachments(
+                user_message, files
             )
 
-            # Get message history
-            message_history = await MessageService.get_message_history_for_open_router(
-                conversation=conversation
+        # Send initial metadata
+        yield json.dumps({
+            "type": "metadata",
+            "conversation_id": str(conversation.id),
+            "user_message_id": str(user_message.id),
+            "has_attachments": len(attachments) > 0,
+        }) + "\n"
+
+        # Get message history
+        message_history = await MessageService.get_message_history_for_open_router(
+            conversation=conversation
+        )
+
+        # Replace last user message with multimodal version if attachments exist
+        if attachments:
+            message_with_files = await ChatOrchestrationService._build_message_with_attachments(
+                message, attachments
+            )
+            message_history[-1] = message_with_files
+
+        # Stream the response
+        open_router_service = get_open_router_service()
+        full_content = ""
+        finish_reason = None
+        usage_data = {}
+        request_id = ""
+        model_used = ""
+
+        async for chunk_data in open_router_service.chat_with_messages_stream(
+            messages=message_history, model=model
+        ):
+            try:
+                chunk = json.loads(chunk_data)
+
+                # Extract content delta
+                if chunk.get("choices") and len(chunk["choices"]) > 0:
+                    choice = chunk["choices"][0]
+                    delta = choice.get("delta", {})
+
+                    if "content" in delta and delta["content"]:
+                        content_chunk = delta["content"]
+                        full_content += content_chunk
+
+                        # Send content chunk
+                        yield json.dumps({
+                            "type": "content",
+                            "delta": content_chunk
+                        }) + "\n"
+
+                    # Check for finish reason
+                    if choice.get("finish_reason"):
+                        finish_reason = choice["finish_reason"]
+
+                # Capture metadata
+                if chunk.get("id"):
+                    request_id = chunk["id"]
+                if chunk.get("model"):
+                    model_used = chunk["model"]
+                if chunk.get("usage"):
+                    usage_data = chunk["usage"]
+
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse streaming chunk: {chunk_data}")
+                continue
+
+        # Save assistant message and response
+        @sync_to_async
+        def create_assistant_response(model_data):
+            with transaction.atomic():
+                assistant_message = Message.objects.create(
+                    conversation=conversation,
+                    role="assistant",
+                    content=full_content,
+                    model_id=model_used,
+                )
+
+                pricing_data = model_data.get("pricing", {})
+                prompt_cost = float(pricing_data.get("prompt", 0)) * usage_data.get(
+                    "prompt_tokens", 0
+                )
+                completion_cost = float(
+                    pricing_data.get("completion", 0)
+                ) * usage_data.get("completion_tokens", 0)
+
+                api_response = OpenRouterResponse.objects.create(
+                    message=assistant_message,
+                    raw_payload={"streamed": True, "usage": usage_data},
+                    request_id=request_id,
+                    model_used=model_used,
+                    finish_reason=finish_reason,
+                    prompt_tokens=usage_data.get("prompt_tokens"),
+                    completion_tokens=usage_data.get("completion_tokens"),
+                    total_tokens=usage_data.get("total_tokens"),
+                    estimated_prompt_cost=prompt_cost,
+                    estimated_completion_cost=completion_cost,
+                )
+                return assistant_message, api_response
+
+        model_data = await open_router_service.get_model_by_id(model_id=model_used)
+        assistant_message, api_response = await create_assistant_response(
+            model_data=model_data
+        )
+        await ConversationService.update_conversation_timestamp(
+            conversation=conversation
+        )
+
+        title_service = get_title_generation_service()
+        if await title_service.should_generate_title(user=user, conversation=conversation):
+            asyncio.create_task(
+                title_service.generate_and_update_title(
+                    user=user, conversation=conversation
+                )
             )
 
-            # Replace last user message with multimodal version if attachments exist
-            if attachments:
-                message_with_files = await ChatOrchestrationService._build_message_with_attachments(
-                    user_content, attachments
+        # Send completion metadata
+        yield json.dumps({
+            "type": "done",
+            "assistant_message_id": str(assistant_message.id),
+            "usage": {
+                "prompt_tokens": api_response.prompt_tokens,
+                "completion_tokens": api_response.completion_tokens,
+                "total_tokens": api_response.total_tokens,
+                "prompt_cost": (
+                    api_response.estimated_prompt_cost
+                    if api_response.estimated_prompt_cost
+                    else None
+                ),
+                "completion_cost": (
+                    api_response.estimated_completion_cost
+                    if api_response.estimated_completion_cost
+                    else None
+                ),
+            },
+        }) + "\n"
+
+    @staticmethod
+    async def _image_generation_stream(
+        user,
+        prompt: str,
+        model: str,
+        conversation_id: UUID | None = None,
+        aspect_ratio: str = "1:1",
+    ):
+        """Internal image generation streaming logic"""
+        # Create or get conversation
+        if conversation_id is None:
+            conversation = (
+                await ConversationService.create_conversation_from_message(
+                    user=user, first_message=f"Generate: {prompt}"
                 )
-                message_history[-1] = message_with_files
+            )
+        else:
+            conversation = await ConversationService.get_conversation(
+                conversation_id=conversation_id, user=user
+            )
 
-            # Stream the response
-            open_router_service = get_open_router_service()
-            full_content = ""
-            finish_reason = None
-            usage_data = {}
-            request_id = ""
-            model_used = ""
+        # Create user message
+        user_message = await MessageService.create_message(
+            conversation=conversation, role="user", content=prompt
+        )
 
-            async for chunk_data in open_router_service.chat_with_messages_stream(
-                messages=message_history, model=model
-            ):
-                try:
-                    chunk = json.loads(chunk_data)
+        # Send metadata
+        yield json.dumps({
+            "type": "metadata",
+            "conversation_id": str(conversation.id),
+            "user_message_id": str(user_message.id),
+        }) + "\n"
 
-                    # Extract content delta
-                    if chunk.get("choices") and len(chunk["choices"]) > 0:
-                        choice = chunk["choices"][0]
-                        delta = choice.get("delta", {})
+        # Stream image generation
+        open_router_service = get_open_router_service()
+        assistant_content = ""
+        images_data = []
+        usage_data = {}
+        model_used = model
 
-                        if "content" in delta and delta["content"]:
-                            content_chunk = delta["content"]
-                            full_content += content_chunk
+        async for chunk_data in open_router_service.generate_image_stream(
+            prompt=prompt, model=model, aspect_ratio=aspect_ratio
+        ):
+            try:
+                chunk = json.loads(chunk_data)
 
-                            # Send content chunk
-                            yield json.dumps(
-                                {"type": "content", "delta": content_chunk}
-                            ) + "\n"
+                if chunk.get("choices") and len(chunk["choices"]) > 0:
+                    choice = chunk["choices"][0]
+                    delta = choice.get("delta", {})
 
-                        # Check for finish reason
-                        if choice.get("finish_reason"):
-                            finish_reason = choice["finish_reason"]
+                    # Handle text content
+                    if "content" in delta and delta["content"]:
+                        content_chunk = delta["content"]
+                        assistant_content += content_chunk
+                        yield json.dumps({
+                            "type": "content",
+                            "delta": content_chunk
+                        }) + "\n"
 
-                    # Capture metadata
-                    if chunk.get("id"):
-                        request_id = chunk["id"]
-                    if chunk.get("model"):
-                        model_used = chunk["model"]
-                    if chunk.get("usage"):
-                        usage_data = chunk["usage"]
+                    # Handle images
+                    if "images" in delta:
+                        images_data.extend(delta["images"])
+                        yield json.dumps({
+                            "type": "image_progress",
+                            "message": "Image being generated..."
+                        }) + "\n"
 
-                except json.JSONDecodeError:
-                    logger.warning(f"Failed to parse streaming chunk: {chunk_data}")
-                    continue
+                if chunk.get("model"):
+                    model_used = chunk["model"]
+                if chunk.get("usage"):
+                    usage_data = chunk["usage"]
 
-            # Save assistant message and response
-            @sync_to_async
-            def create_assistant_response(model_data):
-                with transaction.atomic():
-                    assistant_message = Message.objects.create(
-                        conversation=conversation,
-                        role="assistant",
-                        content=full_content,
-                        model_id=model_used,
-                    )
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse chunk: {chunk_data}")
+                continue
 
-                    pricing_data = model_data.get("pricing", {})
-                    prompt_cost = float(pricing_data.get("prompt", 0)) * usage_data.get(
-                        "prompt_tokens", 0
-                    )
-                    completion_cost = float(
-                        pricing_data.get("completion", 0)
-                    ) * usage_data.get("completion_tokens", 0)
+        # Save results
+        @sync_to_async
+        def save_results():
+            with transaction.atomic():
+                assistant_message = Message.objects.create(
+                    conversation=conversation,
+                    role="assistant",
+                    content=assistant_content or "Image generated successfully",
+                    model_id=model_used,
+                )
 
-                    api_response = OpenRouterResponse.objects.create(
+                generated_images = []
+                for img_data in images_data:
+                    base64_url = img_data["image_url"]["url"]
+                    generated_image = GeneratedImage.save_from_base64(
                         message=assistant_message,
-                        raw_payload={"streamed": True, "usage": usage_data},
-                        request_id=request_id,
+                        base64_data=base64_url,
+                        prompt=prompt,
                         model_used=model_used,
-                        finish_reason=finish_reason,
-                        prompt_tokens=usage_data.get("prompt_tokens"),
-                        completion_tokens=usage_data.get("completion_tokens"),
-                        total_tokens=usage_data.get("total_tokens"),
-                        estimated_prompt_cost=prompt_cost,
-                        estimated_completion_cost=completion_cost,
+                        aspect_ratio=aspect_ratio,
                     )
-                    return assistant_message, api_response
+                    generated_images.append(generated_image)
 
-            model_data = await open_router_service.get_model_by_id(model_id=model_used)
-            assistant_message, api_response = await create_assistant_response(
-                model_data=model_data
-            )
-            await ConversationService.update_conversation_timestamp(
-                conversation=conversation
-            )
-
-            title_service = get_title_generation_service()
-            if await title_service.should_generate_title(user=user, conversation=conversation):
-                asyncio.create_task(
-                    title_service.generate_and_update_title(
-                        user=user, conversation=conversation
-                    )
+                api_response = OpenRouterResponse.objects.create(
+                    message=assistant_message,
+                    raw_payload={"streamed": True, "usage": usage_data},
+                    request_id="",
+                    model_used=model_used,
+                    prompt_tokens=usage_data.get("prompt_tokens"),
+                    completion_tokens=usage_data.get("completion_tokens"),
+                    total_tokens=usage_data.get("total_tokens"),
                 )
 
-            # Send completion metadata
-            yield (
-                json.dumps(
-                    {
-                        "type": "done",
-                        "assistant_message_id": str(assistant_message.id),
-                        "usage": {
-                            "prompt_tokens": api_response.prompt_tokens,
-                            "completion_tokens": api_response.completion_tokens,
-                            "total_tokens": api_response.total_tokens,
-                            "prompt_cost": (
-                                api_response.estimated_prompt_cost
-                                if api_response.estimated_prompt_cost
-                                else None
-                            ),
-                            "completition_cost": (
-                                api_response.estimated_completion_cost
-                                if api_response.estimated_completion_cost
-                                else None
-                            ),
-                        },
-                    }
-                )
-                + "\n"
-            )
+                return assistant_message, generated_images, api_response
 
-        except Exception as e:
-            logger.error(f"Chat stream error: {str(e)}", exc_info=True)
-            yield (
-                json.dumps(
-                    {
-                        "type": "error",
-                        "error": str(e),
-                        "conversation_id": (
-                            str(conversation_id) if conversation_id else None
-                        ),
-                    }
-                )
-                + "\n"
-            )
+        assistant_message, generated_images, api_response = await save_results()
+        await ConversationService.update_conversation_timestamp(conversation)
+
+        # Send completion
+        yield json.dumps({
+            "type": "done",
+            "assistant_message_id": str(assistant_message.id),
+            "generated_images": [
+                {
+                    "id": str(img.id),
+                    "image_url": img.image.url,
+                }
+                for img in generated_images
+            ],
+            "usage": {
+                "prompt_tokens": api_response.prompt_tokens,
+                "completion_tokens": api_response.completion_tokens,
+                "total_tokens": api_response.total_tokens,
+            },
+        }) + "\n"
 
 
 @lru_cache()

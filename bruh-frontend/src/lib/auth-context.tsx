@@ -10,10 +10,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api-client";
 import type { AuthTokens, User } from "@/types/api";
 
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   login: (username: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -137,12 +146,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
   };
 
+  const register = async (data: RegisterData) => {
+    console.log("[AuthProvider] Registering new user:", data.username);
+    try {
+      await api.post("/auth/register", data);
+      console.log("[AuthProvider] Registration successful!");
+    } catch (error: any) {
+      console.error("[AuthProvider] Registration failed:", error);
+      const errorMessage = error.response?.data?.detail || error.message;
+      throw new Error(errorMessage);
+    }
+  };
+
   const logout = () => {
     console.log("[AuthProvider] Logging out user");
     setTokens(null);
     localStorage.removeItem("auth_tokens");
     queryClient.setQueryData(["auth", "user"], null);
-    queryClient.clear(); // Clear all cached data on logout
+    queryClient.clear();
   };
 
   return (
@@ -151,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: user ?? null,
         tokens,
         login,
+        register,
         logout,
         refreshUser,
         isAuthenticated: !!user && !!tokens,

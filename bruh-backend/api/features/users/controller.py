@@ -2,7 +2,8 @@ from typing import List
 
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
-from ninja import File
+from django.contrib.auth.hashers import make_password
+from ninja import File, Router
 from ninja.files import UploadedFile
 from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
@@ -17,12 +18,12 @@ from .schemas import (
     BulkAddModelsSchema,
     RemoveModelSchema,
     BulkOperationResponseSchema,
+    UserRegistrationSchema
 )
 from .models import Profile
 from api.features.ai.schemas import OpenRouterModelSchema
 from .services.user_helper_service import UserHelperService
 from api.features.ai.services.open_router_service import get_open_router_service
-
 
 @api_controller("/users", auth=JWTAuth(), tags=["Users"])
 class UserController:
@@ -32,7 +33,7 @@ class UserController:
                 user.profile.profile_image.url
             )
         return user
-
+    
     @route.get("/me", response=UserSchema)
     def get_current_user(self, request):
         return request.user
@@ -134,3 +135,25 @@ class UserController:
         if not success:
             return 404, {"detail": error}
         return 200, {"message": "Model removed successfully"}
+
+
+@api_controller("/auth", tags=["Auth"])
+class AuthController:
+    @route.post("/register", response={201: UserSchema, 400: dict})
+    def register_user(self, request, data: UserRegistrationSchema):
+        """Public endpoint for user registration"""
+        if User.objects.filter(username=data.username).exists():
+            return 400, {"detail": "Username already exists"}
+        
+        if User.objects.filter(email=data.email).exists():
+            return 400, {"detail": "Email already exists"}
+        
+        user = User.objects.create(
+            username=data.username,
+            email=data.email,
+            password=make_password(data.password),
+            first_name=data.first_name or "",
+            last_name=data.last_name or "",
+        )
+        
+        return 201, user

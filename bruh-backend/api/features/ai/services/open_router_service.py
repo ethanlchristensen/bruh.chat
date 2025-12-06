@@ -14,11 +14,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+
+
 class OpenRouterService:
     MODELS_CACHE_KEY = "openrouter_all_models_data"
     STRUCTURED_MODELS_CACHE_KEY = "openrouter_structured_models_data"
     IMAGE_GEN_MODELS_CACHE_KEY = "openrouter_image_gen_models_data"
     CACHE_TIMEOUT = 60 * 60
+
+    VALID_ASPECT_RATIOS = {
+        "1:1": {"width": 1024, "height": 1024},
+        "2:3": {"width": 832, "height": 1248},
+        "3:2": {"width": 1248, "height": 832},
+        "3:4": {"width": 864, "height": 1184},
+        "4:3": {"width": 1184, "height": 864},
+        "4:5": {"width": 896, "height": 1152},
+        "5:4": {"width": 1152, "height": 896},
+        "9:16": {"width": 768, "height": 1344},
+        "16:9": {"width": 1344, "height": 768},
+        "21:9": {"width": 1536, "height": 672},
+    }
+
+    DEFAULT_ASPECT_RATIO = "1:1"
 
     def __init__(self):
         config = get_config()
@@ -457,6 +474,17 @@ class OpenRouterService:
             data = response.json()
             return data.get("data", [])
 
+    @classmethod
+    def validate_aspect_ratio(cls, aspect_ratio: str) -> bool:
+        return aspect_ratio in cls.VALID_ASPECT_RATIOS
+    
+    @classmethod
+    def get_aspect_ratio_dimensions(cls, aspect_ratio: str) -> dict[str, int] | None:
+        return cls.VALID_ASPECT_RATIOS.get(aspect_ratio)
+
+    @classmethod
+    def get_valid_aspect_ratios(cls) -> list[str]:
+        return list(cls.VALID_ASPECT_RATIOS.keys())
 
 @lru_cache()
 def get_open_router_service() -> OpenRouterService:

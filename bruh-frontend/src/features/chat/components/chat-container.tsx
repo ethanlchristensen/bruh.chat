@@ -3,17 +3,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { useConversation } from "../api/conversation";
-import {
-  useCreateStreamingChat,
-  useCreateStreamingImageGeneration,
-} from "../api/chat";
-import {
-  useUserAvailableModels,
-  modelSupportsImageGeneration,
-} from "@/components/shared/model-selector/models";
+import { useCreateStreamingChat } from "../api/chat";
+import { useUserAvailableModels } from "@/components/shared/model-selector/models";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
+import { INTENTS } from "@/types/intent";
 import type { ConversationsResponse, Conversation, Message } from "@/types/api";
+import type { Intent } from "@/types/intent";
+import type { AspectRatio } from "@/types/image";
 
 type ChatContainerProps = {
   conversationId: string | undefined;
@@ -26,9 +23,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
-    null,
-  );
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>(
     () => {
@@ -85,7 +80,6 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   };
 
   const createChatMutation = useCreateStreamingChat();
-  const createImageMutation = useCreateStreamingImageGeneration();
 
   const finalize = () => {
     const data = doneDataRef.current;
@@ -152,7 +146,6 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const animateContent = (tempAssistantId: string) => {
     if (!isStreamingRef.current) return;
 
-    // Condition 1: Animate text if there is any to show.
     if (displayedContentRef.current.length < contentBufferRef.current.length) {
       const charsToAdd = Math.min(
         3,
@@ -169,63 +162,30 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
             : msg,
         ),
       );
-    }
-    // Condition 2: If text is done animating (or there was no text), and the stream is finished, finalize.
-    else if (isDoneStreamingRef.current) {
+    } else if (isDoneStreamingRef.current) {
       isStreamingRef.current = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
       finalize();
-      return; // Stop the loop
+      return;
     }
 
-    // Keep the loop going.
     animationFrameRef.current = requestAnimationFrame(() =>
       animateContent(tempAssistantId),
     );
   };
 
-  const handleSendMessage = (message: string, files?: File[]) => {
-    const isImageGen =
-      message.trim().startsWith("/image") &&
-      modelSupportsImageGeneration(selectedModel);
-
-    if (isImageGen) {
-      const prompt = message.trim().replace(/^\/image\s*/, "");
-      if (prompt) {
-        const requestData = {
-          conversation_id: conversationId,
-          prompt,
-          model: selectedModelId,
-        };
-        initiateStream(message, undefined, createImageMutation, requestData);
-      }
-    } else {
-      const requestData = {
-        conversation_id: conversationId,
-        message,
-        model: selectedModelId,
-        files,
-      };
-      initiateStream(message, files, createChatMutation, requestData);
-    }
-  };
-
-  const initiateStream = (
-    fullMessage: string,
-    files: File[] | undefined,
-    mutation: any,
-    requestData: any,
-  ) => {
+  const handleSendMessage = (message: string, files?: File[], intent: Intent = INTENTS.CHAT, aspectRatio?: AspectRatio) => {
     const tempUserId = `temp-user-${Date.now()}`;
     const tempAssistantId = `temp-assistant-${Date.now()}`;
     tempAssistantIdRef.current = tempAssistantId;
     newConversationIdRef.current = undefined;
 
-    if (animationFrameRef.current)
+    if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+    }
 
     contentBufferRef.current = "";
     displayedContentRef.current = "";
@@ -245,7 +205,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       ...prev,
       {
         role: "user",
-        content: fullMessage,
+        content: message,
         id: tempUserId,
         conversation_id: conversationId || "",
         created_at: Date.now(),
@@ -264,9 +224,19 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
     setStreamingMessageId(tempAssistantId);
 
-    mutation.mutate({
-      data: requestData,
+    createChatMutation.mutate({
+      data: {
+        message,
+        conversation_id: conversationId,
+        model: selectedModelId,
+        files,
+        intent,
+        aspect_ratio: aspectRatio
+      },
       callbacks: {
+        onIntent: (data: any) => {
+          console.log("Intent:", data.intent, "Model:", data.model);
+        },
         onMetadata: (data: any) => {
           if (!conversationId && data.conversation_id) {
             newConversationIdRef.current = data.conversation_id;
@@ -276,9 +246,9 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
               (old) => {
                 if (!old) return old;
                 const title =
-                  fullMessage.length > 50
-                    ? fullMessage.substring(0, 50) + "..."
-                    : fullMessage;
+                  message.length > 50
+                    ? message.substring(0, 50) + "..."
+                    : message;
                 const newConversation: Conversation = {
                   id: data.conversation_id,
                   title,
@@ -314,8 +284,9 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         onError: (data: any) => {
           console.error("Streaming error:", data.error);
           isStreamingRef.current = false;
-          if (animationFrameRef.current)
+          if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
+          }
           setMessages((prev) =>
             prev.filter((msg) => msg.id !== tempAssistantId),
           );
@@ -337,17 +308,15 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <MessageList
         messages={messages}
-        isLoading={
-          (createChatMutation.isPending || createImageMutation.isPending) &&
-          streamingMessageId === null
-        }
+        isLoading={createChatMutation.isPending && streamingMessageId === null}
       />
       <MessageInput
         onSend={handleSendMessage}
-        disabled={createChatMutation.isPending || createImageMutation.isPending}
+        disabled={createChatMutation.isPending}
         selectedModelId={selectedModelId}
         selectedModel={selectedModel}
         onModelSelect={handleModelSelect}
+        conversationId={conversationId}
       />
     </div>
   );

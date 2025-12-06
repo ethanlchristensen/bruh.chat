@@ -1,36 +1,43 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type {
-  ChatRequest,
-  ImageGenerationChatRequest,
-  GeneratedImage,
-} from "@/types/api";
+import type { ChatRequest, GeneratedImage } from "@/types/api";
+import type { Intent } from "@/types/intent";
 
 type StreamEvent =
-  | { type: "metadata"; conversation_id: string; user_message_id: string }
+  | { 
+      type: "intent"; 
+      intent: Intent; 
+      model: string; 
+      aspect_ratio?: string 
+    }
+  | { 
+      type: "metadata"; 
+      conversation_id: string; 
+      user_message_id: string;
+      has_attachments?: boolean;
+    }
   | { type: "content"; delta: string }
-  | { type: "image_metadata"; conversation_id: string; user_message_id: string }
   | { type: "image_progress"; message: string }
   | {
       type: "done";
       assistant_message_id: string;
-      usage: Record<string, any>;
+      usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+        prompt_cost?: number;
+        completion_cost?: number;
+      };
       generated_images?: GeneratedImage[];
-    }
-  | {
-      type: "image_done";
-      assistant_message_id: string;
-      generated_images: GeneratedImage[];
     }
   | { type: "error"; error: string; conversation_id?: string };
 
 type StreamCallbacks = {
-  onMetadata?: (data: any) => void;
+  onIntent?: (data: Extract<StreamEvent, { type: "intent" }>) => void;
+  onMetadata?: (data: Extract<StreamEvent, { type: "metadata" }>) => void;
   onContent?: (data: Extract<StreamEvent, { type: "content" }>) => void;
-  onImageProgress?: (
-    data: Extract<StreamEvent, { type: "image_progress" }>,
-  ) => void;
-  onDone?: (data: any) => void;
+  onImageProgress?: (data: Extract<StreamEvent, { type: "image_progress" }>) => void;
+  onDone?: (data: Extract<StreamEvent, { type: "done" }>) => void;
   onError?: (data: Extract<StreamEvent, { type: "error" }>) => void;
 };
 
@@ -59,24 +66,32 @@ const processStream = async (
 
       for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
+
         try {
           const event = JSON.parse(line.slice(6)) as StreamEvent;
+
           switch (event.type) {
+            case "intent":
+              callbacks.onIntent?.(event);
+              break;
+
             case "metadata":
-            case "image_metadata":
               callbacks.onMetadata?.(event);
               break;
+
             case "content":
               callbacks.onContent?.(event);
               await sleep(10);
               break;
+
             case "image_progress":
               callbacks.onImageProgress?.(event);
               break;
+
             case "done":
-            case "image_done":
               callbacks.onDone?.(event);
               break;
+
             case "error":
               callbacks.onError?.(event);
               break;
@@ -102,10 +117,13 @@ export const createStreamingChat = async ({
   callbacks: StreamCallbacks;
 }): Promise<void> => {
   const formData = new FormData();
+
   if (data.message) formData.append("message", data.message);
-  if (data.conversation_id)
-    formData.append("conversation_id", data.conversation_id);
+  if (data.conversation_id) formData.append("conversation_id", data.conversation_id);
   if (data.model) formData.append("model", data.model);
+  if (data.intent) formData.append("intent", data.intent);
+  if (data.aspect_ratio) formData.append("aspect_ratio", data.aspect_ratio);
+
   if (data.files && data.files.length > 0) {
     data.files.forEach((file) => formData.append("files", file));
   }
@@ -117,31 +135,6 @@ export const createStreamingChat = async ({
   await processStream(stream, callbacks);
 };
 
-export const createStreamingImageGeneration = async ({
-  data,
-  callbacks,
-}: {
-  data: ImageGenerationChatRequest;
-  callbacks: StreamCallbacks;
-}): Promise<void> => {
-  const stream = await api.post<ReadableStream>(
-    "/ai/images/generate/stream",
-    data,
-    {
-      headers: {
-        Accept: "text/event-stream",
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  await processStream(stream, callbacks);
-};
-
 export const useCreateStreamingChat = () => {
   return useMutation({ mutationFn: createStreamingChat });
-};
-
-export const useCreateStreamingImageGeneration = () => {
-  return useMutation({ mutationFn: createStreamingImageGeneration });
 };

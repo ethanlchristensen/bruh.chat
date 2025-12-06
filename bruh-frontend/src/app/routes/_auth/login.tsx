@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import * as React from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -74,10 +74,24 @@ function LoginPage() {
               autoComplete="current-password"
             />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
+
+          <div className="text-center text-sm">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Create account
+            </Link>
+          </div>
         </form>
       </CardContent>
     </Card>
