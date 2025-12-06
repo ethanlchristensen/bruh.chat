@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_auth")({
   beforeLoad: ({ location }) => {
+    console.loge(location);
     const tokens = localStorage.getItem("auth_tokens");
 
     if (tokens) {

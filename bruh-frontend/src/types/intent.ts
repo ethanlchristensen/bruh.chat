@@ -1,5 +1,3 @@
-import { Image, MessageSquare } from "lucide-react";
-
 export const INTENTS = {
   CHAT: 'chat',
   IMAGE: 'image',

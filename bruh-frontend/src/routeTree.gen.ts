@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './app/routes/__root'
 import { Route as ProtectedRouteImport } from './app/routes/_protected'
 import { Route as AuthRouteImport } from './app/routes/_auth'
-import { Route as ProtectedIndexRouteImport } from './app/routes/_protected/index'
 import { Route as ProtectedProfileRouteImport } from './app/routes/_protected/profile'
 import { Route as ProtectedAboutRouteImport } from './app/routes/_protected/about'
 import { Route as AuthRegisterRouteImport } from './app/routes/_auth/register'
@@ -25,11 +24,6 @@ const ProtectedRoute = ProtectedRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedProfileRoute = ProtectedProfileRouteImport.update({
   id: '/profile',
@@ -63,7 +57,6 @@ export interface FileRoutesByFullPath {
   '/register': typeof AuthRegisterRoute
   '/about': typeof ProtectedAboutRoute
   '/profile': typeof ProtectedProfileRoute
-  '/': typeof ProtectedIndexRoute
   '/chat/$conversationId': typeof ProtectedChatConversationIdRoute
 }
 export interface FileRoutesByTo {
@@ -71,7 +64,6 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/about': typeof ProtectedAboutRoute
   '/profile': typeof ProtectedProfileRoute
-  '/': typeof ProtectedIndexRoute
   '/chat/$conversationId': typeof ProtectedChatConversationIdRoute
 }
 export interface FileRoutesById {
@@ -82,7 +74,6 @@ export interface FileRoutesById {
   '/_auth/register': typeof AuthRegisterRoute
   '/_protected/about': typeof ProtectedAboutRoute
   '/_protected/profile': typeof ProtectedProfileRoute
-  '/_protected/': typeof ProtectedIndexRoute
   '/_protected/chat/$conversationId': typeof ProtectedChatConversationIdRoute
 }
 export interface FileRouteTypes {
@@ -92,16 +83,9 @@ export interface FileRouteTypes {
     | '/register'
     | '/about'
     | '/profile'
-    | '/'
     | '/chat/$conversationId'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/login'
-    | '/register'
-    | '/about'
-    | '/profile'
-    | '/'
-    | '/chat/$conversationId'
+  to: '/login' | '/register' | '/about' | '/profile' | '/chat/$conversationId'
   id:
     | '__root__'
     | '/_auth'
@@ -110,7 +94,6 @@ export interface FileRouteTypes {
     | '/_auth/register'
     | '/_protected/about'
     | '/_protected/profile'
-    | '/_protected/'
     | '/_protected/chat/$conversationId'
   fileRoutesById: FileRoutesById
 }
@@ -134,13 +117,6 @@ declare module '@tanstack/react-router' {
       fullPath: ''
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_protected/': {
-      id: '/_protected/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof ProtectedIndexRouteImport
-      parentRoute: typeof ProtectedRoute
     }
     '/_protected/profile': {
       id: '/_protected/profile'
@@ -195,14 +171,12 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface ProtectedRouteChildren {
   ProtectedAboutRoute: typeof ProtectedAboutRoute
   ProtectedProfileRoute: typeof ProtectedProfileRoute
-  ProtectedIndexRoute: typeof ProtectedIndexRoute
   ProtectedChatConversationIdRoute: typeof ProtectedChatConversationIdRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAboutRoute: ProtectedAboutRoute,
   ProtectedProfileRoute: ProtectedProfileRoute,
-  ProtectedIndexRoute: ProtectedIndexRoute,
   ProtectedChatConversationIdRoute: ProtectedChatConversationIdRoute,
 }
 
