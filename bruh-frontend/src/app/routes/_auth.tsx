@@ -1,14 +1,13 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_auth")({
-  beforeLoad: ({ location }) => {
-    console.loge(location);
+  beforeLoad: () => {
     const tokens = localStorage.getItem("auth_tokens");
 
     if (tokens) {
       const authTokens = JSON.parse(tokens);
       if (authTokens.expires_at > Date.now()) {
-        throw redirect({ to: "/" });
+        throw redirect({ to: "/login" });
       }
     }
   },
