@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_auth")({
     if (tokens) {
       const authTokens = JSON.parse(tokens);
       if (authTokens.expires_at > Date.now()) {
-        throw redirect({ to: "/login" });
+        throw redirect({ to: "/" });
       }
     }
   },
