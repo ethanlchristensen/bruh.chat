@@ -26,10 +26,10 @@ RUN poetry install --no-root --only main
 COPY . .
 
 ENV DJANGO_SETTINGS_MODULE=config.settings \
-    STATIC_ROOT=/app/staticfiles \
+    STATIC_ROOT=/app/static \
     SECRET_KEY=temp-secret-key-for-build
 
-RUN mkdir -p /app/staticfiles && \
+RUN mkdir -p /app/static && \
     python manage.py collectstatic --noinput
 
 RUN echo '#!/bin/sh\n\
