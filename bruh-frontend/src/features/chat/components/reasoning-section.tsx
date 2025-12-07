@@ -81,14 +81,11 @@ export const ReasoningSection = ({
           {streamingImages.length > 0 && (
             <div className="flex flex-col gap-2 mt-2">
               {streamingImages.map((image) => (
-                <div
-                  key={image.id}
-                  className="rounded overflow-hidden bg-background"
-                >
+                <div key={image.id} className="overflow-hidden bg-background">
                   <img
                     src={`data:image/png;base64,${image.data}`}
                     alt="Reasoning visualization"
-                    className="max-w-full max-h-64 object-contain"
+                    className="rounded max-w-full max-h-64 object-contain"
                   />
                 </div>
               ))}
@@ -99,14 +96,11 @@ export const ReasoningSection = ({
           {images.length > 0 && (
             <div className="flex flex-col gap-2 mt-2">
               {images.map((image) => (
-                <div
-                  key={image.id}
-                  className="rounded overflow-hidden bg-background"
-                >
+                <div key={image.id} className="overflow-hidden bg-background">
                   <img
                     src={getImageUrl(image)}
                     alt="Reasoning visualization"
-                    className="max-w-full max-h-64 object-contain"
+                    className="rounded max-w-full max-h-64 object-contain"
                     onError={(e) => {
                       console.error(
                         "Reasoning image failed to load:",

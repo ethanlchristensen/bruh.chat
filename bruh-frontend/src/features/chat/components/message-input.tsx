@@ -3,11 +3,7 @@ import { Send, Paperclip, X, Image } from "lucide-react";
 import { ModelSelector } from "../../../components/shared/model-selector/model-selector";
 import { modelSupportsFileUploads } from "@/components/shared/model-selector/models";
 import type { OpenRouterModel } from "@/components/shared/model-selector/models";
-import {
-  SlashCommandMenu,
-  getAvailableIntents,
-  type IntentCommand,
-} from "./slash-command-menu";
+import { SlashCommandMenu } from "./slash-command-menu";
 import { IntentParameters } from "./intent-parameters";
 import {
   INTENTS,
@@ -21,6 +17,7 @@ import {
   isValidAspectRatio,
   type AspectRatio,
 } from "@/types/image";
+import { type IntentCommand, getAvailableIntents } from "@/types/intent";
 
 type MessageInputProps = {
   onSend: (

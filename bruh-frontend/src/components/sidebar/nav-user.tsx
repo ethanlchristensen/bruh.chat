@@ -1,7 +1,7 @@
 import { BadgeCheck, ChevronsUpDown, LogOut } from "lucide-react";
 
 import { useNavigate, Link } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/hooks/use-auth";
 import { useCachedProfileImage } from "@/hooks/use-cached-profile-image";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

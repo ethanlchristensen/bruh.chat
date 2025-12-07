@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useWebSocket } from "@/lib/websocket-context";
+import { useWebSocket } from "./use-websocket";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ConversationsResponse } from "@/types/api";
 
@@ -45,36 +45,6 @@ export function useConversationWebSocket(
           );
 
           handlers?.onTitleUpdate?.(conversation_id, payload.new_title || "");
-          break;
-
-        case "new_message":
-          console.log(
-            `[WS] New message in conversation ${conversation_id}:`,
-            payload,
-          );
-
-          queryClient.setQueryData<ConversationsResponse>(
-            ["conversations"],
-            (old) => {
-              if (!old) return old;
-
-              const updatedConversations = old.conversations.map((conv) =>
-                conv.id === conversation_id
-                  ? { ...conv, updated_at: new Date().toISOString() }
-                  : conv,
-              );
-
-              updatedConversations.sort(
-                (a, b) =>
-                  new Date(b.updated_at).getTime() -
-                  new Date(a.updated_at).getTime(),
-              );
-
-              return { conversations: updatedConversations };
-            },
-          );
-
-          handlers?.onNewMessage?.(conversation_id, payload);
           break;
 
         default:

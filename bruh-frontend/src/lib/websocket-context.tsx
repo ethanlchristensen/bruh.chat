@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useAuth } from "./auth-context";
+import { useAuth } from "@/hooks/use-auth";
 import { WebSocketClient } from "./websocket-client";
 import type {
   WebSocketMessage,
@@ -17,6 +17,8 @@ interface WebSocketContextType {
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
+
+export { WebSocketContext };
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
@@ -51,7 +53,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         "[WebSocketProvider] User not authenticated, disconnecting WebSocket...",
       );
       wsClient.disconnect();
-      setIsConnected(false);
     }
 
     return () => {
@@ -86,12 +87,4 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       {children}
     </WebSocketContext.Provider>
   );
-}
-
-export function useWebSocket() {
-  const context = useContext(WebSocketContext);
-  if (!context) {
-    throw new Error("useWebSocket must be used within WebSocketProvider");
-  }
-  return context;
 }

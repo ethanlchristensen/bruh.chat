@@ -1,19 +1,5 @@
 import { useEffect, useRef } from "react";
-import {
-  INTENTS,
-  INTENT_METADATA,
-  type Intent,
-  getIntentIcon,
-} from "@/types/intent";
-import { modelSupportsImageGeneration } from "@/components/shared/model-selector/models";
-import type { OpenRouterModel } from "@/components/shared/model-selector/models";
-
-export type IntentCommand = {
-  intent: Intent;
-  label: string;
-  description: string;
-  requiresModel?: (model: OpenRouterModel | undefined) => boolean;
-};
+import { type Intent, type IntentCommand, getIntentIcon } from "@/types/intent";
 
 type SlashCommandMenuProps = {
   commands: IntentCommand[];
@@ -95,34 +81,4 @@ export const SlashCommandMenu = ({
       </div>
     </div>
   );
-};
-
-export const getAvailableIntents = (
-  selectedModel: OpenRouterModel | undefined,
-): IntentCommand[] => {
-  const commands: IntentCommand[] = [];
-
-  // Only show non-default intents
-  Object.values(INTENTS).forEach((intent) => {
-    if (intent === INTENTS.CHAT) return;
-
-    const metadata = INTENT_METADATA[intent];
-
-    // Check if model supports this intent
-    if (intent === INTENTS.IMAGE) {
-      if (!modelSupportsImageGeneration(selectedModel)) return;
-    }
-
-    commands.push({
-      intent,
-      label: `/${intent}`,
-      description: metadata.description,
-      requiresModel:
-        intent === INTENTS.IMAGE
-          ? (model) => modelSupportsImageGeneration(model)
-          : undefined,
-    });
-  });
-
-  return commands;
 };

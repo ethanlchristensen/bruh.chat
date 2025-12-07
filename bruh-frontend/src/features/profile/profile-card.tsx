@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Loader2, Upload, UserIcon } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/hooks/use-auth";
 import { ModelSelector } from "@/components/shared/model-selector/model-selector";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";

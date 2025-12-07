@@ -6,7 +6,7 @@ import {
   useParams,
   useNavigate,
 } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 import { NavUser } from "@/components/sidebar/nav-user";

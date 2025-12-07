@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/hooks/use-auth";
 import { useConversation } from "../api/conversation";
 import { useCreateStreamingChat } from "../api/chat";
 import { useUserAvailableModels } from "@/components/shared/model-selector/models";
@@ -115,6 +115,15 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     const tempAssistantId = tempAssistantIdRef.current;
     const finalContent = contentBufferRef.current;
 
+    const finalReasoning = reasoningBufferRef.current
+      ? {
+          id: `${data.assistant_message_id}-reasoning`,
+          content: reasoningBufferRef.current,
+          created_at: new Date().toISOString(),
+          generated_reasoning_images: data.generated_reasoning_images || [],
+        }
+      : undefined;
+
     setMessages((prev: Message[]) => {
       const updatedMessages = prev.map((msg) =>
         msg.id === tempAssistantId
@@ -124,7 +133,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
               id: data.assistant_message_id,
               isStreaming: false,
               generated_images: data.generated_images,
-              reasoning: data.reasoning, // Use reasoning from done event
+              reasoning: finalReasoning,
             }
           : msg,
       );

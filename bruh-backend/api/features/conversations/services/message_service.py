@@ -118,17 +118,17 @@ class MessageService:
                             }
                         )
 
-                    for gen_reasoning_image in message.generated_reasoning_images.all():
-                        gen_reasoning_image.image.seek(0)
-                        base64_image = open_router_service.encode_image_to_base64(
-                            gen_reasoning_image.image
-                        )
-                        content_parts.append(
-                            {
-                                "type": "image_url",
-                                "image_url": {"url": f"data:image/png;base64,{base64_image}"},
-                            }
-                        )
+                    # for gen_reasoning_image in message.reasoning.generated_reasoning_images.all():
+                    #     gen_reasoning_image.image.seek(0)
+                    #     base64_image = open_router_service.encode_image_to_base64(
+                    #         gen_reasoning_image.image
+                    #     )
+                    #     content_parts.append(
+                    #         {
+                    #             "type": "image_url",
+                    #             "image_url": {"url": f"data:image/png;base64,{base64_image}"},
+                    #         }
+                    #     )
 
                     messages.append({"role": message.role, "content": content_parts})
                 else:

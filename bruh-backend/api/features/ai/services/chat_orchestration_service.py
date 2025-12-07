@@ -312,7 +312,7 @@ class ChatOrchestrationService:
             with transaction.atomic():
                 # Use default message for images if no content provided
                 message_content = full_content or (
-                    "Image generated successfully"
+                    "Here is your generated image."
                     if intent == "image" and generated_images_data
                     else full_content
                 )
@@ -413,6 +413,9 @@ class ChatOrchestrationService:
                 asyncio.create_task(
                     title_service.generate_and_update_title(user=user, conversation=conversation)
                 )
+
+        if not full_content and generated_images and intent == "image":
+            yield {"type": "content", "delta": "Here is your generated image."}
 
         # Send completion metadata
         completion_data = {

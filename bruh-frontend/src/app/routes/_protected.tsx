@@ -2,7 +2,7 @@ import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { ContentLayout } from "@/components/layouts";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { useNavigate, useMatches } from "@tanstack/react-router";
 
