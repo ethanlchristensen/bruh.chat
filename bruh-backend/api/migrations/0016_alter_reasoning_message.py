@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("api", "0015_add_message_to_reasoning"),
+        ("api", "0014_reasoning_generatedreasoningimage"),
     ]
 
     operations = [
