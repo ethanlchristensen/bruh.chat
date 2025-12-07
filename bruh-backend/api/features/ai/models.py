@@ -3,6 +3,7 @@ from django.db import models
 
 from api.features.conversations.models import Message
 
+
 class OpenRouterResponse(models.Model):
     """Stores raw API responses from OpenRouter for audit, debugging, and analytics"""
 
@@ -18,11 +19,31 @@ class OpenRouterResponse(models.Model):
 
     prompt_tokens = models.IntegerField(null=True, blank=True)
     completion_tokens = models.IntegerField(null=True, blank=True)
+    image_tokens = models.IntegerField(null=True, blank=True)
+    reasoning_tokens = models.IntegerField(null=True, blank=True)
     total_tokens = models.IntegerField(null=True, blank=True)
 
-    estimated_prompt_cost = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
-    estimated_completion_cost = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
-    estimated_image_cost = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    estimated_prompt_cost = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+    estimated_completion_cost = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+    estimated_reasoning_cost = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+
+    upstream_inference_cost = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+    upstream_inference_prompt_cost = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+    upstream_inference_completions_cost = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+
+    cost = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,76 +15,146 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Conversation',
+            name="Conversation",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('deleted', models.BooleanField(default=False)),
-                ('deleted_at', models.DateTimeField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("deleted", models.BooleanField(default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-updated_at'],
+                "ordering": ["-updated_at"],
             },
         ),
         migrations.CreateModel(
-            name='Message',
+            name="Message",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('role', models.CharField(max_length=50)),
-                ('content', models.TextField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('deleted', models.BooleanField(default=False)),
-                ('deleted_at', models.DateTimeField(blank=True, null=True)),
-                ('conversation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='messages', to='api.conversation')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("role", models.CharField(max_length=50)),
+                ("content", models.TextField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("deleted", models.BooleanField(default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "conversation",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="messages",
+                        to="api.conversation",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['created_at'],
+                "ordering": ["created_at"],
             },
         ),
         migrations.CreateModel(
-            name='Profile',
+            name="Profile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('bio', models.TextField(blank=True)),
-                ('profile_image', models.ImageField(blank=True, null=True, upload_to='profile_images/')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("bio", models.TextField(blank=True)),
+                (
+                    "profile_image",
+                    models.ImageField(blank=True, null=True, upload_to="profile_images/"),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='OpenRouterResponse',
+            name="OpenRouterResponse",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('raw_payload', models.JSONField()),
-                ('request_id', models.CharField(db_index=True, max_length=255)),
-                ('model_used', models.CharField(max_length=100)),
-                ('finish_reason', models.CharField(blank=True, max_length=50, null=True)),
-                ('prompt_tokens', models.IntegerField(blank=True, null=True)),
-                ('completion_tokens', models.IntegerField(blank=True, null=True)),
-                ('total_tokens', models.IntegerField(blank=True, null=True)),
-                ('estimated_cost', models.DecimalField(blank=True, decimal_places=6, max_digits=10, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('message', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='api_response', to='api.message')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("raw_payload", models.JSONField()),
+                ("request_id", models.CharField(db_index=True, max_length=255)),
+                ("model_used", models.CharField(max_length=100)),
+                ("finish_reason", models.CharField(blank=True, max_length=50, null=True)),
+                ("prompt_tokens", models.IntegerField(blank=True, null=True)),
+                ("completion_tokens", models.IntegerField(blank=True, null=True)),
+                ("total_tokens", models.IntegerField(blank=True, null=True)),
+                (
+                    "estimated_cost",
+                    models.DecimalField(blank=True, decimal_places=6, max_digits=10, null=True),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "message",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="api_response",
+                        to="api.message",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['-created_at', 'model_used'], name='api_openrou_created_56dd75_idx')],
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["-created_at", "model_used"], name="api_openrou_created_56dd75_idx"
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='UserAddedModel',
+            name="UserAddedModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('model_id', models.CharField(max_length=350)),
-                ('added_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='added_models', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("model_id", models.CharField(max_length=350)),
+                ("added_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="added_models",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-added_at'],
-                'unique_together': {('user', 'model_id')},
+                "ordering": ["-added_at"],
+                "unique_together": {("user", "model_id")},
             },
         ),
     ]

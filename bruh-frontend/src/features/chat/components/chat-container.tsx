@@ -8,7 +8,12 @@ import { useUserAvailableModels } from "@/components/shared/model-selector/model
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { INTENTS } from "@/types/intent";
-import type { ConversationsResponse, Conversation, Message } from "@/types/api";
+import type {
+  ConversationsResponse,
+  Conversation,
+  Message,
+  Reasoning,
+} from "@/types/api";
 import type { Intent } from "@/types/intent";
 import type { AspectRatio } from "@/types/image";
 
@@ -23,7 +28,9 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null,
+  );
 
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>(
     () => {
@@ -46,6 +53,11 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const doneDataRef = useRef<any>(null);
   const newConversationIdRef = useRef<string | undefined>(undefined);
   const tempAssistantIdRef = useRef<string>("");
+  const reasoningBufferRef = useRef<string>("");
+  const reasoningStreamingImagesRef = useRef<
+    Array<{ id: string; data: string }>
+  >([]);
+  const isReasoningActiveRef = useRef<boolean>(false);
 
   const { data: conversationData, isLoading } = useConversation({
     conversationId: conversationId!,
@@ -88,11 +100,15 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempAssistantIdRef.current
-            ? { ...msg, isStreaming: false }
+            ? {
+                ...msg,
+                isStreaming: false,
+              }
             : msg,
         ),
       );
       setStreamingMessageId(null);
+      isReasoningActiveRef.current = false;
       return;
     }
 
@@ -108,11 +124,13 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
               id: data.assistant_message_id,
               isStreaming: false,
               generated_images: data.generated_images,
+              reasoning: data.reasoning, // Use reasoning from done event
             }
           : msg,
       );
 
       setStreamingMessageId(null);
+      isReasoningActiveRef.current = false;
 
       if (!conversationId && newConversationIdRef.current) {
         queryClient.setQueryData(
@@ -136,6 +154,8 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     setTimeout(() => {
       contentBufferRef.current = "";
       displayedContentRef.current = "";
+      reasoningBufferRef.current = "";
+      reasoningStreamingImagesRef.current = [];
       isDoneStreamingRef.current = false;
       doneDataRef.current = null;
       newConversationIdRef.current = undefined;
@@ -146,6 +166,8 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const animateContent = (tempAssistantId: string) => {
     if (!isStreamingRef.current) return;
 
+    let needsUpdate = false;
+
     if (displayedContentRef.current.length < contentBufferRef.current.length) {
       const charsToAdd = Math.min(
         3,
@@ -155,14 +177,35 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         0,
         displayedContentRef.current.length + charsToAdd,
       );
+      needsUpdate = true;
+    }
+
+    if (needsUpdate || isReasoningActiveRef.current) {
       setMessages((prev: Message[]) =>
         prev.map((msg) =>
           msg.id === tempAssistantId
-            ? { ...msg, content: displayedContentRef.current }
+            ? {
+                ...msg,
+                content: displayedContentRef.current,
+                // Keep streaming reasoning data separate from final reasoning
+                reasoning: isReasoningActiveRef.current
+                  ? ({
+                      id: "temp-reasoning",
+                      content: reasoningBufferRef.current,
+                      created_at: new Date().toISOString(),
+                      generated_reasoning_images: [],
+                    } as Reasoning)
+                  : msg.reasoning,
+              }
             : msg,
         ),
       );
-    } else if (isDoneStreamingRef.current) {
+    }
+
+    if (
+      isDoneStreamingRef.current &&
+      displayedContentRef.current.length === contentBufferRef.current.length
+    ) {
       isStreamingRef.current = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -177,7 +220,12 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     );
   };
 
-  const handleSendMessage = (message: string, files?: File[], intent: Intent = INTENTS.CHAT, aspectRatio?: AspectRatio) => {
+  const handleSendMessage = (
+    message: string,
+    files?: File[],
+    intent: Intent = INTENTS.CHAT,
+    aspectRatio?: AspectRatio,
+  ) => {
     const tempUserId = `temp-user-${Date.now()}`;
     const tempAssistantId = `temp-assistant-${Date.now()}`;
     tempAssistantIdRef.current = tempAssistantId;
@@ -189,8 +237,11 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
     contentBufferRef.current = "";
     displayedContentRef.current = "";
+    reasoningBufferRef.current = "";
+    reasoningStreamingImagesRef.current = [];
     isStreamingRef.current = false;
     isDoneStreamingRef.current = false;
+    isReasoningActiveRef.current = false;
     doneDataRef.current = null;
 
     const attachments = files?.map((file) => ({
@@ -231,7 +282,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         model: selectedModelId,
         files,
         intent,
-        aspect_ratio: aspectRatio
+        aspect_ratio: aspectRatio,
       },
       callbacks: {
         onIntent: (data: any) => {
@@ -274,16 +325,38 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         onContent: (data: any) => {
           contentBufferRef.current += data.delta;
         },
+        onReasoning: (data: any) => {
+          isReasoningActiveRef.current = true;
+          reasoningBufferRef.current += data.delta;
+        },
+        onReasoningImage: (data: any) => {
+          const newImage = {
+            id: `reasoning-img-${Date.now()}-${Math.random()}`,
+            data: data.image_data,
+          };
+          reasoningStreamingImagesRef.current = [
+            ...reasoningStreamingImagesRef.current,
+            newImage,
+          ];
+          // Force update to show new image
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempAssistantIdRef.current ? { ...msg } : msg,
+            ),
+          );
+        },
         onImageProgress: (data: any) => {
           console.log("Image progress:", data.message);
         },
         onDone: (data: any) => {
           isDoneStreamingRef.current = true;
+          isReasoningActiveRef.current = false;
           doneDataRef.current = data;
         },
         onError: (data: any) => {
           console.error("Streaming error:", data.error);
           isStreamingRef.current = false;
+          isReasoningActiveRef.current = false;
           if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
           }

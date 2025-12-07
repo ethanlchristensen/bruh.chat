@@ -35,17 +35,29 @@ class ConversationService:
     @staticmethod
     @sync_to_async
     def get_conversation(conversation_id: UUID, user):
-        return Conversation.objects.get(id=conversation_id, user=user)
+        return (
+            Conversation.objects.filter(id=conversation_id, user=user, deleted=False)
+            .prefetch_related(
+                "messages__attachments",
+                "messages__generated_images",
+                "messages__reasoning",
+                "messages__reasoning__generated_reasoning_images",
+            )
+            .first()
+        )
 
     @staticmethod
     @sync_to_async
-    def get_conversation_with_messages(
-        conversation_id: UUID, user, include_deleted=False
-    ):
-        message_queryset = Message.objects.prefetch_related("attachments")
+    def get_conversation_with_messages(conversation_id: UUID, user, include_deleted=False):
+        message_queryset = Message.objects.prefetch_related(
+            "attachments",
+            "generated_images",
+            "reasoning",
+            "reasoning__generated_reasoning_images",  # Add this line
+        )
         if not include_deleted:
             message_queryset = message_queryset.filter(deleted=False)
-        
+
         queryset = Conversation.objects.prefetch_related(
             Prefetch("messages", queryset=message_queryset)
         )
@@ -83,7 +95,9 @@ class ConversationService:
         conversation.title = title[:50]
         conversation.save(update_fields=["title"])
 
-        if broadcast: # should be false for api updates by the user since we update this ourselves in the ui
+        if (
+            broadcast
+        ):  # should be false for api updates by the user since we update this ourselves in the ui
             ConversationBroadcaster.broadcast_title_update(
                 user_id=user.id, conversation_id=conversation_id, new_title=title
             )

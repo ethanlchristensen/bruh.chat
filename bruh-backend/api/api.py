@@ -11,6 +11,7 @@ api.register_controllers(
     NinjaJWTDefaultController, UserController, AIController, ConversationController, AuthController
 )
 
+
 @api.get("/hello")
 async def hello(request):
     return {"message": "Hello, world!"}

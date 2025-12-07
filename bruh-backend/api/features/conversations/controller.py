@@ -8,7 +8,7 @@ from .schemas import (
     ConversationListResponse,
     ConversationSchema,
     CreateConversationRequest,
-    ConversationTitleUpdateRequest
+    ConversationTitleUpdateRequest,
 )
 from .services import ConversationService
 
@@ -37,24 +37,28 @@ class ConversationController:
 
         return conversation
 
-    @route.delete("/{conversation_id}", response={
-        204: None
-    })
+    @route.delete("/{conversation_id}", response={204: None})
     async def delete_conversation(self, request, conversation_id: UUID):
         user = request.auth
 
-        deleted = await ConversationService.mark_conversation_as_deleted(conversation_id=conversation_id, user=user)
+        deleted = await ConversationService.mark_conversation_as_deleted(
+            conversation_id=conversation_id, user=user
+        )
 
         if not deleted:
             return 404, {"detail": "Conversation not found"}
         else:
             return 204, None
-    
+
     @route.patch("/{conversation_id}", response=ConversationSchema)
-    async def update_conversation_title(self, request, conversation_id: UUID, data: ConversationTitleUpdateRequest):
+    async def update_conversation_title(
+        self, request, conversation_id: UUID, data: ConversationTitleUpdateRequest
+    ):
         user = request.auth
-        
-        updated, conversation = await ConversationService.update_conversation_title(conversation_id=conversation_id, user=user, title=data.title)
+
+        updated, conversation = await ConversationService.update_conversation_title(
+            conversation_id=conversation_id, user=user, title=data.title
+        )
 
         if not updated:
             return 404, {"detail": "Conversation not found"}

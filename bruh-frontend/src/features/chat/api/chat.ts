@@ -1,22 +1,24 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { ChatRequest, GeneratedImage } from "@/types/api";
+import type { ChatRequest, GeneratedImage, Reasoning } from "@/types/api";
 import type { Intent } from "@/types/intent";
 
 type StreamEvent =
-  | { 
-      type: "intent"; 
-      intent: Intent; 
-      model: string; 
-      aspect_ratio?: string 
+  | {
+      type: "intent";
+      intent: Intent;
+      model: string;
+      aspect_ratio?: string;
     }
-  | { 
-      type: "metadata"; 
-      conversation_id: string; 
+  | {
+      type: "metadata";
+      conversation_id: string;
       user_message_id: string;
       has_attachments?: boolean;
     }
   | { type: "content"; delta: string }
+  | { type: "reasoning"; delta: string }
+  | { type: "reasoning_image"; image_data: string[] }
   | { type: "image_progress"; message: string }
   | {
       type: "done";
@@ -29,6 +31,7 @@ type StreamEvent =
         completion_cost?: number;
       };
       generated_images?: GeneratedImage[];
+      reasoning?: Reasoning;
     }
   | { type: "error"; error: string; conversation_id?: string };
 
@@ -36,7 +39,13 @@ type StreamCallbacks = {
   onIntent?: (data: Extract<StreamEvent, { type: "intent" }>) => void;
   onMetadata?: (data: Extract<StreamEvent, { type: "metadata" }>) => void;
   onContent?: (data: Extract<StreamEvent, { type: "content" }>) => void;
-  onImageProgress?: (data: Extract<StreamEvent, { type: "image_progress" }>) => void;
+  onReasoning?: (data: Extract<StreamEvent, { type: "reasoning" }>) => void;
+  onReasoningImage?: (
+    data: Extract<StreamEvent, { type: "reasoning_image" }>,
+  ) => void;
+  onImageProgress?: (
+    data: Extract<StreamEvent, { type: "image_progress" }>,
+  ) => void;
   onDone?: (data: Extract<StreamEvent, { type: "done" }>) => void;
   onError?: (data: Extract<StreamEvent, { type: "error" }>) => void;
 };
@@ -84,6 +93,15 @@ const processStream = async (
               await sleep(10);
               break;
 
+            case "reasoning":
+              callbacks.onReasoning?.(event);
+              await sleep(10);
+              break;
+
+            case "reasoning_image":
+              callbacks.onReasoningImage?.(event);
+              break;
+
             case "image_progress":
               callbacks.onImageProgress?.(event);
               break;
@@ -119,7 +137,8 @@ export const createStreamingChat = async ({
   const formData = new FormData();
 
   if (data.message) formData.append("message", data.message);
-  if (data.conversation_id) formData.append("conversation_id", data.conversation_id);
+  if (data.conversation_id)
+    formData.append("conversation_id", data.conversation_id);
   if (data.model) formData.append("model", data.model);
   if (data.intent) formData.append("intent", data.intent);
   if (data.aspect_ratio) formData.append("aspect_ratio", data.aspect_ratio);

@@ -6,7 +6,6 @@ from asgiref.sync import sync_to_async
 
 
 class UserHelperService:
-    
     @staticmethod
     async def add_model_for_user(user, model_id: str) -> tuple[UserAddedModel | None, str | None]:
         """
@@ -15,14 +14,13 @@ class UserHelperService:
         """
         service = get_open_router_service()
         is_valid = await service.validate_model_id(model_id)
-        
+
         if not is_valid:
             return None, "Invalid model ID - model not found in OpenRouter"
-        
+
         try:
             model, created = await sync_to_async(UserAddedModel.objects.get_or_create)(
-                user=user,
-                model_id=model_id
+                user=user, model_id=model_id
             )
             if not created:
                 return None, "Model already added"
@@ -36,15 +34,13 @@ class UserHelperService:
         Remove a model from user's collection
         Returns (success, error_message)
         """
+
         def _delete():
-            deleted_count, _ = UserAddedModel.objects.filter(
-                user=user,
-                model_id=model_id
-            ).delete()
+            deleted_count, _ = UserAddedModel.objects.filter(user=user, model_id=model_id).delete()
             return deleted_count
-        
+
         deleted_count = await sync_to_async(_delete)()
-        
+
         if deleted_count == 0:
             return False, "Model not found in your collection"
         return True, None
@@ -55,8 +51,7 @@ class UserHelperService:
         Get list of model IDs added by user
         """
         return await sync_to_async(list)(
-            UserAddedModel.objects.filter(user=user)
-            .values_list('model_id', flat=True)
+            UserAddedModel.objects.filter(user=user).values_list("model_id", flat=True)
         )
 
     @staticmethod
@@ -67,7 +62,7 @@ class UserHelperService:
         user_model_ids = await UserHelperService.get_user_added_model_ids(user)
         if not user_model_ids:
             return []
-        
+
         service = get_open_router_service()
         return await service.get_models_by_ids(user_model_ids)
 
@@ -79,15 +74,14 @@ class UserHelperService:
         """
         service = get_open_router_service()
         valid_ids, invalid_ids = await service.validate_model_ids(model_ids)
-        
+
         added = 0
         skipped = 0
-        
+
         for model_id in valid_ids:
             try:
                 _, created = await sync_to_async(UserAddedModel.objects.get_or_create)(
-                    user=user,
-                    model_id=model_id
+                    user=user, model_id=model_id
                 )
                 if created:
                     added += 1
@@ -95,9 +89,5 @@ class UserHelperService:
                     skipped += 1
             except IntegrityError:
                 skipped += 1
-        
-        return {
-            "added": added,
-            "skipped": skipped,
-            "invalid": invalid_ids
-        }
+
+        return {"added": added, "skipped": skipped, "invalid": invalid_ids}

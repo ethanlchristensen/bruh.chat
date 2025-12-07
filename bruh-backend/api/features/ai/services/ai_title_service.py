@@ -48,16 +48,12 @@ class TitleGenerationService:
     @staticmethod
     async def should_generate_title(user, conversation) -> bool:
         """Check if we should generate a title based on user settings and message count"""
-        auto_generate, frequency, _ = (
-            await TitleGenerationService._get_user_title_settings(user)
-        )
+        auto_generate, frequency, _ = await TitleGenerationService._get_user_title_settings(user)
 
         if not auto_generate:
             return False
 
-        message_count = await MessageService.get_message_count(
-            conversation=conversation
-        )
+        message_count = await MessageService.get_message_count(conversation=conversation)
         return message_count > 0 and message_count % frequency == 0
 
     @staticmethod
@@ -66,9 +62,11 @@ class TitleGenerationService:
         Generate a title using structured outputs and broadcast update
         """
         try:
-            auto_generate, frequency, aux_model = (
-                await TitleGenerationService._get_user_title_settings(user)
-            )
+            (
+                auto_generate,
+                frequency,
+                aux_model,
+            ) = await TitleGenerationService._get_user_title_settings(user)
 
             if not auto_generate:
                 logger.debug(f"Auto title generation disabled for user {user.id}")
@@ -121,9 +119,7 @@ class TitleGenerationService:
                 broadcast=True,  # tell the conversation service to broadcast the update to the websocket for the given user
             )
 
-            logger.info(
-                f"Generated title for conversation {conversation.id}: {new_title}"
-            )
+            logger.info(f"Generated title for conversation {conversation.id}: {new_title}")
 
         except Exception as e:
             logger.error(

@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, X, Image } from "lucide-react";
 import { ModelSelector } from "../../../components/shared/model-selector/model-selector";
-import {
-  modelSupportsFileUploads,
-} from "@/components/shared/model-selector/models";
+import { modelSupportsFileUploads } from "@/components/shared/model-selector/models";
 import type { OpenRouterModel } from "@/components/shared/model-selector/models";
 import {
   SlashCommandMenu,
@@ -11,11 +9,26 @@ import {
   type IntentCommand,
 } from "./slash-command-menu";
 import { IntentParameters } from "./intent-parameters";
-import { INTENTS, INTENT_METADATA, type Intent, isValidIntent } from "@/types/intent";
-import { DEFAULT_ASPECT_RATIO, isValidAspectRatio, type AspectRatio } from "@/types/image";
+import {
+  INTENTS,
+  INTENT_METADATA,
+  type Intent,
+  isValidIntent,
+  getIntentIcon,
+} from "@/types/intent";
+import {
+  DEFAULT_ASPECT_RATIO,
+  isValidAspectRatio,
+  type AspectRatio,
+} from "@/types/image";
 
 type MessageInputProps = {
-  onSend: (message: string, files?: File[], intent?: Intent, aspectRatio?: AspectRatio) => void;
+  onSend: (
+    message: string,
+    files?: File[],
+    intent?: Intent,
+    aspectRatio?: AspectRatio,
+  ) => void;
   disabled?: boolean;
   selectedModelId: string | undefined;
   selectedModel: OpenRouterModel | undefined;
@@ -90,14 +103,16 @@ export const MessageInput = ({
   // BUT skip this check for 2 seconds after mount to allow restoration
   useEffect(() => {
     const timeSinceMount = Date.now() - mountTimeRef.current;
-    
+
     // Skip validation for 2 seconds after mount
     if (timeSinceMount < 2000) {
       return;
     }
 
     if (activeIntent !== INTENTS.CHAT && selectedModel) {
-      const isSupported = availableIntents.some(cmd => cmd.intent === activeIntent);
+      const isSupported = availableIntents.some(
+        (cmd) => cmd.intent === activeIntent,
+      );
       if (!isSupported) {
         setActiveIntent(INTENTS.CHAT);
         setAspectRatio(DEFAULT_ASPECT_RATIO);
@@ -188,9 +203,9 @@ export const MessageInput = ({
         input.trim(),
         selectedFiles,
         activeIntent,
-        activeIntent === INTENTS.IMAGE ? aspectRatio : undefined
+        activeIntent === INTENTS.IMAGE ? aspectRatio : undefined,
       );
-      
+
       setInput("");
       setSelectedFiles([]);
       setShowSlashMenu(false);
@@ -204,9 +219,15 @@ export const MessageInput = ({
     return <Paperclip className="h-4 w-4" />;
   };
 
+  const getActiveIntentIcon = () => {
+    const Icon = getIntentIcon(activeIntent);
+    return <Icon className="w-4 h-4" />;
+  };
+
   const getPlaceholder = () => {
     if (!selectedModelId) return "Select a model first...";
-    if (activeIntent === INTENTS.IMAGE) return "Describe the image you want to generate...";
+    if (activeIntent === INTENTS.IMAGE)
+      return "Describe the image you want to generate...";
     return "Type / for commands or enter a message...";
   };
 
@@ -260,7 +281,7 @@ export const MessageInput = ({
 
           {/* Top row: file upload, text input, send button */}
           <div className="flex items-end gap-2 bg-muted rounded-lg p-2">
-            {supportsFiles && selectedModelId && activeIntent === INTENTS.CHAT && (
+            {supportsFiles && selectedModelId && (
               <>
                 <input
                   ref={fileInputRef}
@@ -316,7 +337,7 @@ export const MessageInput = ({
             {activeIntent !== INTENTS.CHAT && (
               <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-md px-3 py-1.5 text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-right-2 duration-200">
                 <span className="flex items-center gap-1.5">
-                  <span>{INTENT_METADATA[activeIntent].icon}</span>
+                  {getActiveIntentIcon()}
                   <span>{INTENT_METADATA[activeIntent].label}</span>
                 </span>
                 <button
@@ -332,6 +353,7 @@ export const MessageInput = ({
 
             {activeIntent !== INTENTS.CHAT && (
               <IntentParameters
+                modelId={selectedModelId}
                 intent={activeIntent}
                 aspectRatio={aspectRatio}
                 onAspectRatioChange={setAspectRatio}

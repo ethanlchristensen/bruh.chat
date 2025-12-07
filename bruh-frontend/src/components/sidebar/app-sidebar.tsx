@@ -67,7 +67,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { open } = useSidebar();
+  const { open, isMobile } = useSidebar();
   const params = useParams({ strict: false });
 
   const { data: conversationsData, isLoading } = useConversations();
@@ -248,6 +248,118 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>
+              {isMobile ? (
+                <SidebarGroupContent className="overflow-hidden">
+                  {isLoading ? (
+                    <div className="p-4 text-sm text-muted-foreground">
+                      Loading conversations...
+                    </div>
+                  ) : filteredConversations.length === 0 ? (
+                    <div className="p-4 text-sm text-muted-foreground">
+                      {showRecentOnly
+                        ? "No recent conversations in the last 24 hours."
+                        : "No conversations yet. Start a new chat!"}
+                    </div>
+                  ) : (
+                    filteredConversations.map((conversation) => {
+                      const isActive =
+                        currentConversationId === conversation.id;
+                      const isEditing = editingId === conversation.id;
+
+                      return (
+                        <div
+                          key={conversation.id}
+                          className={cn(
+                            "group/item relative border-b last:border-b-0",
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          )}
+                        >
+                          {isEditing ? (
+                            <div className="flex items-center p-4 gap-2">
+                              <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleSaveEdit(conversation.id);
+                                  } else if (e.key === "Escape") {
+                                    handleCancelEdit();
+                                  }
+                                }}
+                                className="flex-1 bg-background border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveEdit(conversation.id)}
+                                className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5"
+                                aria-label="Save"
+                              >
+                                <Check className="h-4 w-4 text-green-600" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5"
+                                aria-label="Cancel"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <Link
+                                to="/chat/$conversationId"
+                                params={{ conversationId: conversation.id }}
+                                className="flex items-center p-4 text-sm min-w-0"
+                              >
+                                <div className="flex w-full items-center gap-2 min-w-0">
+                                  <span className="font-medium truncate min-w-0">
+                                    {conversation.title}
+                                  </span>
+                                  <span className="text-xs shrink-0 whitespace-nowrap ml-auto group-hover/item:opacity-0 transition-opacity">
+                                    <TimeAgo
+                                      isoDate={conversation.updated_at}
+                                    />
+                                  </span>
+                                </div>
+                              </Link>
+
+                              <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden group-hover/item:flex items-center gap-1 pr-2 pl-8 bg-linear-to-r from-transparent via-sidebar-accent/80 to-sidebar-accent">
+                                <button
+                                  className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5 relative z-10"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleStartEdit(conversation);
+                                  }}
+                                  aria-label="Rename conversation"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  className="hover:bg-destructive/10 rounded-sm p-1.5 text-destructive relative z-10"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteClick(conversation.id);
+                                  }}
+                                  aria-label="Delete conversation"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </SidebarGroupContent>
+              ) : (
+                <></>
+              )}
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>

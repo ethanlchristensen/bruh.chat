@@ -1,7 +1,6 @@
 import type { AspectRatio } from "./image";
 import type { Intent } from "./intent";
 
-
 export type BaseEntity = {
   id: string;
   created_at: number;
@@ -49,7 +48,6 @@ export type AuthResponse = {
   refresh: string;
   access: string;
 };
-
 
 export interface ChatRequest {
   message: string;
@@ -107,6 +105,7 @@ export type Message = Entity<{
   chunks?: string[];
   attachments?: MessageAttachment[];
   generated_images?: GeneratedImage[];
+  reasoning?: Reasoning;
 }>;
 
 export type MessageAttachment = {
@@ -129,6 +128,13 @@ export type GeneratedImage = {
   created_at: string;
 };
 
+export type GeneratedReasoningImage = {
+  id: string;
+  image_url: string;
+  model_used: string;
+  created_at: string;
+};
+
 export type ConversationDetailResponse = {
   conversation: Conversation;
   messages: Message[];
@@ -136,4 +142,11 @@ export type ConversationDetailResponse = {
 
 export type ConversationCreateRequest = {
   title?: string;
+};
+
+export type Reasoning = {
+  id: string;
+  content: string;
+  created_at: string;
+  generated_reasoning_images: GeneratedReasoningImage[];
 };

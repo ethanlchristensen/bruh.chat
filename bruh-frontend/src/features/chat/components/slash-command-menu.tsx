@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
-import { INTENTS, INTENT_METADATA, type Intent } from "@/types/intent";
+import {
+  INTENTS,
+  INTENT_METADATA,
+  type Intent,
+  getIntentIcon,
+} from "@/types/intent";
 import { modelSupportsImageGeneration } from "@/components/shared/model-selector/models";
 import type { OpenRouterModel } from "@/components/shared/model-selector/models";
 
@@ -7,7 +12,6 @@ export type IntentCommand = {
   intent: Intent;
   label: string;
   description: string;
-  icon: React.ReactNode;
   requiresModel?: (model: OpenRouterModel | undefined) => boolean;
 };
 
@@ -41,6 +45,11 @@ export const SlashCommandMenu = ({
     return null;
   }
 
+  const getCommandIntentIcon = (intent: Intent) => {
+    const Icon = getIntentIcon(intent);
+    return <Icon className="w-4 h-4" />;
+  };
+
   return (
     <div
       ref={menuRef}
@@ -61,7 +70,7 @@ export const SlashCommandMenu = ({
             }`}
           >
             <div className="shrink-0 mt-0.5 text-lg">
-              {command.icon}
+              {getCommandIntentIcon(command.intent)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-sm">{command.label}</div>
@@ -89,16 +98,16 @@ export const SlashCommandMenu = ({
 };
 
 export const getAvailableIntents = (
-  selectedModel: OpenRouterModel | undefined
+  selectedModel: OpenRouterModel | undefined,
 ): IntentCommand[] => {
   const commands: IntentCommand[] = [];
 
   // Only show non-default intents
   Object.values(INTENTS).forEach((intent) => {
-    if (intent === INTENTS.CHAT) return; // Skip default intent
+    if (intent === INTENTS.CHAT) return;
 
     const metadata = INTENT_METADATA[intent];
-    
+
     // Check if model supports this intent
     if (intent === INTENTS.IMAGE) {
       if (!modelSupportsImageGeneration(selectedModel)) return;
@@ -108,10 +117,10 @@ export const getAvailableIntents = (
       intent,
       label: `/${intent}`,
       description: metadata.description,
-      icon: metadata.icon,
-      requiresModel: intent === INTENTS.IMAGE 
-        ? (model) => modelSupportsImageGeneration(model)
-        : undefined,
+      requiresModel:
+        intent === INTENTS.IMAGE
+          ? (model) => modelSupportsImageGeneration(model)
+          : undefined,
     });
   });
 

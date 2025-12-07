@@ -17,14 +17,14 @@ from .schemas import (
     MessageAttachmentSchema,
     ImageGenerationRequest,
     ImageGenerationResponseSchema,
-    GeneratedImageSchema
+    GeneratedImageSchema,
 )
 from .services import (
     ChatErrorResponse,
     ChatSuccessResponse,
     get_chat_orchestration_service,
     get_open_router_service,
-    get_image_generation_service
+    get_image_generation_service,
 )
 
 
@@ -39,12 +39,12 @@ class AIController:
     async def chat_stream(
         self,
         request,
-        message: str = Form(...), # type: ignore
-        conversation_id: Optional[str] = Form(None), # type: ignore
-        model: Optional[str] = Form(None), # type: ignore
+        message: str = Form(...),  # type: ignore
+        conversation_id: Optional[str] = Form(None),  # type: ignore
+        model: Optional[str] = Form(None),  # type: ignore
         intent: Optional[str] = Form("chat"),  # type: ignore - "chat" or "image"
-        aspect_ratio: Optional[str] = Form("1:1"), # type: ignore
-        files: List[UploadedFile] = File(None), # type: ignore
+        aspect_ratio: Optional[str] = Form("1:1"),  # type: ignore
+        files: List[UploadedFile] = File(None),  # type: ignore
     ):
         """
         Unified streaming endpoint for chat and image generation.
@@ -60,7 +60,7 @@ class AIController:
                 message=message,
                 model=model or self.open_router_service.default_model,
                 conversation_id=conv_id,
-                files=files or [], # type: ignore
+                files=files or [],  # type: ignore
                 intent=intent or "chat",
                 aspect_ratio=aspect_ratio or "1:1",
             )
@@ -68,14 +68,13 @@ class AIController:
                 yield f"data: {chunk}\n\n"
 
         response = StreamingHttpResponse(
-            streaming_content=async_event_generator(), 
-            content_type="text/event-stream"
+            streaming_content=async_event_generator(), content_type="text/event-stream"
         )
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
 
         return response
-    
+
     @route.get("/models")
     async def models(self, request):
         return await self.open_router_service.models()
@@ -91,9 +90,7 @@ class AIController:
         return await service.get_all_models_flat()
 
     @route.post("/models/openrouter")
-    async def get_openrouter_model_by_id(
-        self, request, data: GetOpenRouterModelRequestSchema
-    ):
+    async def get_openrouter_model_by_id(self, request, data: GetOpenRouterModelRequestSchema):
         """Get a specific model from OpenRouter by its ID"""
         model_id = data.model_id
         service = get_open_router_service()

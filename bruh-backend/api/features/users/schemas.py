@@ -27,7 +27,6 @@ class ProfileUpdateSchema(Schema):
     title_generation_frequency: Optional[int] = None
 
 
-
 class UserSchema(Schema):
     id: int
     username: str
@@ -68,10 +67,10 @@ class BulkOperationResponseSchema(Schema):
     added: int
     skipped: int
 
+
 class UserRegistrationSchema(Schema):
     username: str
     email: str
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    

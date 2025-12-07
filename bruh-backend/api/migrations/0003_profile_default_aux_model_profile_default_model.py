@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0002_rename_estimated_cost_openrouterresponse_estimated_completion_cost_and_more'),
+        ("api", "0002_rename_estimated_cost_openrouterresponse_estimated_completion_cost_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='profile',
-            name='default_aux_model',
+            model_name="profile",
+            name="default_aux_model",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='profile',
-            name='default_model',
+            model_name="profile",
+            name="default_model",
             field=models.TextField(blank=True, null=True),
         ),
     ]

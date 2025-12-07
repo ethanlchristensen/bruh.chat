@@ -29,10 +29,10 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
               <MessageSquare className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">Start a conversation</h3>
-            <p className="text-sm text-muted-foreground">
-              Send a message to begin chatting with AI
-            </p>
+            <h3 className="text-3xl text-primary font-semibold mb-1">
+              bruh.chat
+            </h3>
+            <p className="text-sm text-muted-foreground">Let's finna chat.</p>
           </div>
         )}
 

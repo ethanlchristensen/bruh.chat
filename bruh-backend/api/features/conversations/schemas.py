@@ -3,7 +3,14 @@ from typing import List
 
 from ninja import ModelSchema, Schema
 
-from .models import Conversation, Message, MessageAttachment, GeneratedImage
+from .models import (
+    Conversation,
+    Message,
+    MessageAttachment,
+    GeneratedImage,
+    GeneratedReasoningImage,
+    Reasoning,
+)
 
 
 class CreateConversationRequest(Schema):
@@ -15,13 +22,14 @@ class ConversationSchema(ModelSchema):
         model = Conversation
         fields = ["id", "title", "created_at", "updated_at"]
 
+
 class MessageAttachmentSchema(ModelSchema):
     file_url: str | None = None
 
     class Meta:
         model = MessageAttachment
         fields = ["id", "file_name", "file_size", "mime_type", "created_at"]
-    
+
     @staticmethod
     def resolve_file_url(obj, context):
         request = context.get("request")
@@ -29,23 +37,47 @@ class MessageAttachmentSchema(ModelSchema):
             return obj.file.url
         return None
 
+
 class GeneratedImageSchema(ModelSchema):
     image_url: str | None = None
 
     class Meta:
         model = GeneratedImage
         fields = ["id", "prompt", "model_used", "aspect_ratio", "width", "height", "created_at"]
-    
+
     @staticmethod
-    def resolve_image_url(obj):
+    def resolve_image_url(obj, context):
         if obj.image:
             return obj.image.url
         return None
 
 
+class GeneratedReasoningImageSchema(ModelSchema):
+    image_url: str | None = None
+
+    class Meta:
+        model = GeneratedReasoningImage
+        fields = ["id", "model_used", "created_at"]
+
+    @staticmethod
+    def resolve_image_url(obj, context):
+        if obj.image:
+            return obj.image.url
+        return None
+
+
+class ReasoningSchema(ModelSchema):
+    generated_reasoning_images: List[GeneratedReasoningImageSchema] = []
+
+    class Meta:
+        model = Reasoning
+        fields = ["id", "content", "created_at"]
+
+
 class MessageSchema(ModelSchema):
     attachments: List[MessageAttachmentSchema] = []
     generated_images: List[GeneratedImageSchema] = []
+    reasoning: ReasoningSchema | None = None
 
     class Meta:
         model = Message

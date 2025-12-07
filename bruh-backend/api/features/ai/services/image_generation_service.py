@@ -28,10 +28,8 @@ class ImageGenerationService:
         try:
             # Create or get conversation
             if conversation_id is None:
-                conversation = (
-                    await ConversationService.create_conversation_from_message(
-                        user=user, first_message=f"Generate: {prompt}"
-                    )
+                conversation = await ConversationService.create_conversation_from_message(
+                    user=user, first_message=f"Generate: {prompt}"
                 )
             else:
                 conversation = await ConversationService.get_conversation(
@@ -96,13 +94,9 @@ class ImageGenerationService:
 
                     return assistant_message, generated_images, api_response
 
-            assistant_message, generated_images, api_response = (
-                await save_generated_images()
-            )
+            assistant_message, generated_images, api_response = await save_generated_images()
 
-            await ConversationService.update_conversation_timestamp(
-                conversation=conversation
-            )
+            await ConversationService.update_conversation_timestamp(conversation=conversation)
 
             return {
                 "success": True,
@@ -133,10 +127,8 @@ class ImageGenerationService:
         try:
             # Create or get conversation
             if conversation_id is None:
-                conversation = (
-                    await ConversationService.create_conversation_from_message(
-                        user=user, first_message=f"Generate: {prompt}"
-                    )
+                conversation = await ConversationService.create_conversation_from_message(
+                    user=user, first_message=f"Generate: {prompt}"
                 )
             else:
                 conversation = await ConversationService.get_conversation(
@@ -149,11 +141,16 @@ class ImageGenerationService:
             )
 
             # Send metadata
-            yield json.dumps({
-                "type": "metadata",
-                "conversation_id": str(conversation.id),
-                "user_message_id": str(user_message.id),
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "type": "metadata",
+                        "conversation_id": str(conversation.id),
+                        "user_message_id": str(user_message.id),
+                    }
+                )
+                + "\n"
+            )
 
             # Stream image generation
             open_router_service = get_open_router_service()
@@ -176,18 +173,20 @@ class ImageGenerationService:
                         if "content" in delta and delta["content"]:
                             content_chunk = delta["content"]
                             assistant_content += content_chunk
-                            yield json.dumps({
-                                "type": "content",
-                                "delta": content_chunk
-                            }) + "\n"
+                            yield json.dumps({"type": "content", "delta": content_chunk}) + "\n"
 
                         # Handle images
                         if "images" in delta:
                             images_data.extend(delta["images"])
-                            yield json.dumps({
-                                "type": "image_progress",
-                                "message": "Image being generated..."
-                            }) + "\n"
+                            yield (
+                                json.dumps(
+                                    {
+                                        "type": "image_progress",
+                                        "message": "Image being generated...",
+                                    }
+                                )
+                                + "\n"
+                            )
 
                     if chunk.get("model"):
                         model_used = chunk["model"]
@@ -237,30 +236,40 @@ class ImageGenerationService:
             await ConversationService.update_conversation_timestamp(conversation)
 
             # Send completion
-            yield json.dumps({
-                "type": "done",
-                "assistant_message_id": str(assistant_message.id),
-                "generated_images": [
+            yield (
+                json.dumps(
                     {
-                        "id": str(img.id),
-                        "image_url": img.image.url,
+                        "type": "done",
+                        "assistant_message_id": str(assistant_message.id),
+                        "generated_images": [
+                            {
+                                "id": str(img.id),
+                                "image_url": img.image.url,
+                            }
+                            for img in generated_images
+                        ],
+                        "usage": {
+                            "prompt_tokens": api_response.prompt_tokens,
+                            "completion_tokens": api_response.completion_tokens,
+                            "total_tokens": api_response.total_tokens,
+                        },
                     }
-                    for img in generated_images
-                ],
-                "usage": {
-                    "prompt_tokens": api_response.prompt_tokens,
-                    "completion_tokens": api_response.completion_tokens,
-                    "total_tokens": api_response.total_tokens,
-                },
-            }) + "\n"
+                )
+                + "\n"
+            )
 
         except Exception as e:
             logger.error(f"Image generation stream error: {str(e)}", exc_info=True)
-            yield json.dumps({
-                "type": "error",
-                "error": str(e),
-                "conversation_id": str(conversation_id) if conversation_id else None,
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "type": "error",
+                        "error": str(e),
+                        "conversation_id": str(conversation_id) if conversation_id else None,
+                    }
+                )
+                + "\n"
+            )
 
 
 @lru_cache()

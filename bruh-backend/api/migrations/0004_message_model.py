@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0003_profile_default_aux_model_profile_default_model'),
+        ("api", "0003_profile_default_aux_model_profile_default_model"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='message',
-            name='model',
+            model_name="message",
+            name="model",
             field=models.TextField(max_length=350, null=True),
         ),
     ]

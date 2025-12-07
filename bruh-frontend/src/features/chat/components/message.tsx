@@ -1,6 +1,7 @@
 import { User, Bot, Download } from "lucide-react";
 import type { Message as MessageType } from "@/types/api";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
+import { ReasoningSection } from "./reasoning-section";
 
 type MessageProps = {
   message: MessageType;
@@ -16,6 +17,7 @@ export const Message = ({ message }: MessageProps) => {
     isStreaming,
     attachments,
     generated_images,
+    reasoning,
   } = message;
   const isUser = role === "user";
 
@@ -129,12 +131,21 @@ export const Message = ({ message }: MessageProps) => {
 
         {/* Message bubble */}
         <div
-          className={`rounded-lg px-4 py-2.5 ${
+          className={`rounded-lg py-2.5 ${
             isUser
-              ? "bg-primary text-primary-foreground self-end"
-              : "bg-muted text-foreground self-start"
+              ? "bg-primary text-primary-foreground self-end px-4"
+              : "bg-transparent text-foreground self-start"
           }`}
         >
+          {/* Reasoning Section - Show for assistant messages */}
+          {!isUser && reasoning && (
+            <ReasoningSection
+              content={reasoning.content}
+              images={reasoning.generated_reasoning_images}
+              isActive={isStreaming}
+            />
+          )}
+
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">
               {content}
@@ -171,7 +182,7 @@ export const Message = ({ message }: MessageProps) => {
                     }}
                   />
                   {genImage.aspect_ratio && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground italic px-2 py-1">
                       Aspect Ratio: {genImage.aspect_ratio}
                     </p>
                   )}

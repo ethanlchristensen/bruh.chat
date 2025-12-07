@@ -18,12 +18,13 @@ from .schemas import (
     BulkAddModelsSchema,
     RemoveModelSchema,
     BulkOperationResponseSchema,
-    UserRegistrationSchema
+    UserRegistrationSchema,
 )
 from .models import Profile
 from api.features.ai.schemas import OpenRouterModelSchema
 from .services.user_helper_service import UserHelperService
 from api.features.ai.services.open_router_service import get_open_router_service
+
 
 @api_controller("/users", auth=JWTAuth(), tags=["Users"])
 class UserController:
@@ -33,7 +34,7 @@ class UserController:
                 user.profile.profile_image.url
             )
         return user
-    
+
     @route.get("/me", response=UserSchema)
     def get_current_user(self, request):
         return request.user
@@ -56,18 +57,12 @@ class UserController:
         open_router_service = get_open_router_service()
 
         if "default_model" in data_dict and data_dict["default_model"]:
-            is_valid = await open_router_service.validate_model_id(
-                data_dict["default_model"]
-            )
+            is_valid = await open_router_service.validate_model_id(data_dict["default_model"])
             if not is_valid:
-                return 400, {
-                    "detail": f"Invalid model ID: {data_dict['default_model']}"
-                }
+                return 400, {"detail": f"Invalid model ID: {data_dict['default_model']}"}
 
         if "default_aux_model" in data_dict and data_dict["default_aux_model"]:
-            is_valid = await open_router_service.validate_model_id(
-                data_dict["default_aux_model"]
-            )
+            is_valid = await open_router_service.validate_model_id(data_dict["default_aux_model"])
             if not is_valid:
                 return 400, {
                     "detail": f"Invalid auxiliary model ID: {data_dict['default_aux_model']}"
@@ -114,9 +109,7 @@ class UserController:
     @route.post("/me/models", response={201: UserAddedModelSchema, 400: dict})
     async def add_model(self, request, data: AddModelSchema):
         """Add a model to user's collection"""
-        model, error = await UserHelperService.add_model_for_user(
-            request.user, data.model_id
-        )
+        model, error = await UserHelperService.add_model_for_user(request.user, data.model_id)
         if error:
             return 400, {"detail": error}
         return 201, model
@@ -129,9 +122,7 @@ class UserController:
     @route.delete("/me/models/{model_id}", response={200: dict, 404: dict})
     async def remove_model(self, request, model_id: str):
         """Remove a model from user's collection"""
-        success, error = await UserHelperService.remove_model_for_user(
-            request.user, model_id
-        )
+        success, error = await UserHelperService.remove_model_for_user(request.user, model_id)
         if not success:
             return 404, {"detail": error}
         return 200, {"message": "Model removed successfully"}
@@ -144,10 +135,10 @@ class AuthController:
         """Public endpoint for user registration"""
         if User.objects.filter(username=data.username).exists():
             return 400, {"detail": "Username already exists"}
-        
+
         if User.objects.filter(email=data.email).exists():
             return 400, {"detail": "Email already exists"}
-        
+
         user = User.objects.create(
             username=data.username,
             email=data.email,
@@ -155,5 +146,5 @@ class AuthController:
             first_name=data.first_name or "",
             last_name=data.last_name or "",
         )
-        
+
         return 201, user

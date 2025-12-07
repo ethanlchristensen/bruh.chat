@@ -3,17 +3,19 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 class UserAddedModel(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="added_models")
     model_id = models.CharField(max_length=350)
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['user', 'model_id']
-        ordering = ['-added_at']
+        unique_together = ["user", "model_id"]
+        ordering = ["-added_at"]
 
     def __str__(self):
         return f"{self.user.username} - {self.model_id}"
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
@@ -24,12 +26,10 @@ class Profile(models.Model):
 
     # ai title generation
     auto_generate_titles = models.BooleanField(
-        default=False,
-        help_text="Automatically generate conversation titles using AI"
+        default=False, help_text="Automatically generate conversation titles using AI"
     )
     title_generation_frequency = models.PositiveIntegerField(
-        default=4,
-        help_text="Generate title every N messages (e.g., 4 = every 4th message)"
+        default=4, help_text="Generate title every N messages (e.g., 4 = every 4th message)"
     )
 
     def __str__(self):

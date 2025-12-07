@@ -6,25 +6,36 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0006_profile_auto_generate_titles_and_more'),
+        ("api", "0006_profile_auto_generate_titles_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MessageAttachment',
+            name="MessageAttachment",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('file', models.FileField(upload_to='message_attachments/%Y/%m/%d/')),
-                ('file_name', models.CharField(max_length=255)),
-                ('file_size', models.BigIntegerField()),
-                ('mime_type', models.CharField(max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('message', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attachments', to='api.message')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("file", models.FileField(upload_to="message_attachments/%Y/%m/%d/")),
+                ("file_name", models.CharField(max_length=255)),
+                ("file_size", models.BigIntegerField()),
+                ("mime_type", models.CharField(max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "message",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="attachments",
+                        to="api.message",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['created_at'],
+                "ordering": ["created_at"],
             },
         ),
     ]

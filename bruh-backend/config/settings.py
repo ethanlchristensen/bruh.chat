@@ -40,10 +40,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # apps
     "api",
-    
     # third-party apps
     "corsheaders",
     "ninja_jwt",
@@ -84,11 +82,7 @@ TEMPLATES = [
     },
 ]
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
-}
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 WSGI_APPLICATION = "config.wsgi.application"
 
@@ -145,7 +139,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100MB
 
 MEDIA_ROOT = CONFIG.media_root if CONFIG else (BASE_DIR / "media")
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

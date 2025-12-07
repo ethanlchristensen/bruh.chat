@@ -11,6 +11,7 @@ export type OpenRouterModel = {
   id: string;
   name: string;
   description?: string;
+  supports_asepct_ratio?: boolean;
   pricing?: {
     prompt: string;
     completion: string;
@@ -40,6 +41,13 @@ export const modelSupportsImageGeneration = (
 ): boolean => {
   if (!model?.architecture?.output_modalities) return false;
   return model.architecture.output_modalities.includes("image");
+};
+
+export const modelSupportsAspectRatio = (
+  modelId: string | undefined,
+): boolean => {
+  if (!modelId) return false;
+  return modelId.includes("google") && modelId.includes("gemini");
 };
 
 export const getModelSupportedModalities = (
