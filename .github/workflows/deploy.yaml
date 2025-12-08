@@ -20,7 +20,7 @@ jobs:
       - name: Copy configuration files
         run: |
           echo "Copying environment files..."
-          cp /home/ethan/source/repos/bruh.chat/.env ./.env
+          cp /home/ethan/source/repos/bruh.chat/.env.container ./.env
           cp /home/ethan/source/repos/bruh.chat/bruh-backend/config.json ./bruh-backend/config.json
           cp /home/ethan/source/repos/bruh.chat/bruh-frontend/.env ./bruh-frontend/.env
 

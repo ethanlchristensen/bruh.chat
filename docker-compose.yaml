@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin}
       - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
@@ -24,12 +24,12 @@ services:
       context: ./bruh-frontend
       dockerfile: Dockerfile
       args:
-        - VITE_APP_BACKEND_API_URL=${VITE_APP_BACKEND_API_URL:-http://localhost:8000}
+        - VITE_APP_BACKEND_API_URL=${VITE_APP_BACKEND_API_URL:-http://localhost:8001}
         - VITE_APP_BACKEND_API_VERSION=${VITE_APP_BACKEND_API_VERSION:-api}
     restart: unless-stopped
     ports:
-      - "5173:80"
-      - "443:443"
+      - "5174:80"
+      - "8443:443"
     depends_on:
       - bruhbackend
     volumes:
