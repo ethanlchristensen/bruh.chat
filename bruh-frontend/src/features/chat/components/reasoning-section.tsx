@@ -33,11 +33,11 @@ export const ReasoningSection = ({
   };
 
   return (
-    <div className="mb-3">
+    <div>
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 px-1 py-1.5 hover:bg-muted/30 rounded transition-colors text-left group"
+        className="w-full flex items-center gap-2 rounded transition-colors text-left group hover:cursor-pointer"
       >
         {isExpanded ? (
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground" />
@@ -45,12 +45,15 @@ export const ReasoningSection = ({
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground" />
         )}
         <Brain className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground" />
-        <span className="text-xs font-medium text-muted-foreground/70 group-hover:text-muted-foreground">
+        <span
+          className={`text-xs font-medium group-hover:text-muted-foreground ${
+            isActive
+              ? "bg-reasoning-gradient bg-size-[200%_200%] bg-clip-text text-transparent animate-shine drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+              : "text-muted-foreground/70"
+          }`}
+        >
           Reasoning
         </span>
-        {isActive && (
-          <Loader2 className="h-3 w-3 text-muted-foreground/70 animate-spin ml-auto" />
-        )}
       </button>
 
       {/* Content */}

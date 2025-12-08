@@ -3,7 +3,7 @@ import { MessageCircle, Info, Trash2, Pencil, Check, X } from "lucide-react";
 import {
   Link,
   useLocation,
-  useParams,
+  useSearch,
   useNavigate,
 } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
@@ -68,15 +68,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { open, isMobile } = useSidebar();
-  const params = useParams({ strict: false });
+  const search = useSearch({ strict: false });
+  const currentConversationId = (search as any)?.c;
 
   const { data: conversationsData, isLoading } = useConversations();
   const conversations = conversationsData?.conversations || [];
 
   const updateTitleMutation = useUpdateConversationTitle();
   const deleteMutation = useDeleteConversation();
-
-  const currentConversationId = (params as any)?.conversationId;
 
   const [showRecentOnly, setShowRecentOnly] = React.useState(() => {
     const saved = localStorage.getItem("sidebar-show-recent");
@@ -184,7 +183,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     // Navigate away BEFORE deleting if we're viewing this conversation
     if (deletingCurrentConversation) {
-      navigate({ to: "/" });
+      navigate({ to: "/", search: {} }); // Clear search params
     }
 
     try {
@@ -213,7 +212,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                  <Link to="/" className="relative overflow-hidden">
+                  <Link to="/" search={{}} className="relative overflow-hidden">
                     <img
                       src="/bruh.chat.png"
                       alt="Company Logo"
@@ -239,7 +238,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         isActive={activeItem?.title === item.title}
                         className="px-2.5 md:px-2"
                       >
-                        <Link to={item.url}>
+                        <Link to={item.url} search={{}}>
                           <item.icon />
                           <span>{item.title}</span>
                         </Link>
@@ -310,8 +309,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           ) : (
                             <>
                               <Link
-                                to="/chat/$conversationId"
-                                params={{ conversationId: conversation.id }}
+                                to="/"
+                                search={{ c: conversation.id }}
                                 className="flex items-center p-4 text-sm min-w-0"
                               >
                                 <div className="flex w-full items-center gap-2 min-w-0">
@@ -391,6 +390,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             />
             <Link
               to="/"
+              search={{}}
               className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
             >
               <MessageCircle className="h-4 w-4" />
@@ -459,8 +459,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         ) : (
                           <>
                             <Link
-                              to="/chat/$conversationId"
-                              params={{ conversationId: conversation.id }}
+                              to="/"
+                              search={{ c: conversation.id }}
                               className="flex items-center p-4 text-sm min-w-0"
                             >
                               <div className="flex w-full items-center gap-2 min-w-0">

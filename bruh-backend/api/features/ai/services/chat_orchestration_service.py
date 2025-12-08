@@ -82,7 +82,7 @@ class ChatOrchestrationService:
 
     @staticmethod
     async def _build_message_with_attachments(
-        content: str, attachments: List[MessageAttachment]
+        content: str, attachments: List[MessageAttachment], model: str = None
     ) -> dict:
         """Build OpenAI-compatible message with text and images"""
         open_router_service = get_open_router_service()
@@ -94,9 +94,16 @@ class ChatOrchestrationService:
         # Build multimodal content
         content_parts = []
 
+        # Check if this is a Gemini model (requires thought_signature)
+        is_gemini = model and "gemini" in model.lower()
+
         # Add text content if provided
         if content and content.strip():
-            content_parts.append({"type": "text", "text": content})
+            text_part = {"type": "text", "text": content}
+            # Add thought_signature for Gemini models
+            if is_gemini:
+                text_part["thought_signature"] = True
+            content_parts.append(text_part)
 
         # Add attachments
         for attachment in attachments:
@@ -223,7 +230,7 @@ class ChatOrchestrationService:
         # Replace last user message with multimodal version if attachments exist
         if attachments:
             message_with_files = await ChatOrchestrationService._build_message_with_attachments(
-                message, attachments
+                message, attachments, model
             )
             message_history[-1] = message_with_files
 
@@ -237,6 +244,7 @@ class ChatOrchestrationService:
         reasoning_content = ""
         generated_images_data = []
         generated_reasoning_images_data = []
+        reasoning_details_chunks = []
         finish_reason = None
         usage_data = {}
         request_id = ""
@@ -256,6 +264,9 @@ class ChatOrchestrationService:
                     choice = chunk["choices"][0]
                     delta = choice.get("delta", {})
 
+                    if "reasoning_details" in delta and delta["reasoning_details"]:
+                        reasoning_details_chunks.extend(delta["reasoning_details"])
+
                     if "content" in delta and delta["content"]:
                         content_chunk = delta["content"]
                         full_content += content_chunk
@@ -267,10 +278,12 @@ class ChatOrchestrationService:
                     elif "reasoning_details" in delta and delta["reasoning_details"]:
                         if "images" in delta and delta["images"]:
                             for img_data in delta["images"]:
-                                base64_url = img_data["image_url"]["url"]
                                 yield (
                                     json.dumps(
-                                        {"type": "reasoning_image", "image_data": base64_url}
+                                        {
+                                            "type": "reasoning_image",
+                                            "image_data": img_data["image_url"]["url"],
+                                        }
                                     )
                                     + "\n"
                                 )
@@ -366,9 +379,14 @@ class ChatOrchestrationService:
 
                 cost_details = usage_data.get("cost_details", {})
 
+                raw_payload = {"streamed": True, "usage": usage_data}
+
+                if reasoning_details_chunks:
+                    raw_payload["reasoning_details"] = reasoning_details_chunks
+
                 api_response = OpenRouterResponse.objects.create(
                     message=assistant_message,
-                    raw_payload={"streamed": True, "usage": usage_data},
+                    raw_payload=raw_payload,
                     request_id=request_id,
                     model_used=model_used,
                     finish_reason=finish_reason,

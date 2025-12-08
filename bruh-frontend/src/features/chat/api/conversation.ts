@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { QueryConfig } from "@/lib/react-query";
-import type {
-  ConversationsResponse,
-  ConversationDetailResponse,
+import {
+  type ConversationsResponse,
+  type ConversationDetailResponse,
+  type Conversation,
+  type ConversationCreateRequest,
 } from "@/types/api";
 import { toast } from "sonner";
 
@@ -128,6 +130,15 @@ export const useDeleteConversation = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
+export const useCreateConversation = () => {
+  return useMutation({
+    mutationFn: async (data: ConversationCreateRequest) => {
+      const response = await api.post<Conversation>("/conversations", data);
+      return response;
     },
   });
 };

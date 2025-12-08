@@ -66,9 +66,11 @@ export const Message = ({ message }: MessageProps) => {
       </div>
 
       {/* Message Content */}
-      <div className="flex flex-col gap-1 max-w-[70%] min-w-0 items-start">
+      <div
+        className={`flex flex-col gap-1 max-w-[70%] min-w-0 overflow-hidden ${isUser ? "items-end" : "items-start"}`}
+      >
         <div
-          className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse self-end" : "self-start"}`}
+          className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse" : ""}`}
         >
           <span className="font-medium">
             {isUser ? "You" : model_id || "Assistant"}
@@ -131,10 +133,10 @@ export const Message = ({ message }: MessageProps) => {
 
         {/* Message bubble */}
         <div
-          className={`rounded-lg py-2.5 ${
+          className={`rounded-lg py-2.5 flex flex-col gap-2 overflow-hidden ${
             isUser
-              ? "bg-primary text-primary-foreground self-end px-4"
-              : "bg-transparent text-foreground self-start"
+              ? "bg-primary text-primary-foreground self-end px-2"
+              : "bg-transparent text-foreground self-start w-full"
           }`}
         >
           {/* Reasoning Section - Show for assistant messages */}
@@ -148,7 +150,7 @@ export const Message = ({ message }: MessageProps) => {
 
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {content}
+              <MarkdownRenderer content={content} />
             </p>
           ) : (
             <MarkdownRenderer content={content} />

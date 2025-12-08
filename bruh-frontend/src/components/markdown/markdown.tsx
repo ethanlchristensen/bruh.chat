@@ -40,7 +40,7 @@ const CodeBlockWithCopy = ({
   }, [effectiveTheme]);
 
   return (
-    <div className="relative group first:mt-0 last:mb-0">
+    <div className="relative group first:mt-0 last:mb-0 max-w-full overflow-hidden">
       <div className="flex items-center justify-between bg-card py-1 px-2 rounded-t-lg">
         <span className="text-xs text-muted-foreground font-mono">
           {language || "text"}
@@ -61,20 +61,22 @@ const CodeBlockWithCopy = ({
           )}
         </button>
       </div>
-      <SyntaxHighlighter
-        style={codeTheme}
-        language={language}
-        PreTag="div"
-        customStyle={{
-          margin: 0,
-          borderTopLeftRadius: 0,
-          borderTopRightRadius: 0,
-          fontSize: "0.75rem",
-          background: "var(--card)",
-        }}
-      >
-        {code}
-      </SyntaxHighlighter>
+      <div className="overflow-x-auto">
+        <SyntaxHighlighter
+          style={codeTheme}
+          language={language}
+          PreTag="div"
+          customStyle={{
+            margin: 0,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            fontSize: "0.75rem",
+            background: "var(--card)",
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 };
@@ -90,7 +92,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
       if (isInline) {
         return (
           <code
-            className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono"
+            className="bg-card px-1.5 py-0.5 rounded text-xs font-mono border border-border/50 wrap-break-word"
             {...props}
           >
             {children}
@@ -131,7 +133,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
     blockquote({ node, children, ...props }) {
       return (
         <blockquote
-          className="border-l-4 border-primary/50 pl-4 my-2 first:mt-0 last:mb-0 italic text-muted-foreground"
+          className="border-l-4 border-primary/50 pl-4 my-1.5 first:mt-0 last:mb-0 italic text-muted-foreground"
           {...props}
         >
           {children}
@@ -179,7 +181,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
     ul({ node, children, ...props }) {
       return (
         <ul
-          className="text-xs list-disc list-inside my-2 first:mt-0 last:mb-0 space-y-1"
+          className="text-xs my-2 first:mt-0 last:mb-0 space-y-1.5 pl-6 border-l-2 border-primary/30 bg-muted/20 py-2 pr-2 rounded-r overflow-hidden"
           {...props}
         >
           {children}
@@ -190,7 +192,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
     ol({ node, children, ...props }) {
       return (
         <ol
-          className="text-xs list-decimal list-inside my-2 first:mt-0 last:mb-0 space-y-1"
+          className="text-xs my-2 first:mt-0 last:mb-0 space-y-1.5 pl-6 border-l-2 border-primary/30 bg-muted/20 py-2 pr-2 rounded-r overflow-hidden"
           {...props}
         >
           {children}
@@ -198,10 +200,21 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
       );
     },
 
+    li({ node, children, ...props }) {
+      return (
+        <li
+          className="text-xs leading-relaxed marker:text-primary marker:font-bold wrap-break-word"
+          {...props}
+        >
+          {children}
+        </li>
+      );
+    },
+
     h1({ node, children, ...props }) {
       return (
         <h1
-          className="text-3xl font-bold mt-6 mb-3 first:mt-0 scroll-m-20"
+          className="text-3xl font-bold mt-4 mb-2 first:mt-0 scroll-m-20"
           {...props}
         >
           {children}
@@ -212,7 +225,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
     h2({ node, children, ...props }) {
       return (
         <h2
-          className="text-2xl font-semibold mt-5 mb-2 first:mt-0 pb-2 border-b scroll-m-20"
+          className="text-2xl font-semibold mt-3 mb-1.5 first:mt-0 pb-2 border-b scroll-m-20"
           {...props}
         >
           {children}
@@ -223,7 +236,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
     h3({ node, children, ...props }) {
       return (
         <h3
-          className="text-xl font-semibold mt-4 mb-2 first:mt-0 scroll-m-20"
+          className="text-xl font-semibold mt-2.5 mb-1.5 first:mt-0 scroll-m-20"
           {...props}
         >
           {children}
@@ -234,7 +247,7 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
     h4({ node, children, ...props }) {
       return (
         <h4
-          className="text-lg font-semibold mt-3 mb-1.5 first:mt-0 scroll-m-20"
+          className="text-lg font-semibold mt-2 mb-1 first:mt-0 scroll-m-20"
           {...props}
         >
           {children}
@@ -244,7 +257,10 @@ export const MarkdownRenderer: React.FC<MarkdownProps> = ({ content }) => {
 
     p({ node, children, ...props }) {
       return (
-        <p className="text-xs leading-7 my-2 first:mt-0 last:mb-0" {...props}>
+        <p
+          className="text-xs leading-relaxed first:mt-0 last:mb-0 wrap-break-word"
+          {...props}
+        >
           {children}
         </p>
       );

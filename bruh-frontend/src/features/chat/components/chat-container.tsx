@@ -16,6 +16,8 @@ import type {
 } from "@/types/api";
 import type { Intent } from "@/types/intent";
 import type { AspectRatio } from "@/types/image";
+import { ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type ChatContainerProps = {
   conversationId: string | undefined;
@@ -31,6 +33,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
     null,
   );
+  const justCreatedConversationRef = useRef<string | null>(null);
 
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>(
     () => {
@@ -51,20 +54,33 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const isStreamingRef = useRef<boolean>(false);
   const isDoneStreamingRef = useRef<boolean>(false);
   const doneDataRef = useRef<any>(null);
-  const newConversationIdRef = useRef<string | undefined>(undefined);
   const tempAssistantIdRef = useRef<string>("");
   const reasoningBufferRef = useRef<string>("");
   const reasoningStreamingImagesRef = useRef<
     Array<{ id: string; data: string }>
   >([]);
   const isReasoningActiveRef = useRef<boolean>(false);
+  const newConversationIdRef = useRef<string | undefined>(undefined);
+  const userMessageRef = useRef<string>("");
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const messageListRef = useRef<{ scrollToBottom: () => void } | null>(null);
+
+  const createChatMutation = useCreateStreamingChat();
+
+  const shouldFetchConversation = Boolean(
+    conversationId && conversationId !== justCreatedConversationRef.current,
+  );
 
   const { data: conversationData, isLoading } = useConversation({
     conversationId: conversationId!,
     queryConfig: {
-      enabled: !!conversationId,
+      enabled: shouldFetchConversation,
     },
   });
+
+  const handleScrollToBottom = () => {
+    messageListRef.current?.scrollToBottom();
+  };
 
   useEffect(() => {
     if (conversationData?.messages) {
@@ -84,14 +100,22 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     }
   }, [conversationId, conversationData, user?.profile?.default_model]);
 
+  // Clear the justCreatedConversationRef when we navigate to a different conversation
+  useEffect(() => {
+    if (
+      conversationId &&
+      conversationId !== justCreatedConversationRef.current
+    ) {
+      justCreatedConversationRef.current = null;
+    }
+  }, [conversationId]);
+
   const handleModelSelect = (modelId: string) => {
     setSelectedModelId(modelId);
     if (!conversationId) {
       localStorage.setItem(NEW_CHAT_MODEL_KEY, modelId);
     }
   };
-
-  const createChatMutation = useCreateStreamingChat();
 
   const finalize = () => {
     const data = doneDataRef.current;
@@ -141,22 +165,18 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       setStreamingMessageId(null);
       isReasoningActiveRef.current = false;
 
+      // Update URL after streaming is complete
       if (!conversationId && newConversationIdRef.current) {
-        queryClient.setQueryData(
-          ["conversations", newConversationIdRef.current],
-          {
-            id: newConversationIdRef.current,
-            messages: updatedMessages,
-          },
-        );
+        justCreatedConversationRef.current = newConversationIdRef.current;
         setTimeout(() => {
           navigate({
-            to: "/chat/$conversationId",
-            params: { conversationId: newConversationIdRef.current! },
+            to: "/",
+            search: { c: newConversationIdRef.current },
             replace: true,
           });
         }, 0);
       }
+
       return updatedMessages;
     });
 
@@ -169,6 +189,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       doneDataRef.current = null;
       newConversationIdRef.current = undefined;
       tempAssistantIdRef.current = "";
+      userMessageRef.current = "";
     }, 100);
   };
 
@@ -196,7 +217,6 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
             ? {
                 ...msg,
                 content: displayedContentRef.current,
-                // Keep streaming reasoning data separate from final reasoning
                 reasoning: isReasoningActiveRef.current
                   ? ({
                       id: "temp-reasoning",
@@ -239,6 +259,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     const tempAssistantId = `temp-assistant-${Date.now()}`;
     tempAssistantIdRef.current = tempAssistantId;
     newConversationIdRef.current = undefined;
+    userMessageRef.current = message;
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -298,17 +319,20 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
           console.log("Intent:", data.intent, "Model:", data.model);
         },
         onMetadata: (data: any) => {
+          // Store the conversation ID for later URL update
           if (!conversationId && data.conversation_id) {
             newConversationIdRef.current = data.conversation_id;
             localStorage.removeItem(NEW_CHAT_MODEL_KEY);
+
+            // Update conversations list immediately
             queryClient.setQueryData<ConversationsResponse>(
               ["conversations"],
               (old) => {
                 if (!old) return old;
                 const title =
-                  message.length > 50
-                    ? message.substring(0, 50) + "..."
-                    : message;
+                  userMessageRef.current.length > 50
+                    ? userMessageRef.current.substring(0, 50) + "..."
+                    : userMessageRef.current;
                 const newConversation: Conversation = {
                   id: data.conversation_id,
                   title,
@@ -321,6 +345,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
               },
             );
           }
+
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === tempUserId
@@ -347,7 +372,6 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
             ...reasoningStreamingImagesRef.current,
             newImage,
           ];
-          // Force update to show new image
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === tempAssistantIdRef.current ? { ...msg } : msg,
@@ -388,18 +412,45 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
-      <MessageList
-        messages={messages}
-        isLoading={createChatMutation.isPending && streamingMessageId === null}
-      />
-      <MessageInput
-        onSend={handleSendMessage}
-        disabled={createChatMutation.isPending}
-        selectedModelId={selectedModelId}
-        selectedModel={selectedModel}
-        onModelSelect={handleModelSelect}
-        conversationId={conversationId}
-      />
+      <div className="relative flex flex-col flex-1 min-h-0">
+        <MessageList
+          ref={messageListRef}
+          messages={messages}
+          isLoading={
+            createChatMutation.isPending && streamingMessageId === null
+          }
+          onScrollStateChange={setIsScrolledUp}
+        />
+
+        {isScrolledUp && (
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-background from-20% to-transparent pointer-events-none z-10" />
+        )}
+
+        {isScrolledUp && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <Button
+              onClick={handleScrollToBottom}
+              className="shadow-lg"
+              variant={"secondary"}
+              size={"sm"}
+            >
+              <ArrowDown className="h-4 w-4" />
+              <span className="text-sm font-medium">Back to bottom</span>
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 relative z-20 bg-background">
+        <MessageInput
+          onSend={handleSendMessage}
+          disabled={createChatMutation.isPending}
+          selectedModelId={selectedModelId}
+          selectedModel={selectedModel}
+          onModelSelect={handleModelSelect}
+          conversationId={conversationId}
+        />
+      </div>
     </div>
   );
 };

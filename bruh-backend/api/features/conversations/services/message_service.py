@@ -1,7 +1,10 @@
 from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
+import logging
 
 from ..models import Conversation, Message, MessageAttachment, GeneratedImage
+
+logger = logging.getLogger(__name__)
 
 
 class MessageService:
@@ -32,7 +35,7 @@ class MessageService:
             conversation: The conversation object
             include_user_images: Whether to include user-uploaded images
             max_generated_images: Maximum number of recent generated images to include
-                                 (0 = none, -1 = all, N = last N images)
+                                (0 = none, -1 = all, N = last N images)
         """
         from api.features.ai.services.open_router_service import get_open_router_service
 
@@ -41,6 +44,7 @@ class MessageService:
 
         db_messages = (
             conversation.messages.filter(deleted=False)
+            .select_related("api_response")  # Changed from openrouterresponse to api_response
             .prefetch_related(
                 Prefetch(
                     "attachments",
@@ -102,6 +106,8 @@ class MessageService:
                         include_images = True
                     generated_image_count += 1
 
+                msg_dict = {"role": message.role}
+
                 if include_images:
                     content_parts = []
 
@@ -118,21 +124,22 @@ class MessageService:
                             }
                         )
 
-                    # for gen_reasoning_image in message.reasoning.generated_reasoning_images.all():
-                    #     gen_reasoning_image.image.seek(0)
-                    #     base64_image = open_router_service.encode_image_to_base64(
-                    #         gen_reasoning_image.image
-                    #     )
-                    #     content_parts.append(
-                    #         {
-                    #             "type": "image_url",
-                    #             "image_url": {"url": f"data:image/png;base64,{base64_image}"},
-                    #         }
-                    #     )
-
-                    messages.append({"role": message.role, "content": content_parts})
+                    msg_dict["content"] = content_parts
                 else:
-                    messages.append({"role": message.role, "content": message.content})
+                    msg_dict["content"] = message.content
+
+                # Preserve reasoning_details if present
+                try:
+                    if hasattr(message, "api_response") and message.api_response:
+                        response = message.api_response
+                        if response.raw_payload and isinstance(response.raw_payload, dict):
+                            reasoning_details = response.raw_payload.get("reasoning_details")
+                            if reasoning_details:
+                                msg_dict["reasoning_details"] = reasoning_details
+                except Exception as e:
+                    logger.warning(f"Could not retrieve reasoning_details: {e}")
+
+                messages.append(msg_dict)
 
         return messages
 

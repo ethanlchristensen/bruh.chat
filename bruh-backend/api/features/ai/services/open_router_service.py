@@ -127,6 +127,11 @@ class OpenRouterService:
             async with client.stream(
                 "POST", url, json=payload, headers=self._get_headers(), timeout=60.0
             ) as response:
+                logger.info(f"Response status: {response.status_code}")
+
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    logger.error(f"OpenRouter API error: {error_text.decode()}")
                 response.raise_for_status()
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):

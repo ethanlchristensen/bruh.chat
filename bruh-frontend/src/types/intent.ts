@@ -1,4 +1,4 @@
-import { Image, MessageCircle } from "lucide-react";
+import { Image, MessageCircle, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { OpenRouterModel } from "@/components/shared/model-selector/models";
 import { modelSupportsImageGeneration } from "@/components/shared/model-selector/models";
@@ -6,6 +6,7 @@ import { modelSupportsImageGeneration } from "@/components/shared/model-selector
 export const INTENTS = {
   CHAT: "chat",
   IMAGE: "image",
+  PERSONA: "persona",
 } as const;
 
 export type Intent = (typeof INTENTS)[keyof typeof INTENTS];
@@ -27,6 +28,8 @@ export const isValidIntent = (value: string): value is Intent => {
 
 export const getIntentIcon = (intent: Intent): LucideIcon => {
   switch (intent) {
+    case INTENTS.PERSONA:
+      return Sparkles;
     case INTENTS.IMAGE:
       return Image;
     case INTENTS.CHAT:
@@ -49,6 +52,10 @@ export const INTENT_METADATA: Record<Intent, IntentMetadata> = {
   [INTENTS.IMAGE]: {
     label: "Generate Image",
     description: "Create images from text descriptions",
+  },
+  [INTENTS.PERSONA]: {
+    label: "Persona",
+    description: "Chat with one of your curated Personas",
   },
 };
 

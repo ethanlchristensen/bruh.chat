@@ -65,8 +65,12 @@ body,
   background: var(--color-card);
 }
 
+[class*="language-"] {
+  background: var(--card) !important;
+}
+
 [class*="language-"] span {
-  background: var(--card);
+  background: transparent;
 }
 
 code {
@@ -661,7 +665,41 @@ code {
     }
   }
 
-  .animate-fade-in {
-    animation: fade-in 0.3s ease-in;
+  @keyframes shine {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    100% {
+      background-position: 200% 50%;
+    }
+  }
+
+  @keyframes glow {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+    }
+    50% {
+      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+    }
+  }
+
+  .animate-shine {
+    animation: shine 3s linear infinite;
+  }
+
+  .animate-glow {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.3));
+  }
+
+  .bg-reasoning-gradient {
+    background-image: linear-gradient(
+      to right,
+      color-mix(in oklab, var(--muted-foreground) 60%, transparent),
+      var(--foreground),
+      color-mix(in oklab, var(--muted-foreground) 60%, transparent)
+    );
   }
 }
