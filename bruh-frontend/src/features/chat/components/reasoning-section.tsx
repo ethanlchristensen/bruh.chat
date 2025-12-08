@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Brain, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Brain } from "lucide-react";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
 import type { GeneratedReasoningImage } from "@/types/api";
 
