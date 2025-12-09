@@ -196,4 +196,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for more 
 ---
 
 Built with ❤️ by `bruh`
-![bruhshelllogo](README\bruhshelllogo2.png)
+![bruhshelllogo](README/bruhshelllogo2.png)
