@@ -318,6 +318,7 @@ export const ModelSelector = ({
                     </p>
                   </div>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowAddModel(false)}
@@ -358,6 +359,7 @@ export const ModelSelector = ({
                         return (
                           <div key={provider} className="mb-1">
                             <Button
+                              type="button"
                               variant="ghost"
                               onClick={() => toggleProvider(provider)}
                               className="w-full justify-between px-3 py-2 h-auto font-medium"
@@ -379,6 +381,7 @@ export const ModelSelector = ({
                               <div className="ml-6 mt-1 space-y-0.5">
                                 {(models as any[]).map((model) => (
                                   <Button
+                                    type="button"
                                     key={model.id}
                                     variant="ghost"
                                     onClick={() => handleAddModel(model.id)}
@@ -495,6 +498,7 @@ export const ModelSelector = ({
                   </p>
                 </div>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowAddModel(false)}
@@ -535,6 +539,7 @@ export const ModelSelector = ({
                       return (
                         <div key={provider} className="mb-1">
                           <Button
+                            type="button"
                             variant="ghost"
                             onClick={() => toggleProvider(provider)}
                             className="w-full justify-between px-3 py-2 h-auto font-medium"
@@ -556,6 +561,7 @@ export const ModelSelector = ({
                             <div className="ml-6 mt-1 space-y-0.5">
                               {(models as any[]).map((model) => (
                                 <Button
+                                  type="button"
                                   key={model.id}
                                   variant="ghost"
                                   onClick={() => handleAddModel(model.id)}
