@@ -24,7 +24,7 @@ type MessageInputProps = {
     message: string,
     files?: File[],
     intent?: Intent,
-    aspectRatio?: AspectRatio,
+    aspectRatio?: AspectRatio
   ) => void;
   disabled?: boolean;
   selectedModelId: string | undefined;
@@ -108,7 +108,7 @@ export const MessageInput = ({
 
     if (activeIntent !== INTENTS.CHAT && selectedModel) {
       const isSupported = availableIntents.some(
-        (cmd) => cmd.intent === activeIntent,
+        (cmd) => cmd.intent === activeIntent
       );
       if (!isSupported) {
         setActiveIntent(INTENTS.CHAT);
@@ -153,12 +153,12 @@ export const MessageInput = ({
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSlashMenuIndex((prev) =>
-          prev < availableIntents.length - 1 ? prev + 1 : 0,
+          prev < availableIntents.length - 1 ? prev + 1 : 0
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSlashMenuIndex((prev) =>
-          prev > 0 ? prev - 1 : availableIntents.length - 1,
+          prev > 0 ? prev - 1 : availableIntents.length - 1
         );
       } else if (e.key === "Escape") {
         setShowSlashMenu(false);
@@ -200,7 +200,7 @@ export const MessageInput = ({
         input.trim(),
         selectedFiles,
         activeIntent,
-        activeIntent === INTENTS.IMAGE ? aspectRatio : undefined,
+        activeIntent === INTENTS.IMAGE ? aspectRatio : undefined
       );
 
       setInput("");
@@ -230,7 +230,7 @@ export const MessageInput = ({
 
   return (
     <div className="p-4">
-      <div className="max-w-4xl mx-auto space-y-3">
+      <div className="max-w-4xl mx-auto space-y-2">
         {/* File previews */}
         {selectedFiles.length > 0 && (
           <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -323,41 +323,41 @@ export const MessageInput = ({
               <Send className="h-4 w-4" />
             </button>
           </div>
-
-          {/* Bottom row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <ModelSelector
-              selectedModelId={selectedModelId}
-              onModelSelect={onModelSelect}
-            />
-
-            {activeIntent !== INTENTS.CHAT && (
-              <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-md px-3 py-1.5 text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-right-2 duration-200">
-                <span className="flex items-center gap-1.5">
-                  {getActiveIntentIcon()}
-                  <span>{INTENT_METADATA[activeIntent].label}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={handleRemoveIntent}
-                  className="hover:bg-primary/20 rounded-sm p-0.5 transition-colors"
-                  title="Remove intent"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-
-            {activeIntent !== INTENTS.CHAT && (
-              <IntentParameters
-                modelId={selectedModelId}
-                intent={activeIntent}
-                aspectRatio={aspectRatio}
-                onAspectRatioChange={setAspectRatio}
-              />
-            )}
-          </div>
         </form>
+
+        {/* Bottom row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <ModelSelector
+            selectedModelId={selectedModelId}
+            onModelSelect={onModelSelect}
+          />
+
+          {activeIntent !== INTENTS.CHAT && (
+            <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-md px-3 py-1.5 text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-right-2 duration-200">
+              <span className="flex items-center gap-1.5">
+                {getActiveIntentIcon()}
+                <span>{INTENT_METADATA[activeIntent].label}</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleRemoveIntent}
+                className="hover:bg-primary/20 rounded-sm p-0.5 transition-colors"
+                title="Remove intent"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          {activeIntent !== INTENTS.CHAT && (
+            <IntentParameters
+              modelId={selectedModelId}
+              intent={activeIntent}
+              aspectRatio={aspectRatio}
+              onAspectRatioChange={setAspectRatio}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
