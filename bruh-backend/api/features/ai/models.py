@@ -1,15 +1,21 @@
-from django.contrib.auth.models import User
 from django.db import models
 
 from api.features.conversations.models import Message
 
 
-class OpenRouterResponse(models.Model):
+class AIResponse(models.Model):
     """Stores raw API responses from OpenRouter for audit, debugging, and analytics"""
+
+    PROVIDER_CHOICES = [
+        ("openrouter", "OpenRouter"),
+        ("ollama", "Ollama"),
+    ]
 
     message = models.OneToOneField(
         Message, related_name="api_response", on_delete=models.CASCADE, null=True, blank=True
     )
+
+    provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, default="openrouter")
 
     raw_payload = models.JSONField()
 
@@ -17,12 +23,14 @@ class OpenRouterResponse(models.Model):
     model_used = models.CharField(max_length=100)
     finish_reason = models.CharField(max_length=50, null=True, blank=True)
 
+    # usage stats (ollama & openrouter)
     prompt_tokens = models.IntegerField(null=True, blank=True)
     completion_tokens = models.IntegerField(null=True, blank=True)
     image_tokens = models.IntegerField(null=True, blank=True)
     reasoning_tokens = models.IntegerField(null=True, blank=True)
     total_tokens = models.IntegerField(null=True, blank=True)
 
+    # cost stats (openrouter)
     estimated_prompt_cost = models.DecimalField(
         max_digits=10, decimal_places=6, null=True, blank=True
     )
@@ -32,7 +40,6 @@ class OpenRouterResponse(models.Model):
     estimated_reasoning_cost = models.DecimalField(
         max_digits=10, decimal_places=6, null=True, blank=True
     )
-
     upstream_inference_cost = models.DecimalField(
         max_digits=10, decimal_places=6, null=True, blank=True
     )
@@ -51,7 +58,8 @@ class OpenRouterResponse(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["-created_at", "model_used"]),
+            models.Index(fields=["provider"]),
         ]
 
     def __str__(self):
-        return f"{self.model_used} - {self.request_id[:10]}"
+        return f"[{self.provider}] {self.model_used} - {self.request_id[:10]}"

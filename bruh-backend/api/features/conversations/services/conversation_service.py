@@ -1,12 +1,12 @@
 import datetime
-from uuid import UUID
 from typing import Tuple
+from uuid import UUID
 
 from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
 
-from ..models import Conversation, Message
 from ..broadcast import ConversationBroadcaster
+from ..models import Conversation, Message
 
 
 class ConversationService:

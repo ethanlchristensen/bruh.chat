@@ -24,6 +24,8 @@ export const MessageList = forwardRef<
   const [autoScroll, setAutoScroll] = useState(true);
   const lastScrollHeight = useRef(0);
   const isScrollingToBottom = useRef(false);
+  const prevMessagesLengthRef = useRef(0);
+  const prevFirstMessageIdRef = useRef<string | null>(null);
 
   // Check if user is near bottom
   const checkIfNearBottom = () => {
@@ -77,22 +79,53 @@ export const MessageList = forwardRef<
     const container = containerRef.current;
     const currentScrollHeight = container.scrollHeight;
 
-    // Check if content grew (streaming or new message)
     const contentGrew = currentScrollHeight > lastScrollHeight.current;
     lastScrollHeight.current = currentScrollHeight;
 
     if (contentGrew && autoScroll) {
-      // Use auto behavior to prevent jump
       scrollToBottom("auto");
     }
   }, [messages, autoScroll]);
 
-  // Initial scroll
+  // Detect conversation switches
+  useEffect(() => {
+    const currentLength = messages.length;
+    const prevLength = prevMessagesLengthRef.current;
+    const currentFirstId = messages[0]?.id ?? null;
+    const prevFirstId = prevFirstMessageIdRef.current;
+
+    // Detect conversation switch by checking if first message ID changed
+    const conversationSwitched =
+      currentFirstId !== prevFirstId && prevFirstId !== null;
+
+    // Or if messages array changed significantly
+    const significantChange =
+      Math.abs(currentLength - prevLength) > 1 || currentLength === 0;
+
+    if (conversationSwitched || significantChange) {
+      setAutoScroll(true);
+      onScrollStateChange?.(false);
+      lastScrollHeight.current = 0;
+
+      // Force scroll to bottom after a brief delay to ensure DOM is updated
+      setTimeout(() => {
+        scrollToBottom("auto");
+      }, 50);
+    }
+
+    prevMessagesLengthRef.current = currentLength;
+    prevFirstMessageIdRef.current = currentFirstId;
+  }, [messages]);
+
+  // Initial scroll when messages first load
   useEffect(() => {
     if (messages.length > 0) {
-      scrollToBottom("auto");
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        scrollToBottom("auto");
+      }, 50);
     }
-  }, []);
+  }, [messages.length]);
 
   return (
     <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
@@ -134,7 +167,6 @@ export const MessageList = forwardRef<
             </div>
           </div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
     </div>

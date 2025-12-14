@@ -1,4 +1,5 @@
 from django.urls import path
+
 from api.features.users.consumers import UserConsumer
 
 websocket_urlpatterns = [

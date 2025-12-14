@@ -2,7 +2,6 @@ import * as React from "react";
 
 import { SidebarTrigger } from "../ui/sidebar";
 import { ThemeToggle } from "../theme/theme-toggle";
-import { ColorThemeToggle } from "../theme/color-theme-toggle";
 
 type ContentLayoutProps = {
   children: React.ReactNode;
@@ -15,11 +14,10 @@ export const ContentLayout = ({
 }: ContentLayoutProps) => {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <header className="bg-sidebar flex shrink-0 items-center justify-between gap-1 p-1 border-b">
+      <header className="bg-sidebar flex shrink-0 items-center justify-between gap-1 px-x py-1">
         <SidebarTrigger />
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <ColorThemeToggle />
         </div>
       </header>
       {fullHeight ? (

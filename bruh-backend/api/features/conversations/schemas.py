@@ -1,14 +1,13 @@
-from uuid import UUID
 from typing import List
 
 from ninja import ModelSchema, Schema
 
 from .models import (
     Conversation,
-    Message,
-    MessageAttachment,
     GeneratedImage,
     GeneratedReasoningImage,
+    Message,
+    MessageAttachment,
     Reasoning,
 )
 

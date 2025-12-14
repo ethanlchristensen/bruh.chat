@@ -8,180 +8,199 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './app/routes/__root'
-import { Route as ProtectedRouteImport } from './app/routes/_protected'
-import { Route as AuthRouteImport } from './app/routes/_auth'
-import { Route as ProtectedIndexRouteImport } from './app/routes/_protected/index'
-import { Route as ProtectedProfileRouteImport } from './app/routes/_protected/profile'
-import { Route as ProtectedAboutRouteImport } from './app/routes/_protected/about'
-import { Route as AuthRegisterRouteImport } from './app/routes/_auth/register'
-import { Route as AuthLoginRouteImport } from './app/routes/_auth/login'
+import { Route as rootRouteImport } from "./app/routes/__root";
+import { Route as ProtectedRouteImport } from "./app/routes/_protected";
+import { Route as AuthRouteImport } from "./app/routes/_auth";
+import { Route as ProtectedIndexRouteImport } from "./app/routes/_protected/index";
+import { Route as ProtectedProfileRouteImport } from "./app/routes/_protected/profile";
+import { Route as ProtectedPersonaRouteImport } from "./app/routes/_protected/persona";
+import { Route as ProtectedAboutRouteImport } from "./app/routes/_protected/about";
+import { Route as AuthRegisterRouteImport } from "./app/routes/_auth/register";
+import { Route as AuthLoginRouteImport } from "./app/routes/_auth/login";
 
 const ProtectedRoute = ProtectedRouteImport.update({
-  id: '/_protected',
+  id: "/_protected",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
+  id: "/_auth",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => ProtectedRoute,
-} as any)
+} as any);
 const ProtectedProfileRoute = ProtectedProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+  id: "/profile",
+  path: "/profile",
   getParentRoute: () => ProtectedRoute,
-} as any)
+} as any);
+const ProtectedPersonaRoute = ProtectedPersonaRouteImport.update({
+  id: "/persona",
+  path: "/persona",
+  getParentRoute: () => ProtectedRoute,
+} as any);
 const ProtectedAboutRoute = ProtectedAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+  id: "/about",
+  path: "/about",
   getParentRoute: () => ProtectedRoute,
-} as any)
+} as any);
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
+  id: "/register",
+  path: "/register",
   getParentRoute: () => AuthRoute,
-} as any)
+} as any);
 const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => AuthRoute,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/login': typeof AuthLoginRoute
-  '/register': typeof AuthRegisterRoute
-  '/about': typeof ProtectedAboutRoute
-  '/profile': typeof ProtectedProfileRoute
-  '/': typeof ProtectedIndexRoute
+  "/login": typeof AuthLoginRoute;
+  "/register": typeof AuthRegisterRoute;
+  "/about": typeof ProtectedAboutRoute;
+  "/persona": typeof ProtectedPersonaRoute;
+  "/profile": typeof ProtectedProfileRoute;
+  "/": typeof ProtectedIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/login': typeof AuthLoginRoute
-  '/register': typeof AuthRegisterRoute
-  '/about': typeof ProtectedAboutRoute
-  '/profile': typeof ProtectedProfileRoute
-  '/': typeof ProtectedIndexRoute
+  "/login": typeof AuthLoginRoute;
+  "/register": typeof AuthRegisterRoute;
+  "/about": typeof ProtectedAboutRoute;
+  "/persona": typeof ProtectedPersonaRoute;
+  "/profile": typeof ProtectedProfileRoute;
+  "/": typeof ProtectedIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/_auth': typeof AuthRouteWithChildren
-  '/_protected': typeof ProtectedRouteWithChildren
-  '/_auth/login': typeof AuthLoginRoute
-  '/_auth/register': typeof AuthRegisterRoute
-  '/_protected/about': typeof ProtectedAboutRoute
-  '/_protected/profile': typeof ProtectedProfileRoute
-  '/_protected/': typeof ProtectedIndexRoute
+  __root__: typeof rootRouteImport;
+  "/_auth": typeof AuthRouteWithChildren;
+  "/_protected": typeof ProtectedRouteWithChildren;
+  "/_auth/login": typeof AuthLoginRoute;
+  "/_auth/register": typeof AuthRegisterRoute;
+  "/_protected/about": typeof ProtectedAboutRoute;
+  "/_protected/persona": typeof ProtectedPersonaRoute;
+  "/_protected/profile": typeof ProtectedProfileRoute;
+  "/_protected/": typeof ProtectedIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/login' | '/register' | '/about' | '/profile' | '/'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/register' | '/about' | '/profile' | '/'
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/login" | "/register" | "/about" | "/persona" | "/profile" | "/";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/login" | "/register" | "/about" | "/persona" | "/profile" | "/";
   id:
-    | '__root__'
-    | '/_auth'
-    | '/_protected'
-    | '/_auth/login'
-    | '/_auth/register'
-    | '/_protected/about'
-    | '/_protected/profile'
-    | '/_protected/'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/_auth"
+    | "/_protected"
+    | "/_auth/login"
+    | "/_auth/register"
+    | "/_protected/about"
+    | "/_protected/persona"
+    | "/_protected/profile"
+    | "/_protected/";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  AuthRoute: typeof AuthRouteWithChildren
-  ProtectedRoute: typeof ProtectedRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren;
+  ProtectedRoute: typeof ProtectedRouteWithChildren;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/_protected': {
-      id: '/_protected'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof ProtectedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_protected/': {
-      id: '/_protected/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof ProtectedIndexRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/profile': {
-      id: '/_protected/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProtectedProfileRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/about': {
-      id: '/_protected/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof ProtectedAboutRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_auth/register': {
-      id: '/_auth/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
+    "/_protected": {
+      id: "/_protected";
+      path: "";
+      fullPath: "";
+      preLoaderRoute: typeof ProtectedRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_auth": {
+      id: "/_auth";
+      path: "";
+      fullPath: "";
+      preLoaderRoute: typeof AuthRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_protected/": {
+      id: "/_protected/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof ProtectedIndexRouteImport;
+      parentRoute: typeof ProtectedRoute;
+    };
+    "/_protected/profile": {
+      id: "/_protected/profile";
+      path: "/profile";
+      fullPath: "/profile";
+      preLoaderRoute: typeof ProtectedProfileRouteImport;
+      parentRoute: typeof ProtectedRoute;
+    };
+    "/_protected/persona": {
+      id: "/_protected/persona";
+      path: "/persona";
+      fullPath: "/persona";
+      preLoaderRoute: typeof ProtectedPersonaRouteImport;
+      parentRoute: typeof ProtectedRoute;
+    };
+    "/_protected/about": {
+      id: "/_protected/about";
+      path: "/about";
+      fullPath: "/about";
+      preLoaderRoute: typeof ProtectedAboutRouteImport;
+      parentRoute: typeof ProtectedRoute;
+    };
+    "/_auth/register": {
+      id: "/_auth/register";
+      path: "/register";
+      fullPath: "/register";
+      preLoaderRoute: typeof AuthRegisterRouteImport;
+      parentRoute: typeof AuthRoute;
+    };
+    "/_auth/login": {
+      id: "/_auth/login";
+      path: "/login";
+      fullPath: "/login";
+      preLoaderRoute: typeof AuthLoginRouteImport;
+      parentRoute: typeof AuthRoute;
+    };
   }
 }
 
 interface AuthRouteChildren {
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthLoginRoute: typeof AuthLoginRoute;
+  AuthRegisterRoute: typeof AuthRegisterRoute;
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
-}
+};
 
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren);
 
 interface ProtectedRouteChildren {
-  ProtectedAboutRoute: typeof ProtectedAboutRoute
-  ProtectedProfileRoute: typeof ProtectedProfileRoute
-  ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedAboutRoute: typeof ProtectedAboutRoute;
+  ProtectedPersonaRoute: typeof ProtectedPersonaRoute;
+  ProtectedProfileRoute: typeof ProtectedProfileRoute;
+  ProtectedIndexRoute: typeof ProtectedIndexRoute;
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAboutRoute: ProtectedAboutRoute,
+  ProtectedPersonaRoute: ProtectedPersonaRoute,
   ProtectedProfileRoute: ProtectedProfileRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
-}
+};
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
   ProtectedRouteChildren,
-)
+);
 
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ProtectedRoute: ProtectedRouteWithChildren,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

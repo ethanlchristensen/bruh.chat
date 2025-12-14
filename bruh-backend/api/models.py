@@ -1,5 +1,5 @@
-from .features.ai.models import OpenRouterResponse
+from .features.ai.models import AIResponse
 from .features.conversations.models import Conversation, Message
 from .features.users.models import Profile, UserAddedModel
 
-__all__ = ["OpenRouterResponse", "UserAddedModel", "Conversation", "Message", "Profile"]
+__all__ = ["AIResponse", "UserAddedModel", "Conversation", "Message", "Profile"]

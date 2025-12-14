@@ -3,6 +3,10 @@
         "open_router_api_key": "sk-...",
         "open_router_default_model": "openai/gpt-5-nano"
     },
+    "ollama": {
+        "ollama_host": "localhost:11434",
+        "ollama_default_model": null
+    },
     "allowed_hosts": [
         "localhost",
         "127.0.0.1"

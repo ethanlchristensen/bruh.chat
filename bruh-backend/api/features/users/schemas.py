@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from ninja import Schema
 
@@ -9,6 +9,7 @@ class ProfileSchema(Schema):
     profile_image: Optional[str] = None
     default_model: Optional[str] = None
     default_aux_model: Optional[str] = None
+    default_provider: Optional[str] = None
     auto_generate_titles: Optional[bool] = None
     title_generation_frequency: Optional[int] = None
 
@@ -23,6 +24,7 @@ class ProfileUpdateSchema(Schema):
     bio: Optional[str] = None
     default_model: Optional[str] = None
     default_aux_model: Optional[str] = None
+    default_provider: Optional[str] = None
     auto_generate_titles: Optional[bool] = None
     title_generation_frequency: Optional[int] = None
 
@@ -48,24 +50,29 @@ class UserUpdateSchema(Schema):
 class UserAddedModelSchema(Schema):
     id: int
     model_id: str
+    provider: str  # NEW
     added_at: datetime
 
 
 class AddModelSchema(Schema):
     model_id: str
+    provider: str = "openrouter"  # NEW
 
 
 class BulkAddModelsSchema(Schema):
     model_ids: List[str]
+    provider: str = "openrouter"  # NEW
 
 
 class RemoveModelSchema(Schema):
     model_id: str
+    provider: str = "openrouter"  # NEW
 
 
 class BulkOperationResponseSchema(Schema):
     added: int
     skipped: int
+    invalid: List[str] = []  # NEW - show which models were invalid
 
 
 class UserRegistrationSchema(Schema):

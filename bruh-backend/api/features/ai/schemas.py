@@ -1,5 +1,5 @@
+from typing import Literal, Optional
 from uuid import UUID
-from typing import Optional, Literal
 
 from ninja import Schema
 

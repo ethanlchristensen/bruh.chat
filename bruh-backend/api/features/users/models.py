@@ -5,16 +5,19 @@ from django.dispatch import receiver
 
 
 class UserAddedModel(models.Model):
+    PROVDER_CHOICES = [("openrouter", "OpenRouter"), ("ollama", "Ollama")]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="added_models")
     model_id = models.CharField(max_length=350)
+    provider = models.CharField(max_length=20, choices=PROVDER_CHOICES, default="openrouter")
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ["user", "model_id"]
+        unique_together = ["user", "model_id", "provider"]
         ordering = ["-added_at"]
 
     def __str__(self):
-        return f"{self.user.username} - {self.model_id}"
+        return f"{self.user.username} - {self.provider}/{self.model_id}"
 
 
 class Profile(models.Model):
@@ -22,6 +25,7 @@ class Profile(models.Model):
     bio = models.TextField(blank=True)
     profile_image = models.ImageField(upload_to="profile_images/", blank=True, null=True)
     default_model = models.TextField(blank=True, null=True)
+    default_provider = models.TextField(blank=True, null=True)
     default_aux_model = models.TextField(blank=True, null=True)
 
     # ai title generation

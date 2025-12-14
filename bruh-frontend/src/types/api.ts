@@ -20,6 +20,7 @@ export interface UserProfile {
   bio: string;
   profile_image: string;
   default_model: string;
+  default_provider: string;
   default_aux_model: string;
   auto_generate_titles: boolean;
   title_generation_frequency: number;
@@ -53,6 +54,7 @@ export interface ChatRequest {
   message: string;
   conversation_id?: string;
   model?: string;
+  provider?: string;
   intent?: Intent;
   aspect_ratio?: AspectRatio;
   files?: File[];

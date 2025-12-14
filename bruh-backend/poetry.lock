@@ -788,6 +788,22 @@ files = [
 ]
 
 [[package]]
+name = "ollama"
+version = "0.6.1"
+description = "The official Python client for Ollama."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "ollama-0.6.1-py3-none-any.whl", hash = "sha256:fc4c984b345735c5486faeee67d8a265214a31cbb828167782dc642ce0a2bf8c"},
+    {file = "ollama-0.6.1.tar.gz", hash = "sha256:478c67546836430034b415ed64fa890fd3d1ff91781a9d548b3325274e69d7c6"},
+]
+
+[package.dependencies]
+httpx = ">=0.27"
+pydantic = ">=2.9"
+
+[[package]]
 name = "openrouter"
 version = "0.0.19"
 description = "Official Python Client SDK for OpenRouter."
@@ -1561,4 +1577,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13"
-content-hash = "bf7586401eae2ced764aac36988fa1782edff01f247bdbdd103911952f143f2e"
+content-hash = "8e265cf9ee4953d88c7a9ba616bfaaf1661d3d22dfc2f97fc5e7382b4884aa96"

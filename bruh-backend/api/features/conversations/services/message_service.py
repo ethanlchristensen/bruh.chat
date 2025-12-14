@@ -1,8 +1,9 @@
-from asgiref.sync import sync_to_async
-from django.db.models import Prefetch
 import logging
 
-from ..models import Conversation, Message, MessageAttachment, GeneratedImage
+from asgiref.sync import sync_to_async
+from django.db.models import Prefetch
+
+from ..models import Conversation, Message, MessageAttachment
 
 logger = logging.getLogger(__name__)
 

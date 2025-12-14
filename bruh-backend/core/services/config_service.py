@@ -1,7 +1,7 @@
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -17,8 +17,14 @@ class OpenRouterConfig(BaseModel):
         return v
 
 
+class OllamaConfig(BaseModel):
+    ollama_host: str = Field(..., min_length=1)
+    ollama_default_model: Optional[str]
+
+
 class Config(BaseModel):
     open_router: OpenRouterConfig
+    ollama: OllamaConfig
     allowed_hosts: List[str]
     media_root: str
 

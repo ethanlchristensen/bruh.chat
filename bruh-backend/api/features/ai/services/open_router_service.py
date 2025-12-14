@@ -1,15 +1,13 @@
 import base64
+import logging
 from functools import lru_cache
 from typing import Optional
-from io import BytesIO
 
 import httpx
 from django.core.cache import cache
 from django.core.files.uploadedfile import UploadedFile
 
 from core.services import get_config
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +66,39 @@ class OpenRouterService:
             "image_url": {"url": f"data:{mime_type};base64,{base64_image}"},
         }
 
+    async def format_message_payload(
+        self, content: str, attachments: list, model: str = None
+    ) -> dict:
+        """Build OpenAI-compatible message with text and images"""
+        # If no attachments, return simple text message
+        if not attachments:
+            return {"role": "user", "content": content}
+
+        # Build multimodal content
+        content_parts = []
+        is_gemini = model and "gemini" in model.lower()
+
+        # Add text content if provided
+        if content and content.strip():
+            text_part = {"type": "text", "text": content}
+            if is_gemini:
+                text_part["thought_signature"] = True
+            content_parts.append(text_part)
+
+        # Add attachments
+        for attachment in attachments:
+            if attachment.mime_type.startswith("image/"):
+                attachment.file.seek(0)
+                base64_image = self.encode_image_to_base64(attachment.file)
+                content_parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{attachment.mime_type};base64,{base64_image}"},
+                    }
+                )
+
+        return {"role": "user", "content": content_parts}
+
     async def chat(
         self,
         content: str,
@@ -104,6 +135,7 @@ class OpenRouterService:
         max_tokens: Optional[int] = None,
         modalities: Optional[list[str]] = None,
         image_config: Optional[dict] = None,
+        **kwargs,
     ):
         """Stream chat completions as Server-Sent Events"""
         url = f"{self.base_url}/chat/completions"

@@ -1,11 +1,11 @@
-import uuid
+import base64
 import re
+import uuid
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
-from django.db import models
 from django.core.files.base import ContentFile
-import base64
+from django.db import models
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet

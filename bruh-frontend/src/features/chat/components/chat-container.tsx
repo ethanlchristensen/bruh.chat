@@ -47,6 +47,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
   const { data: userModels } = useUserAvailableModels();
   const selectedModel = userModels?.find((m) => m.id === selectedModelId);
+  const provider = selectedModel?.provider;
 
   const contentBufferRef = useRef<string>("");
   const displayedContentRef = useRef<string>("");
@@ -95,12 +96,12 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       }
     } else if (!conversationId) {
       setMessages([]);
+      setIsScrolledUp(false);
       const saved = localStorage.getItem(NEW_CHAT_MODEL_KEY);
       setSelectedModelId(saved || user?.profile?.default_model);
     }
   }, [conversationId, conversationData, user?.profile?.default_model]);
 
-  // Clear the justCreatedConversationRef when we navigate to a different conversation
   useEffect(() => {
     if (
       conversationId &&
@@ -108,6 +109,10 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     ) {
       justCreatedConversationRef.current = null;
     }
+  }, [conversationId]);
+
+  useEffect(() => {
+    setIsScrolledUp(false);
   }, [conversationId]);
 
   const handleModelSelect = (modelId: string) => {
@@ -254,6 +259,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     files?: File[],
     intent: Intent = INTENTS.CHAT,
     aspectRatio?: AspectRatio,
+    provider?: string,
   ) => {
     const tempUserId = `temp-user-${Date.now()}`;
     const tempAssistantId = `temp-assistant-${Date.now()}`;
@@ -310,6 +316,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         message,
         conversation_id: conversationId,
         model: selectedModelId,
+        provider: provider,
         files,
         intent,
         aspect_ratio: aspectRatio,
@@ -319,12 +326,10 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
           console.log("Intent:", data.intent, "Model:", data.model);
         },
         onMetadata: (data: any) => {
-          // Store the conversation ID for later URL update
           if (!conversationId && data.conversation_id) {
             newConversationIdRef.current = data.conversation_id;
             localStorage.removeItem(NEW_CHAT_MODEL_KEY);
 
-            // Update conversations list immediately
             queryClient.setQueryData<ConversationsResponse>(
               ["conversations"],
               (old) => {
@@ -449,6 +454,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
           selectedModel={selectedModel}
           onModelSelect={handleModelSelect}
           conversationId={conversationId}
+          provider={provider}
         />
       </div>
     </div>

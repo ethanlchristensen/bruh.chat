@@ -38,6 +38,9 @@ export default function ProfileCard() {
   const [defaultModel, setDefaultModel] = useState<string | undefined>(
     undefined,
   );
+  const [defaultProvider, setDefaultProvider] = useState<string | undefined>(
+    undefined,
+  );
   const [defaultAuxModel, setDefaultAuxModel] = useState<string | undefined>(
     undefined,
   );
@@ -50,6 +53,7 @@ export default function ProfileCard() {
   const [initialValues, setInitialValues] = useState({
     bio: "",
     defaultModel: undefined as string | undefined,
+    defaultProvider: undefined as string | undefined,
     defaultAuxModel: undefined as string | undefined,
     autoGenerateTitles: false,
     titleGenerationFrequency: 4,
@@ -60,6 +64,7 @@ export default function ProfileCard() {
       const values = {
         bio: user.profile.bio || "",
         defaultModel: user.profile.default_model || undefined,
+        defaultProvider: user.profile.default_provider || undefined,
         defaultAuxModel: user.profile.default_aux_model || undefined,
         autoGenerateTitles: user.profile.auto_generate_titles ?? false,
         titleGenerationFrequency: user.profile.title_generation_frequency ?? 4,
@@ -67,6 +72,7 @@ export default function ProfileCard() {
       setBio(values.bio);
       setProfileImage(user.profile.profile_image || "");
       setDefaultModel(values.defaultModel);
+      setDefaultProvider(values.defaultProvider);
       setDefaultAuxModel(values.defaultAuxModel);
       setAutoGenerateTitles(values.autoGenerateTitles);
       setTitleGenerationFrequency(values.titleGenerationFrequency);
@@ -114,6 +120,15 @@ export default function ProfileCard() {
         hasChanges = true;
       }
 
+      if (
+        defaultModel !== initialValues.defaultModel ||
+        defaultProvider !== initialValues.defaultProvider
+      ) {
+        updates.default_model = defaultModel || null;
+        updates.default_provider = defaultProvider || null;
+        hasChanges = true;
+      }
+
       if (defaultAuxModel !== initialValues.defaultAuxModel) {
         updates.default_aux_model = defaultAuxModel || null;
         hasChanges = true;
@@ -143,6 +158,7 @@ export default function ProfileCard() {
       setInitialValues({
         bio,
         defaultModel,
+        defaultProvider,
         defaultAuxModel,
         autoGenerateTitles,
         titleGenerationFrequency,
@@ -160,6 +176,7 @@ export default function ProfileCard() {
   const handleCancel = () => {
     setBio(initialValues.bio);
     setDefaultModel(initialValues.defaultModel);
+    setDefaultProvider(initialValues.defaultProvider);
     setDefaultAuxModel(initialValues.defaultAuxModel);
     setAutoGenerateTitles(initialValues.autoGenerateTitles);
     setTitleGenerationFrequency(initialValues.titleGenerationFrequency);
@@ -192,184 +209,177 @@ export default function ProfileCard() {
     `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase();
 
   return (
-    <div className="container mx-auto max-w-3xl py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your profile information and preferences
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>
-            Update your profile picture, bio, and model preferences
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Profile Image */}
-            <div className="space-y-2">
-              <Label>Profile Image</Label>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-24 w-24 rounded-xl">
-                  <AvatarImage src={displayImage} alt={user.username} />
-                  <AvatarFallback className="text-2xl">
-                    {userInitials || <UserIcon className="h-12 w-12" />}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col gap-2">
-                  <input
-                    type="file"
-                    id="profile-image"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById("profile-image")?.click()
-                    }
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload new image
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    JPG, PNG or GIF. Max 5MB.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* User Info (Read-only) */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Username</Label>
-                <p className="text-sm font-medium">{user.username}</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Email</Label>
-                <p className="text-sm font-medium">{user.email}</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">First Name</Label>
-                <p className="text-sm font-medium">{user.first_name}</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Last Name</Label>
-                <p className="text-sm font-medium">{user.last_name}</p>
-              </div>
-            </div>
-
-            {/* Bio */}
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us a little about yourself..."
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={4}
-                maxLength={500}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                Brief description for your profile. Maximum 500 characters.
-              </p>
-            </div>
-
-            {/* Default Model */}
-            <div className="space-y-2">
-              <Label>Default Model</Label>
-              <ModelSelector
-                selectedModelId={defaultModel}
-                onModelSelect={setDefaultModel}
-              />
-              <p className="text-xs text-muted-foreground">
-                Your default AI model for chatting. You can also select any
-                model on the conversation page already.
-              </p>
-            </div>
-
-            {/* Default Auxiliary Model */}
-            <div className="space-y-2">
-              <Label>Default Auxiliary Model</Label>
-              <ModelSelector
-                variant="by-provider"
-                structuredOutputOnly={true}
-                selectedModelId={defaultAuxModel}
-                onModelSelect={setDefaultAuxModel}
-              />
-              <p className="text-xs text-muted-foreground">
-                Secondary model for auxiliary tasks that also utilize structured
-                outputs.
-              </p>
-            </div>
-
-            {/* Auto Generate Titles */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="auto-generate-titles">
-                    Auto-Generate Conversation Titles
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Automatically generate titles for your conversations using
-                    AI
-                  </p>
-                </div>
-                <Switch
-                  id="auto-generate-titles"
-                  checked={autoGenerateTitles}
-                  onCheckedChange={setAutoGenerateTitles}
+    <Card>
+      <CardHeader>
+        <CardTitle>Personal Information</CardTitle>
+        <CardDescription>
+          Update your profile picture, bio, and model preferences
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Image */}
+          <div className="space-y-2">
+            <Label>Profile Image</Label>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-24 w-24 rounded-xl">
+                <AvatarImage src={displayImage} alt={user.username} />
+                <AvatarFallback className="text-2xl">
+                  {userInitials || <UserIcon className="h-12 w-12" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="file"
+                  id="profile-image"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
                 />
-              </div>
-            </div>
-
-            {/* Title Generation Frequency */}
-            {autoGenerateTitles && (
-              <div className="space-y-2">
-                <Label htmlFor="title-frequency">
-                  Title Generation Frequency
-                </Label>
-                <Input
-                  id="title-frequency"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={titleGenerationFrequency}
-                  onChange={(e) =>
-                    setTitleGenerationFrequency(Number(e.target.value))
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    document.getElementById("profile-image")?.click()
                   }
-                  className="max-w-xs"
-                />
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload new image
+                </Button>
                 <p className="text-xs text-muted-foreground">
-                  Generate a new title after this many messages (1-100)
+                  JPG, PNG or GIF. Max 5MB.
                 </p>
               </div>
-            )}
-
-            <div className="flex items-center justify-end gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+
+          {/* User Info (Read-only) */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Username</Label>
+              <p className="text-sm font-medium">{user.username}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Email</Label>
+              <p className="text-sm font-medium">{user.email}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">First Name</Label>
+              <p className="text-sm font-medium">{user.first_name}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Last Name</Label>
+              <p className="text-sm font-medium">{user.last_name}</p>
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              placeholder="Tell us a little about yourself..."
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              maxLength={500}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Brief description for your profile. Maximum 500 characters.
+            </p>
+          </div>
+
+          {/* Default Model */}
+          <div className="space-y-2">
+            <Label>Default Model</Label>
+            <ModelSelector
+              selectedModelId={defaultModel}
+              onModelSelect={(modelId, provider) => {
+                setDefaultModel(modelId);
+                setDefaultProvider(provider);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Your default AI model for chatting. You can also select any model
+              on the conversation page already.
+            </p>
+          </div>
+
+          {/* Default Auxiliary Model */}
+          <div className="space-y-2">
+            <Label>Default Auxiliary Model</Label>
+            <ModelSelector
+              variant="by-provider"
+              structuredOutputOnly={true}
+              selectedModelId={defaultAuxModel}
+              onModelSelect={setDefaultAuxModel}
+            />
+            <p className="text-xs text-muted-foreground">
+              Secondary model for auxiliary tasks that also utilize structured
+              outputs.
+            </p>
+          </div>
+
+          {/* Auto Generate Titles */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="auto-generate-titles">
+                  Auto-Generate Conversation Titles
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Automatically generate titles for your conversations using AI
+                </p>
+              </div>
+              <Switch
+                id="auto-generate-titles"
+                checked={autoGenerateTitles}
+                onCheckedChange={setAutoGenerateTitles}
+              />
+            </div>
+          </div>
+
+          {/* Title Generation Frequency */}
+          {autoGenerateTitles && (
+            <div className="space-y-2">
+              <Label htmlFor="title-frequency">
+                Title Generation Frequency
+              </Label>
+              <Input
+                id="title-frequency"
+                type="number"
+                min="1"
+                max="100"
+                value={titleGenerationFrequency}
+                onChange={(e) =>
+                  setTitleGenerationFrequency(Number(e.target.value))
+                }
+                className="max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                Generate a new title after this many messages (1-100)
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

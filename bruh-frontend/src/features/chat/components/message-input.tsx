@@ -24,13 +24,15 @@ type MessageInputProps = {
     message: string,
     files?: File[],
     intent?: Intent,
-    aspectRatio?: AspectRatio
+    aspectRatio?: AspectRatio,
+    provider?: string,
   ) => void;
   disabled?: boolean;
   selectedModelId: string | undefined;
   selectedModel: OpenRouterModel | undefined;
   onModelSelect: (modelId: string) => void;
   conversationId?: string;
+  provider?: string;
 };
 
 const TEMP_INTENT_KEY = "temp-active-intent";
@@ -43,6 +45,7 @@ export const MessageInput = ({
   selectedModel,
   onModelSelect,
   conversationId,
+  provider,
 }: MessageInputProps) => {
   const [activeIntent, setActiveIntent] = useState<Intent>(() => {
     const saved = localStorage.getItem(TEMP_INTENT_KEY);
@@ -108,7 +111,7 @@ export const MessageInput = ({
 
     if (activeIntent !== INTENTS.CHAT && selectedModel) {
       const isSupported = availableIntents.some(
-        (cmd) => cmd.intent === activeIntent
+        (cmd) => cmd.intent === activeIntent,
       );
       if (!isSupported) {
         setActiveIntent(INTENTS.CHAT);
@@ -153,12 +156,12 @@ export const MessageInput = ({
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSlashMenuIndex((prev) =>
-          prev < availableIntents.length - 1 ? prev + 1 : 0
+          prev < availableIntents.length - 1 ? prev + 1 : 0,
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSlashMenuIndex((prev) =>
-          prev > 0 ? prev - 1 : availableIntents.length - 1
+          prev > 0 ? prev - 1 : availableIntents.length - 1,
         );
       } else if (e.key === "Escape") {
         setShowSlashMenu(false);
@@ -200,7 +203,8 @@ export const MessageInput = ({
         input.trim(),
         selectedFiles,
         activeIntent,
-        activeIntent === INTENTS.IMAGE ? aspectRatio : undefined
+        activeIntent === INTENTS.IMAGE ? aspectRatio : undefined,
+        provider,
       );
 
       setInput("");
