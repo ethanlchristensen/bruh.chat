@@ -2,6 +2,8 @@
 
 A modern, full-stack AI chat application that provides access to multiple AI models through OpenRouter API. Built with Django Ninja and React, featuring support for image generation, file uploads, reasoning models, and streaming responses.
 
+![Application Screenshot](README/chatpage.png)
+
 ## ✨ Features
 
 - 🤖 **Multi-Model Support** - Access to numerous AI models via OpenRouter API
@@ -13,7 +15,7 @@ A modern, full-stack AI chat application that provides access to multiple AI mod
 - 🎨 **Modern UI** - Clean interface built with shadcn components
 - ✨ **Personas** - Create your own Personas guided with instructions and sample dialogue
 
-![Application Screenshot](README/chatpage.png)
+![Personas Screenshot](README/personas.png)
 
 ## 🛠️ Tech Stack
 
