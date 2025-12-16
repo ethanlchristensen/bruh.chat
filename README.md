@@ -65,16 +65,19 @@ A modern, full-stack AI chat application that provides access to multiple AI mod
    Edit `config.json` with your settings:
    ```json
    {
-       "open_router": {
-           "open_router_api_key": "sk-your-api-key-here",
-           "open_router_default_model": "openai/gpt-4"
-       },
-       "allowed_hosts": [
-           "localhost",
-           "127.0.0.1",
-           "your-domain.com"
-       ],
-       "media_root": "media"
+      "open_router": {
+         "open_router_api_key": "sk-...",
+         "open_router_default_model": "openai/gpt-5-nano"
+      },
+      "ollama": {
+         "ollama_host": "localhost:11434",
+         "ollama_default_model": null
+      },
+      "allowed_hosts": [
+         "localhost",
+         "127.0.0.1"
+      ],
+      "media_root": "media"
    }
    ```
 
