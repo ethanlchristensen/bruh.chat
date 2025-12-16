@@ -1,4 +1,4 @@
-import { User, Bot, Download } from "lucide-react";
+import { User, Bot, Download, Users } from "lucide-react";
 import type { Message as MessageType } from "@/types/api";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
 import { ReasoningSection } from "./reasoning-section";
@@ -18,8 +18,10 @@ export const Message = ({ message }: MessageProps) => {
     attachments,
     generated_images,
     reasoning,
+    persona,
   } = message;
   const isUser = role === "user";
+  const hasPersona = !isUser && persona;
 
   const displayDate = created_at
     ? new Date(created_at).toLocaleDateString([], {
@@ -55,13 +57,32 @@ export const Message = ({ message }: MessageProps) => {
       {/* Avatar */}
       <div className="shrink-0">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
             isUser
               ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
+              : hasPersona
+                ? "bg-purple-500 text-white"
+                : "bg-muted text-muted-foreground"
           }`}
         >
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+          {isUser ? (
+            <User className="h-4 w-4" />
+          ) : hasPersona && persona.persona_image ? (
+            <img
+              src={getAttachmentUrl(persona.persona_image)}
+              alt={persona.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                e.currentTarget.parentElement!.innerHTML =
+                  '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="m16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+              }}
+            />
+          ) : hasPersona ? (
+            <Users className="h-4 w-4" />
+          ) : (
+            <Bot className="h-4 w-4" />
+          )}
         </div>
       </div>
 
@@ -73,7 +94,11 @@ export const Message = ({ message }: MessageProps) => {
           className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? "flex-row-reverse" : ""}`}
         >
           <span className="font-medium">
-            {isUser ? "You" : model_id || "Assistant"}
+            {isUser
+              ? "You"
+              : hasPersona
+                ? `${persona.name}${persona.model_id ? ` (${persona.model_id})` : ""}`
+                : model_id || "Assistant"}
           </span>
           <span>
             {displayDate} at {displayTime}

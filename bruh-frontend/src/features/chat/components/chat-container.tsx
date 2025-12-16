@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useConversation } from "../api/conversation";
 import { useCreateStreamingChat } from "../api/chat";
 import { useUserAvailableModels } from "@/components/shared/model-selector/models";
+import { usePersonasQuery } from "@/features/persona/api/persona";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { INTENTS } from "@/types/intent";
@@ -28,6 +29,7 @@ const NEW_CHAT_MODEL_KEY = "new-chat-model";
 export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: personas } = usePersonasQuery();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
@@ -260,6 +262,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     intent: Intent = INTENTS.CHAT,
     aspectRatio?: AspectRatio,
     provider?: string,
+    personaId?: string,
   ) => {
     const tempUserId = `temp-user-${Date.now()}`;
     const tempAssistantId = `temp-assistant-${Date.now()}`;
@@ -288,6 +291,10 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
       mime_type: file.type,
     }));
 
+    const personaData = personaId
+      ? personas?.find((p) => p.id === personaId)
+      : undefined;
+
     setMessages((prev) => [
       ...prev,
       {
@@ -306,6 +313,14 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         created_at: Date.now(),
         model_id: selectedModelId,
         isStreaming: true,
+        ...(personaData && {
+          persona: {
+            id: personaData.id,
+            name: personaData.name,
+            persona_image: personaData.persona_image,
+            model_id: personaData.model_id,
+          },
+        }),
       },
     ]);
 
@@ -320,6 +335,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         files,
         intent,
         aspect_ratio: aspectRatio,
+        persona_id: personaId,
       },
       callbacks: {
         onIntent: (data: any) => {

@@ -9,6 +9,7 @@ from .features.conversations.models import (
     MessageAttachment,
     Reasoning,
 )
+from .features.persona.models import Persona
 from .features.users.models import Profile, UserAddedModel
 
 admin.site.register(Conversation)
@@ -20,3 +21,4 @@ admin.site.register(MessageAttachment)
 admin.site.register(GeneratedImage)
 admin.site.register(Reasoning)
 admin.site.register(GeneratedReasoningImage)
+admin.site.register(Persona)

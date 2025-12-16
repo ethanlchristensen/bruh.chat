@@ -3,12 +3,18 @@ from ninja_jwt.controller import NinjaJWTDefaultController
 
 from .features.ai.controller import AIController
 from .features.conversations.controller import ConversationController
+from .features.persona.controller import PersonaController
 from .features.users.controller import AuthController, UserController
 
 api = NinjaExtraAPI()
 
 api.register_controllers(
-    NinjaJWTDefaultController, UserController, AIController, ConversationController, AuthController
+    NinjaJWTDefaultController,
+    UserController,
+    AIController,
+    ConversationController,
+    PersonaController,
+    AuthController,
 )
 
 

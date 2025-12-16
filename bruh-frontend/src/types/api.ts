@@ -58,6 +58,7 @@ export interface ChatRequest {
   intent?: Intent;
   aspect_ratio?: AspectRatio;
   files?: File[];
+  persona_id?: string;
 }
 
 export type ImageGenerationChatRequest = {
@@ -108,6 +109,7 @@ export type Message = Entity<{
   attachments?: MessageAttachment[];
   generated_images?: GeneratedImage[];
   reasoning?: Reasoning;
+  persona?: PersonaLight;
 }>;
 
 export type MessageAttachment = {
@@ -152,3 +154,62 @@ export type Reasoning = {
   created_at: string;
   generated_reasoning_images: GeneratedReasoningImage[];
 };
+
+// Persona
+export interface PersonaLight {
+  id: string;
+  name: string;
+  persona_image?: string;
+  model_id: string | null;
+}
+
+export interface Persona {
+  id: string;
+  name: string;
+  description: string | null;
+  instructions: string;
+  example_dialogue: string | null;
+  model_id: string | null;
+  provider: string;
+  created_at: string;
+  updated_at: string;
+  is_public: boolean;
+  is_active: boolean;
+  owner_username: string;
+  persona_image?: string;
+}
+
+export interface PersonaLight {
+  id: string;
+  name: string;
+  persona_image?: string;
+  model_id: string | null;
+}
+
+export interface PersonaCreateRequest {
+  name: string;
+  description?: string;
+  instructions: string;
+  example_dialogue?: string;
+  model_id?: string;
+  provider: string;
+  is_public?: boolean;
+  is_active?: boolean;
+}
+
+export interface PersonaUpdateRequest {
+  name?: string;
+  description?: string;
+  instructions?: string;
+  example_dialogue?: string;
+  model_id?: string;
+  provider?: string;
+  is_public?: boolean;
+  is_active?: boolean;
+}
+
+export interface PersonaGenerationRequest {
+  prompt: string;
+  target_provider: string;
+  suggested_model: string;
+}

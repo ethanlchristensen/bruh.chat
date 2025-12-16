@@ -2,6 +2,8 @@ from typing import List
 
 from ninja import ModelSchema, Schema
 
+from api.features.persona.schemas import PersonaLightSchema
+
 from .models import (
     Conversation,
     GeneratedImage,
@@ -77,6 +79,7 @@ class MessageSchema(ModelSchema):
     attachments: List[MessageAttachmentSchema] = []
     generated_images: List[GeneratedImageSchema] = []
     reasoning: ReasoningSchema | None = None
+    persona: PersonaLightSchema | None = None
 
     class Meta:
         model = Message

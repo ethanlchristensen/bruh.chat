@@ -18,6 +18,7 @@ import {
   type AspectRatio,
 } from "@/types/image";
 import { type IntentCommand, getAvailableIntents } from "@/types/intent";
+import { toast } from "sonner";
 
 type MessageInputProps = {
   onSend: (
@@ -26,6 +27,7 @@ type MessageInputProps = {
     intent?: Intent,
     aspectRatio?: AspectRatio,
     provider?: string,
+    personaId?: string,
   ) => void;
   disabled?: boolean;
   selectedModelId: string | undefined;
@@ -37,6 +39,7 @@ type MessageInputProps = {
 
 const TEMP_INTENT_KEY = "temp-active-intent";
 const TEMP_ASPECT_RATIO_KEY = "temp-aspect-ratio";
+const TEMP_PERSONA_KEY = "temp-persona-id";
 
 export const MessageInput = ({
   onSend,
@@ -63,6 +66,10 @@ export const MessageInput = ({
     return DEFAULT_ASPECT_RATIO;
   });
 
+  const [selectedPersonaId, setSelectedPersonaId] = useState<
+    string | undefined
+  >();
+
   const [input, setInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -83,8 +90,9 @@ export const MessageInput = ({
       const timer = setTimeout(() => {
         localStorage.removeItem(TEMP_INTENT_KEY);
         localStorage.removeItem(TEMP_ASPECT_RATIO_KEY);
+        localStorage.removeItem(TEMP_PERSONA_KEY);
         hasRestoredFromStorage.current = true;
-      }, 1000); // Increased to 1 second
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [conversationId]);
@@ -100,11 +108,9 @@ export const MessageInput = ({
   }, [input]);
 
   // Reset to chat intent if current intent is no longer supported
-  // BUT skip this check for 2 seconds after mount to allow restoration
   useEffect(() => {
     const timeSinceMount = Date.now() - mountTimeRef.current;
 
-    // Skip validation for 2 seconds after mount
     if (timeSinceMount < 2000) {
       return;
     }
@@ -116,9 +122,10 @@ export const MessageInput = ({
       if (!isSupported) {
         setActiveIntent(INTENTS.CHAT);
         setAspectRatio(DEFAULT_ASPECT_RATIO);
+        setSelectedPersonaId(undefined);
       }
     }
-  }, [selectedModel?.id, activeIntent, availableIntents]); // Include ALL dependencies
+  }, [selectedModel?.id, activeIntent, availableIntents]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -180,22 +187,39 @@ export const MessageInput = ({
   const handleRemoveIntent = () => {
     setActiveIntent(INTENTS.CHAT);
     setAspectRatio(DEFAULT_ASPECT_RATIO);
+    setSelectedPersonaId(undefined);
     localStorage.removeItem(TEMP_INTENT_KEY);
     localStorage.removeItem(TEMP_ASPECT_RATIO_KEY);
+    localStorage.removeItem(TEMP_PERSONA_KEY);
     textareaRef.current?.focus();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("Submit Debug:", {
+      activeIntent,
+      selectedPersonaId,
+      conversationId,
+    });
+
     if (
       (input.trim() || selectedFiles.length > 0) &&
       !disabled &&
       selectedModelId
     ) {
+      if (activeIntent === INTENTS.PERSONA && !selectedPersonaId) {
+        toast.error("Select a Persona to chat with.");
+        return;
+      }
+
       if (!conversationId && activeIntent !== INTENTS.CHAT) {
         localStorage.setItem(TEMP_INTENT_KEY, activeIntent);
         if (activeIntent === INTENTS.IMAGE) {
           localStorage.setItem(TEMP_ASPECT_RATIO_KEY, aspectRatio);
+        }
+        if (activeIntent === INTENTS.PERSONA && selectedPersonaId) {
+          localStorage.setItem(TEMP_PERSONA_KEY, selectedPersonaId);
         }
       }
 
@@ -205,6 +229,7 @@ export const MessageInput = ({
         activeIntent,
         activeIntent === INTENTS.IMAGE ? aspectRatio : undefined,
         provider,
+        activeIntent === INTENTS.PERSONA ? selectedPersonaId : undefined,
       );
 
       setInput("");
@@ -229,6 +254,8 @@ export const MessageInput = ({
     if (!selectedModelId) return "Select a model first...";
     if (activeIntent === INTENTS.IMAGE)
       return "Describe the image you want to generate...";
+    if (activeIntent === INTENTS.PERSONA)
+      return "Chat with your selected persona...";
     return "Type / for commands or enter a message...";
   };
 
@@ -320,7 +347,8 @@ export const MessageInput = ({
               disabled={
                 disabled ||
                 (!input.trim() && selectedFiles.length === 0) ||
-                !selectedModelId
+                !selectedModelId ||
+                (activeIntent === INTENTS.PERSONA && !selectedPersonaId)
               }
               className="shrink-0 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             >
@@ -331,13 +359,17 @@ export const MessageInput = ({
 
         {/* Bottom row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <ModelSelector
-            selectedModelId={selectedModelId}
-            onModelSelect={onModelSelect}
-          />
+          {activeIntent !== INTENTS.PERSONA && (
+            <div className="animate-in fade-in slide-in-from-left-2 slide-out-to-left-2 duration-200">
+              <ModelSelector
+                selectedModelId={selectedModelId}
+                onModelSelect={onModelSelect}
+              />
+            </div>
+          )}
 
           {activeIntent !== INTENTS.CHAT && (
-            <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-md px-3 py-1.5 text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-right-2 duration-200">
+            <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-md px-3 py-1.5 text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-left-2 duration-200">
               <span className="flex items-center gap-1.5">
                 {getActiveIntentIcon()}
                 <span>{INTENT_METADATA[activeIntent].label}</span>
@@ -354,12 +386,16 @@ export const MessageInput = ({
           )}
 
           {activeIntent !== INTENTS.CHAT && (
-            <IntentParameters
-              modelId={selectedModelId}
-              intent={activeIntent}
-              aspectRatio={aspectRatio}
-              onAspectRatioChange={setAspectRatio}
-            />
+            <div className="animate-in fade-in slide-in-from-left-2 slide-out-to-left-2 duration-200">
+              <IntentParameters
+                modelId={selectedModelId}
+                intent={activeIntent}
+                aspectRatio={aspectRatio}
+                onAspectRatioChange={setAspectRatio}
+                personaId={selectedPersonaId}
+                onPersonaChange={setSelectedPersonaId}
+              />
+            </div>
           )}
         </div>
       </div>

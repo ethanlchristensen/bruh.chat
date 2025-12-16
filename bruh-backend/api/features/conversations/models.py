@@ -10,6 +10,8 @@ from django.db import models
 if TYPE_CHECKING:
     from django.db.models import QuerySet
 
+from api.features.persona.models import Persona
+
 
 class Conversation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -38,6 +40,9 @@ class Message(models.Model):
     role = models.CharField(max_length=50)
     content = models.TextField()
     model_id = models.TextField(max_length=350, null=True, blank=False)
+    persona = models.ForeignKey(
+        Persona, related_name="messages", on_delete=models.SET_NULL, null=True, blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField(default=False)

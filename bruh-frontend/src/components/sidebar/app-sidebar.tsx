@@ -1,5 +1,13 @@
 import * as React from "react";
-import { MessageCircle, Info, Trash2, Pencil, Check, X } from "lucide-react";
+import {
+  MessageCircle,
+  Info,
+  Trash2,
+  Pencil,
+  Check,
+  X,
+  Users,
+} from "lucide-react";
 import {
   Link,
   useLocation,
@@ -52,6 +60,12 @@ const data = {
       title: "Conversations",
       url: "/",
       icon: MessageCircle,
+      isActive: true,
+    },
+    {
+      title: "Personas",
+      url: "/personas",
+      icon: Users,
       isActive: true,
     },
     {

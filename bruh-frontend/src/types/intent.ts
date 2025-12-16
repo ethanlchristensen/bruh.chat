@@ -1,4 +1,4 @@
-import { Image, MessageCircle, Sparkles } from "lucide-react";
+import { Image, MessageCircle, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { OpenRouterModel } from "@/components/shared/model-selector/models";
 import { modelSupportsImageGeneration } from "@/components/shared/model-selector/models";
@@ -29,7 +29,7 @@ export const isValidIntent = (value: string): value is Intent => {
 export const getIntentIcon = (intent: Intent): LucideIcon => {
   switch (intent) {
     case INTENTS.PERSONA:
-      return Sparkles;
+      return Users;
     case INTENTS.IMAGE:
       return Image;
     case INTENTS.CHAT:

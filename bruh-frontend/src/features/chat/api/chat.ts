@@ -143,6 +143,7 @@ export const createStreamingChat = async ({
   if (data.provider) formData.append("provider", data.provider);
   if (data.intent) formData.append("intent", data.intent);
   if (data.aspect_ratio) formData.append("aspect_ratio", data.aspect_ratio);
+  if (data.persona_id) formData.append("persona_id", data.persona_id);
 
   if (data.files && data.files.length > 0) {
     data.files.forEach((file) => formData.append("files", file));

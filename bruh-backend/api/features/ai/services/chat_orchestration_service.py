@@ -22,6 +22,8 @@ from api.features.conversations.models import (
     Reasoning,
 )
 from api.features.conversations.services import ConversationService, MessageService
+from api.features.persona.models import Persona
+from api.features.persona.services.persona_service import get_persona_service
 
 logger = logging.getLogger(__name__)
 
@@ -80,47 +82,86 @@ class ChatOrchestrationService:
         return await save_files()
 
     @staticmethod
+    async def _build_persona_system_prompt(persona) -> str:
+        """Build a comprehensive system prompt from persona data"""
+        prompt_parts = []
+
+        prompt_parts.append(f"You are {persona.name}.")
+
+        if persona.description:
+            prompt_parts.append(f"\n{persona.description}")
+
+        prompt_parts.append(f"\n{persona.instructions}")
+
+        if persona.example_dialogue:
+            prompt_parts.append(
+                "\n\nHere are examples of how you should respond:\n" + persona.example_dialogue
+            )
+
+        return "\n".join(prompt_parts)
+
+    @staticmethod
     async def unified_stream(
         user,
         message: str,
-        model: str,
+        model: str | None = None,
         provider: str = "openrouter",
         conversation_id: UUID | None = None,
         files: List[UploadedFile] | None = None,
         intent: str = "chat",
         aspect_ratio: str = "1:1",
+        persona_id: UUID | None = None,
     ):
         """
         Unified streaming that routes to chat or image generation based on intent and provider.
         """
         try:
-            # 1. Get the abstract service via Factory
+            persona = None
+
+            if persona_id:
+                persona_service = get_persona_service()
+
+                persona = await persona_service.get_user_persona(user, persona_id)
+
+                if not persona:
+                    raise ValueError(f"Persona with ID {persona_id} not found or not accessible")
+
+                model = persona.model_id
+                provider = persona.provider
+
+                logger.info(f"Using persona '{persona.name}' with model {model} on {provider}")
+            else:
+                logger.info("Finna, we aren't using a persona.")
+
+            # Get default model if still not set
+            if not model:
+                service = get_ai_service(provider)
+                model = service.default_model
+
+            # Validate everything before starting stream
             service = get_ai_service(provider)
 
-            # 2. Validate Intent (Ollama doesn't support 'image' intent yet)
             if intent == "image" and provider == "ollama":
                 raise ValueError("Ollama does not support image generation intent")
 
-            # 3. Validate Aspect Ratio (if using OpenRouter image gen)
-            if intent == "image" and provider == "openrouter":
-                # We can access static methods on the class if needed, or just assume valid defaults
-                pass
+            # Send intent confirmation event with full context
+            intent_data = {
+                "type": "intent",
+                "intent": intent,
+                "model": model,
+                "provider": provider,
+                "aspect_ratio": aspect_ratio if intent == "image" else None,
+            }
 
-            # 4. Send intent confirmation event
-            yield (
-                json.dumps(
-                    {
-                        "type": "intent",
-                        "intent": intent,
-                        "model": model,
-                        "provider": provider,
-                        "aspect_ratio": aspect_ratio if intent == "image" else None,
-                    }
-                )
-                + "\n"
-            )
+            if persona:
+                intent_data["persona"] = {
+                    "id": str(persona.id),
+                    "name": persona.name,
+                    "description": persona.description,
+                }
 
-            # 5. Hand off to the execution logic
+            yield json.dumps(intent_data) + "\n"
+
             async for chunk in ChatOrchestrationService._execute_stream(
                 service=service,
                 user=user,
@@ -131,6 +172,7 @@ class ChatOrchestrationService:
                 files=files,
                 intent=intent,
                 aspect_ratio=aspect_ratio,
+                persona=persona,
             ):
                 yield chunk
 
@@ -158,8 +200,9 @@ class ChatOrchestrationService:
         files: List[UploadedFile] | None = None,
         intent: str = "chat",
         aspect_ratio: str = "1:1",
+        persona: Persona | None = None,
     ):
-        # 1. Create or get conversation
+        # Create or get conversation
         if conversation_id is None:
             conversation = await ConversationService.create_conversation_from_message(
                 user=user, first_message=message_text
@@ -169,44 +212,56 @@ class ChatOrchestrationService:
                 conversation_id=conversation_id, user=user
             )
 
-        # 2. Create user message
+        # Create user message
         user_message = await MessageService.create_message(
             conversation=conversation, role="user", content=message_text
         )
 
-        # 3. Save file attachments if any
+        # Save file attachments if any
         attachments = []
         if files:
             attachments = await ChatOrchestrationService._save_attachments(user_message, files)
 
-        # 4. Send initial metadata
-        yield (
-            json.dumps(
-                {
-                    "type": "metadata",
-                    "conversation_id": str(conversation.id),
-                    "user_message_id": str(user_message.id),
-                    "has_attachments": len(attachments) > 0,
-                    "provider": provider,
-                }
-            )
-            + "\n"
-        )
+        # Send initial metadata
+        metadata = {
+            "type": "metadata",
+            "conversation_id": str(conversation.id),
+            "user_message_id": str(user_message.id),
+            "has_attachments": len(attachments) > 0,
+            "provider": provider,
+            "model": model,
+        }
 
-        # 5. Get message history
+        if persona:
+            metadata["persona_id"] = str(persona.id)
+
+        yield json.dumps(metadata) + "\n"
+
         message_history = await MessageService.get_message_history_for_open_router(
             conversation=conversation, include_user_images=True, max_generated_images=1
         )
 
-        # 6. Format the last message (Multimodal support)
-        # We rely on the service to know how to format text + images
+        if persona:
+            persona_system_prompt = await ChatOrchestrationService._build_persona_system_prompt(
+                persona
+            )
+            has_system_message = any(msg.get("role") == "system" for msg in message_history)
+
+            if has_system_message:
+                for msg in message_history:
+                    if msg.get("role") == "system":
+                        msg["content"] = f"{persona_system_prompt}\n\n{msg['content']}"
+                        break
+            else:
+                system_message = {"role": "system", "content": persona_system_prompt}
+                message_history.insert(0, system_message)
+
         if attachments:
             formatted_message = await service.format_message_payload(
                 message_text, attachments, model
             )
             message_history[-1] = formatted_message
 
-        # 7. Start the Unified Stream Processor
         async for chunk in ChatOrchestrationService._stream_processor(
             service=service,
             message_history=message_history,
@@ -217,6 +272,7 @@ class ChatOrchestrationService:
             intent=intent,
             aspect_ratio=aspect_ratio,
             provider=provider,
+            persona=persona,
         ):
             yield chunk
 
@@ -231,6 +287,7 @@ class ChatOrchestrationService:
         intent: str,
         aspect_ratio: str,
         provider: str,
+        persona: Persona | None = None,
     ):
         modalities = ["text", "image"] if intent == "image" else ["text"]
         image_config = {"aspect_ratio": aspect_ratio} if intent == "image" else None
@@ -314,7 +371,7 @@ class ChatOrchestrationService:
                 pricing_data = model_data.get("pricing", {})
 
         @sync_to_async
-        def save_results(pricing):
+        def save_results(pricing, persona: Persona | None = None):
             with transaction.atomic():
                 final_content = full_content
                 if intent == "image" and generated_images_data and not full_content:
@@ -325,6 +382,7 @@ class ChatOrchestrationService:
                     role="assistant",
                     content=final_content,
                     model_id=model_used,
+                    persona=persona,
                 )
 
                 reasoning = None
@@ -406,7 +464,7 @@ class ChatOrchestrationService:
             saved_gen_images,
             saved_reasoning_images,
             api_response,
-        ) = await save_results(pricing_data)
+        ) = await save_results(pricing_data, persona)
 
         await ConversationService.update_conversation_timestamp(conversation=conversation)
 

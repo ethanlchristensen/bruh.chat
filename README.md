@@ -11,6 +11,7 @@ A modern, full-stack AI chat application that provides access to multiple AI mod
 - ⚡ **Real-time Streaming** - Streaming responses for better UX
 - 🐳 **Docker Support** - Easy deployment with Docker Compose
 - 🎨 **Modern UI** - Clean interface built with shadcn components
+- ✨ **Personas** - Create your own Personas guided with instructions and sample dialogue
 
 ![Application Screenshot](README/chatpage.png)
 

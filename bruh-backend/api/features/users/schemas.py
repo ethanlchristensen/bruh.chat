@@ -50,29 +50,29 @@ class UserUpdateSchema(Schema):
 class UserAddedModelSchema(Schema):
     id: int
     model_id: str
-    provider: str  # NEW
+    provider: str
     added_at: datetime
 
 
 class AddModelSchema(Schema):
     model_id: str
-    provider: str = "openrouter"  # NEW
+    provider: str = "openrouter"
 
 
 class BulkAddModelsSchema(Schema):
     model_ids: List[str]
-    provider: str = "openrouter"  # NEW
+    provider: str = "openrouter"
 
 
 class RemoveModelSchema(Schema):
     model_id: str
-    provider: str = "openrouter"  # NEW
+    provider: str = "openrouter"
 
 
 class BulkOperationResponseSchema(Schema):
     added: int
     skipped: int
-    invalid: List[str] = []  # NEW - show which models were invalid
+    invalid: List[str] = []
 
 
 class UserRegistrationSchema(Schema):

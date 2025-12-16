@@ -35,36 +35,34 @@ class AIController:
         conversation_id: Optional[str] = Form(None),  # type: ignore
         model: Optional[str] = Form(None),  # type: ignore
         provider: Optional[str] = Form("openrouter"),  # type: ignore
-        intent: Optional[str] = Form("chat"),  # type: ignore - "chat" or "image"
+        intent: Optional[str] = Form("chat"),  # type: ignore
         aspect_ratio: Optional[str] = Form("1:1"),  # type: ignore
         files: List[UploadedFile] = File(None),  # type: ignore
+        persona_id: Optional[str] = Form(None),  # type: ignore
     ):
         """
         Unified streaming endpoint for chat and image generation.
         - provider: "openrouter" (default) or "ollama"
         - intent: "chat" (default) or "image"
         - aspect_ratio: Only used for image generation
+        - persona_id: Optional UUID of persona to use
         """
         user = request.auth
         conv_id = UUID(conversation_id) if conversation_id else None
+        pers_id = UUID(persona_id) if persona_id else None
 
-        # Get default model based on provider
-        if not model:
-            if provider == "ollama":
-                model = self.ollama_service.default_model
-            else:
-                model = self.open_router_service.default_model
-
+        # Don't set defaults here - let the service handle persona-based model/provider
         async def async_event_generator() -> AsyncIterator[str]:
             async_gen = self.chat_orchestration_service.unified_stream(
                 user=user,
                 message=message,
                 model=model,
-                provider=provider or "openrouter",
+                provider=provider,
                 conversation_id=conv_id,
                 files=files or [],  # type: ignore
                 intent=intent or "chat",
                 aspect_ratio=aspect_ratio or "1:1",
+                persona_id=pers_id,
             )
             async for chunk in async_gen:
                 yield f"data: {chunk}\n\n"
