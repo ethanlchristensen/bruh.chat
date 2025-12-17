@@ -53,7 +53,6 @@ class PersonaController:
         """
         user = request.auth
 
-        # Get user's profile for default AUX model
         @sync_to_async
         def get_user_profile():
             return user.profile
@@ -66,14 +65,12 @@ class PersonaController:
                 "error": "No default AUX model set. Please configure your default AUX model in your profile settings.",
             }
 
-        # Parse provider from aux model (format: "provider/model" or just "model")
         aux_model = profile.default_aux_model
         aux_provider = profile.default_provider or "openrouter"
 
         try:
             persona_service = get_persona_service()
 
-            # Generate and create the persona
             persona, reasoning = await persona_service.generate_and_create_persona(
                 user=user,
                 request_data=data,
@@ -81,10 +78,8 @@ class PersonaController:
                 aux_provider=aux_provider,
             )
 
-            # Convert to schema
             @sync_to_async
             def serialize_persona():
-
                 return {
                     "id": str(persona.id),
                     "name": persona.name,
@@ -129,14 +124,12 @@ class PersonaController:
         persona_id: UUID,
         profile_image: UploadedFile = File(...),  # type: ignore
     ):
-        """Upload or update a persona's profile image"""
         return await get_persona_service().update_persona_image(
             user=request.auth, persona_id=persona_id, image_file=profile_image
         )
 
     @route.delete("/{persona_id}/image", response=PersonaOutSchema)
     async def delete_persona_image(self, request, persona_id: UUID):
-        """Delete a persona's profile image"""
         return await get_persona_service().delete_persona_image(
             user=request.auth, persona_id=persona_id
         )

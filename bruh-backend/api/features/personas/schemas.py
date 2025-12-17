@@ -82,8 +82,6 @@ class PersonaGenerationRequestSchema(Schema):
 
 
 class PersonaGenerationStructuredSchema(Schema):
-    """Schema for structured output from AI"""
-
     name: str
     description: str
     instructions: str

@@ -10,7 +10,7 @@ from django.db import models
 if TYPE_CHECKING:
     from django.db.models import QuerySet
 
-from api.features.persona.models import Persona
+from api.features.personas.models import Persona
 
 
 class Conversation(models.Model):

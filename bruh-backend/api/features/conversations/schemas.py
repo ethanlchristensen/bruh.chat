@@ -2,7 +2,7 @@ from typing import List
 
 from ninja import ModelSchema, Schema
 
-from api.features.persona.schemas import PersonaLightSchema
+from api.features.personas.schemas import PersonaLightSchema
 
 from .models import (
     Conversation,

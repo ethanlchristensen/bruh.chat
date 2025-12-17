@@ -22,8 +22,8 @@ from api.features.conversations.models import (
     Reasoning,
 )
 from api.features.conversations.services import ConversationService, MessageService
-from api.features.persona.models import Persona
-from api.features.persona.services.persona_service import get_persona_service
+from api.features.personas.models import Persona
+from api.features.personas.services.persona_service import get_persona_service
 
 logger = logging.getLogger(__name__)
 
