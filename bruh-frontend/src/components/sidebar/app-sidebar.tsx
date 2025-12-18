@@ -67,13 +67,13 @@ const data = {
       title: "Personas",
       url: "/personas",
       icon: Users,
-      isActive: true,
+      isActive: false,
     },
     {
       title: "Flows",
       url: "/flows",
       icon: Network,
-      isActive: true,
+      isActive: false,
     },
     {
       title: "About",
@@ -158,7 +158,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const activeItem = React.useMemo(
     () =>
-      data.navMain.find((item) => item.url === location.pathname) ||
+      data.navMain.find((item) => location.pathname.includes(item.url)) ||
       data.navMain[0],
     [location.pathname],
   );
@@ -202,9 +202,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const deletingCurrentConversation =
       currentConversationId === conversationToDelete;
 
-    // Navigate away BEFORE deleting if we're viewing this conversation
     if (deletingCurrentConversation) {
-      navigate({ to: "/", search: {} }); // Clear search params
+      navigate({ to: "/", search: {} });
     }
 
     try {

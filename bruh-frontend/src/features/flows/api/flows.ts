@@ -68,6 +68,20 @@ export interface ValidationErrorResponse {
   errors: ValidationError[];
 }
 
+export interface FlowExecutionListItem {
+  executionId: string;
+  flowId: string;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  startTime: string;
+  endTime?: string;
+  totalExecutionTime?: number;
+  error?: {
+    message: string;
+    nodeId?: string;
+  };
+}
+
+
 export const getFlows = (params?: {
   page?: number;
   pageSize?: number;
@@ -366,5 +380,40 @@ export const useCancelFlowExecution = () => {
     onError: () => {
       toast.error("Failed to cancel execution");
     },
+  });
+};
+
+// Executions
+export const getFlowExecutions = ({
+  flowId,
+  limit = 10,
+  status,
+}: {
+  flowId: string;
+  limit?: number;
+  status?: string;
+}): Promise<FlowExecutionListItem[]> => {
+  const params = new URLSearchParams();
+  params.set("limit", limit.toString());
+  if (status) params.set("status", status);
+  
+  return api.get(`/flows/${flowId}/executions?${params.toString()}`);
+};
+
+export const useFlowExecutions = ({
+  flowId,
+  limit = 10,
+  status,
+  queryConfig,
+}: {
+  flowId: string;
+  limit?: number;
+  status?: string;
+  queryConfig?: QueryConfig<typeof getFlowExecutions>;
+}) => {
+  return useQuery({
+    queryKey: ["flows", flowId, "executions", { limit, status }],
+    queryFn: () => getFlowExecutions({ flowId, limit, status }),
+    ...queryConfig,
   });
 };

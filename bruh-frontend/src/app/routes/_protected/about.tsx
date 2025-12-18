@@ -1,4 +1,3 @@
-// src/app/routes/_protected/about.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import React from "react";
 

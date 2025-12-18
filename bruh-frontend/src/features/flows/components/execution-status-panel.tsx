@@ -25,7 +25,7 @@ export function ExecutionStatusPanel({
   onCancel,
   isCancelling,
 }: ExecutionStatusPanelProps) {
-  const { setNodes, setEdges } = useReactFlow();
+  const { setNodes, setEdges, getNodes } = useReactFlow();
 
   useEffect(() => {
     if (!execution) return;
@@ -35,18 +35,21 @@ export function ExecutionStatusPanel({
         const result = execution.nodeResults.find((r) => r.nodeId === node.id);
 
         if (result) {
+          let visualStatus = "idle";
+
+          if (result.status === "success") {
+            visualStatus = "success";
+          } else if (result.status === "error") {
+            visualStatus = "error";
+          } else if (result.status === "running") {
+            visualStatus = "running";
+          }
+
           return {
             ...node,
             data: {
               ...node.data,
-              status:
-                result.status === "completed"
-                  ? "success"
-                  : result.status === "failed"
-                    ? "error"
-                    : result.status === "running"
-                      ? "running"
-                      : "idle",
+              status: visualStatus,
               output: result.output,
               input: result.input,
               error: result.error?.message,
@@ -55,60 +58,48 @@ export function ExecutionStatusPanel({
           };
         }
         return node;
-      }),
+      })
     );
 
     setEdges((edges) =>
       edges.map((edge) => {
         const sourceResult = execution.nodeResults.find(
-          (r) => r.nodeId === edge.source,
+          (r) => r.nodeId === edge.source
         );
         const targetResult = execution.nodeResults.find(
-          (r) => r.nodeId === edge.target,
+          (r) => r.nodeId === edge.target
         );
 
         const shouldAnimate =
-          sourceResult?.status === "completed" ||
-          sourceResult?.status === "running" ||
+          sourceResult?.status === "success" ||
           targetResult?.status === "running";
 
         return {
           ...edge,
           animated: shouldAnimate,
-          style: {
-            ...edge.style,
-            stroke: shouldAnimate ? "hsl(var(--primary))" : undefined,
-            strokeWidth: shouldAnimate ? 2 : 1,
-          },
+          style: shouldAnimate
+            ? {
+                ...edge.style,
+                stroke: "var(--color-primary)",
+                strokeWidth: 2,
+              }
+            : edge.style,
         };
-      }),
+      })
     );
   }, [execution, setNodes, setEdges]);
 
-  useEffect(() => {
-    if (execution?.nodeResults) {
-      console.log("📋 Node Results:", execution.nodeResults);
-      console.log(
-        "📋 Node IDs in results:",
-        execution.nodeResults.map((r) => r.nodeId),
-      );
-    }
-  }, [execution?.nodeResults]);
-
   if (!execution) return null;
 
-  const progress =
-    execution.nodeResults.length > 0
-      ? (execution.nodeResults.filter(
-          (r) => r.status === "completed" || r.status === "failed",
-        ).length /
-          execution.nodeResults.length) *
-        100
-      : 0;
+  const totalNodes = getNodes().length;
 
+  const completedNodes = execution.nodeResults.filter(
+    (r) => r.status === "success" || r.status === "error"
+  ).length;
+
+  const progress = totalNodes > 0 ? (completedNodes / totalNodes) * 100 : 0;
   const canCancel =
     execution.status === "pending" || execution.status === "running";
-  const isActive = canCancel;
 
   return (
     <div className="absolute top-4 right-4 w-96 bg-card border border-border rounded-lg shadow-lg z-50">
@@ -156,23 +147,16 @@ export function ExecutionStatusPanel({
       </div>
 
       <div className="p-4 space-y-4">
-        {isActive && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} />
-            <p className="text-xs text-muted-foreground">
-              {
-                execution.nodeResults.filter(
-                  (r) => r.status === "completed" || r.status === "failed",
-                ).length
-              }{" "}
-              of {execution.nodeResults.length} nodes complete
-            </p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Progress</span>
+            <span className="font-medium">{Math.round(progress)}%</span>
           </div>
-        )}
+          <Progress value={progress} />
+          <p className="text-xs text-muted-foreground">
+            {completedNodes} of {totalNodes} nodes complete
+          </p>
+        </div>
 
         {execution.status === "completed" && execution.finalOutput && (
           <div className="space-y-2">

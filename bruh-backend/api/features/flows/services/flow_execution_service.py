@@ -50,7 +50,6 @@ class FlowExecutionService:
             initial_input = execution.execution_data.get("initialInput", {})
             variables = execution.execution_data.get("variables", {})
             
-            # Execute flow
             result = await FlowExecutionService.execute_flow(
                 execution=execution,
                 nodes=nodes,
@@ -59,13 +58,11 @@ class FlowExecutionService:
                 variables=variables,
             )
             
-            # Update execution with final result
             execution.execution_data["finalOutput"] = result.get("output")
             if result.get("success"):
                 execution.status = "completed"
             else:
                 execution.status = "failed"
-                # Wrap error in dictionary format
                 error_msg = result.get("error", "Unknown error")
                 execution.execution_data["error"] = {
                     "message": error_msg,
@@ -77,7 +74,6 @@ class FlowExecutionService:
         except Exception as e:
             logger.exception(f"Flow execution failed: {e}")
             execution.status = "failed"
-            # Wrap exception in dictionary format
             execution.execution_data["error"] = {
                 "message": str(e),
                 "type": type(e).__name__,
@@ -94,39 +90,30 @@ class FlowExecutionService:
     ) -> Dict[str, Any]:
         """Execute flow nodes in topological order"""
         
-        # Build execution order
         execution_order = FlowExecutionService._topological_sort(nodes, edges)
         
         if not execution_order:
             return {"success": False, "error": "Could not determine execution order (cycle detected?)"}
         
-        # Store outputs from each node
         node_outputs: Dict[str, Any] = {}
         
-        # Store input node values
         for node in nodes:
             if node["type"] == "input":
                 node_id = node["id"]
                 node_data = node.get("data", {})
                 
-                # Priority 1: Check if variableName matches initialInput key
                 variable_name = node_data.get("variableName")
                 if variable_name and variable_name in initial_input:
                     node_outputs[node_id] = initial_input[variable_name]
-                # Priority 2: Check if variableName matches variables
                 elif variable_name and variable_name in variables:
                     node_outputs[node_id] = variables[variable_name]
-                # Priority 3: Use node's configured value
                 elif "value" in node_data:
                     node_outputs[node_id] = node_data["value"]
-                # Priority 4: Check if node ID is in initial_input (backward compatibility)
                 elif node_id in initial_input:
                     node_outputs[node_id] = initial_input[node_id]
-                # Priority 5: Default to empty
                 else:
                     node_outputs[node_id] = ""
         
-        # Execute nodes in order
         for node_id in execution_order:
             node = next((n for n in nodes if n["id"] == node_id), None)
             if not node:
@@ -134,12 +121,9 @@ class FlowExecutionService:
             
             node_type = node["type"]
 
-            # Track start time
             start_time = datetime.utcnow()
             
-            # Skip input and output nodes
             if node_type == "input":
-                # Input nodes just pass their value through
                 output_value = node_outputs.get(node_id, "")
                 end_time = datetime.utcnow()
                 
@@ -155,7 +139,6 @@ class FlowExecutionService:
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 continue
             
-            # Handle OUTPUT nodes
             if node_type == "output":
                 inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
                 end_time = datetime.utcnow()
@@ -167,15 +150,13 @@ class FlowExecutionService:
                     "startTime": start_time.isoformat(),
                     "endTime": end_time.isoformat(),
                     "input": inputs,
-                    "output": inputs.get("input", inputs),  # Output = Input for display nodes
+                    "output": inputs.get("input", inputs),
                 })
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 continue
             
-            # Get inputs from connected nodes
             inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
             
-            # Create execution log
             log = await FlowExecutionService.create_node_log(
                 execution=execution,
                 node_id=node_id,
@@ -184,24 +165,20 @@ class FlowExecutionService:
             )
             
             try:
-                # Execute node
                 result = await FlowExecutionService.execute_node(
                     node_type=node_type,
                     node_data=node.get("data", {}),
                     inputs=inputs,
                 )
                 
-                # Track end time
                 end_time = datetime.utcnow()
                 
-                # Update log with result
                 log.output_data = result.get("output")
                 log.status = "completed" if result.get("success") else "failed"
                 if not result.get("success"):
                     log.error_message = result.get("error")
                 await sync_to_async(log.save)()
                 
-                # Add to nodeResults array matching NodeExecutionResult schema
                 node_result = {
                     "nodeId": node_id,
                     "nodeType": node_type,
@@ -213,7 +190,6 @@ class FlowExecutionService:
                 }
                 
                 if not result.get("success"):
-                    # Ensure error is always a dictionary
                     error = result.get("error")
                     if isinstance(error, str):
                         node_result["error"] = {"message": error}
@@ -223,11 +199,9 @@ class FlowExecutionService:
                 execution.execution_data.setdefault("nodeResults", []).append(node_result)
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 
-                # Store output for downstream nodes
                 if result.get("success"):
                     node_outputs[node_id] = result.get("output")
                 else:
-                    # Fail fast on error
                     return {
                         "success": False,
                         "error": f"Node {node_id} failed: {result.get('error')}",
@@ -259,23 +233,18 @@ class FlowExecutionService:
                     "error": f"Node {node_id} crashed: {str(e)}",
                     "failedNodeId": node_id,
                 }
-        # Get output from output nodes
         output_nodes = [n for n in nodes if n["type"] == "output"]
         final_output = {}
 
         for output_node in output_nodes:
             output_id = output_node["id"]
-            # Get the value from connected input nodes
             inputs = FlowExecutionService._get_node_inputs(output_id, edges, node_outputs)
             
             if inputs:
-                # Use the input value as the output
                 final_output[output_id] = inputs.get("input", inputs)
             else:
-                # No connected input
                 final_output[output_id] = None
 
-        # Return single output if only one output node
         if len(final_output) == 1:
             final_output = list(final_output.values())[0]
 
@@ -317,7 +286,6 @@ class FlowExecutionService:
     ) -> Optional[List[str]]:
         """Sort nodes in execution order using topological sort"""
         
-        # Build adjacency list and in-degree count
         graph: Dict[str, List[str]] = {node["id"]: [] for node in nodes}
         in_degree: Dict[str, int] = {node["id"]: 0 for node in nodes}
         
@@ -327,26 +295,21 @@ class FlowExecutionService:
             graph[source].append(target)
             in_degree[target] += 1
         
-        # Find all nodes with no incoming edges (start nodes)
         queue = [node_id for node_id, degree in in_degree.items() if degree == 0]
         result = []
         
         while queue:
-            # Process node with no dependencies
             node_id = queue.pop(0)
             result.append(node_id)
             
-            # Reduce in-degree for neighbors
             for neighbor in graph[node_id]:
                 in_degree[neighbor] -= 1
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
         
-        # If we processed all nodes, we have a valid order
         if len(result) == len(nodes):
             return result
         
-        # Otherwise there's a cycle
         return None
 
     @staticmethod
@@ -358,18 +321,15 @@ class FlowExecutionService:
         """Get input values for a node from connected upstream nodes"""
         inputs = {}
         
-        # Find all edges targeting this node
         incoming_edges = [e for e in edges if e["target"] == node_id]
         
         for edge in incoming_edges:
             source_id = edge["source"]
             target_handle = edge.get("targetHandle", "input")
             
-            # Get output from source node
             if source_id in node_outputs:
                 inputs[target_handle] = node_outputs[source_id]
         
-        # If single input, make it the default "input" key
         if len(inputs) == 1 and "input" not in inputs:
             inputs["input"] = list(inputs.values())[0]
         

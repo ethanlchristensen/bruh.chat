@@ -15,7 +15,7 @@ import {
   type EdgeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Save, Play, ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { Save, Play, ArrowLeft, Trash2, Loader2, History } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +47,7 @@ import {
   useCancelFlowExecution,
 } from "@/features/flows/api/flows";
 
-export const Route = createFileRoute("/_protected/flows/$flowId")({
+export const Route = createFileRoute("/_protected/flows/$flowId/")({
   component: FlowWrapper,
 });
 
@@ -76,7 +76,7 @@ function FlowBuilder() {
 
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(
-    null,
+    null
   );
   const [showExecutionPanel, setShowExecutionPanel] = useState(false);
 
@@ -87,7 +87,7 @@ function FlowBuilder() {
   const executeMutation = useExecuteFlow();
   const { data: execution } = useFlowExecution(
     currentExecutionId,
-    !!currentExecutionId,
+    !!currentExecutionId
   );
   const cancelMutation = useCancelFlowExecution();
 
@@ -113,21 +113,21 @@ function FlowBuilder() {
     (changes: NodeChange[]) =>
       setNodes(
         (nodesSnapshot) =>
-          applyNodeChanges(changes, nodesSnapshot) as FlowNode[],
+          applyNodeChanges(changes, nodesSnapshot) as FlowNode[]
       ),
-    [],
+    []
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) =>
       setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-    [],
+    []
   );
 
   const onConnect = useCallback(
     (params: Connection) =>
       setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    [],
+    []
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -168,7 +168,7 @@ function FlowBuilder() {
         console.error("Failed to drop node:", err);
       }
     },
-    [screenToFlowPosition],
+    [screenToFlowPosition]
   );
 
   const onSelectTemplate = useCallback((template: NodeTemplate) => {
@@ -219,7 +219,7 @@ function FlowBuilder() {
           console.error("Execution failed to start:", error);
           console.error("Error details:", JSON.stringify(error, null, 2));
         },
-      },
+      }
     );
   };
 
@@ -240,18 +240,13 @@ function FlowBuilder() {
           output: undefined,
           error: undefined,
         },
-      })),
+      }))
     );
     setEdges((edges) =>
       edges.map((edge) => ({
         ...edge,
         animated: false,
-        style: {
-          ...edge.style,
-          stroke: undefined,
-          strokeWidth: 1,
-        },
-      })),
+      }))
     );
   };
 
@@ -297,7 +292,7 @@ function FlowBuilder() {
           ) : (
             <h1
               onClick={() => !isExecuting && setIsEditingName(true)}
-              className={`text-lg font-semibold ${!isExecuting ? "cursor-pointer hover:text-primary" : "cursor-not-allowed opacity-50"}`}
+              className={`text-lg font-semibold ${!isExecuting ? `cursor-pointer hover:text-primary` : `cursor-not-allowed opacity-50`}`}
             >
               {flowName}
             </h1>
@@ -336,6 +331,19 @@ function FlowBuilder() {
           >
             <Play className="w-4 h-4" />
             Run
+          </button>
+
+          <button
+            onClick={() =>
+              navigate({
+                to: "/flows/$flowId/executions",
+                params: { flowId },
+              })
+            }
+            className="flex items-center gap-2 px-4 py-2 border border-input rounded-lg hover:bg-accent"
+          >
+            <History className="w-4 h-4" />
+            History
           </button>
 
           <button
