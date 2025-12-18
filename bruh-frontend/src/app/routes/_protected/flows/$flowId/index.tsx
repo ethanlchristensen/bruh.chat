@@ -74,6 +74,10 @@ function FlowBuilder() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const originalNodesRef = useRef<FlowNode[]>([]);
+  const originalEdgesRef = useRef<Edge[]>([]);
+  const originalNameRef = useRef("");
+
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(
     null
@@ -96,18 +100,22 @@ function FlowBuilder() {
       setNodes(flow.nodes);
       setEdges(flow.edges);
       setFlowName(flow.name);
+
+      originalNodesRef.current = flow.nodes;
+      originalEdgesRef.current = flow.edges;
+      originalNameRef.current = flow.name;
     }
-  }, [flow]);
+  }, [flow?.id]);
 
   useEffect(() => {
-    if (flow) {
+    if (originalNodesRef.current.length > 0) {
       const hasChanges =
-        JSON.stringify(nodes) !== JSON.stringify(flow.nodes) ||
-        JSON.stringify(edges) !== JSON.stringify(flow.edges) ||
-        flowName !== flow.name;
+        JSON.stringify(nodes) !== JSON.stringify(originalNodesRef.current) ||
+        JSON.stringify(edges) !== JSON.stringify(originalEdgesRef.current) ||
+        flowName !== originalNameRef.current;
       setHasUnsavedChanges(hasChanges);
     }
-  }, [nodes, edges, flowName, flow]);
+  }, [nodes, edges, flowName]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) =>
@@ -187,14 +195,23 @@ function FlowBuilder() {
   }, []);
 
   const handleSave = () => {
-    updateMutation.mutate({
-      flowId,
-      data: {
-        name: flowName,
-        nodes,
-        edges,
+    updateMutation.mutate(
+      {
+        flowId,
+        data: {
+          name: flowName,
+          nodes,
+          edges,
+        },
       },
-    });
+      {
+        onSuccess: () => {
+          originalNodesRef.current = nodes;
+          originalEdgesRef.current = edges;
+          originalNameRef.current = flowName;
+        },
+      }
+    );
   };
 
   const handleDelete = async () => {
