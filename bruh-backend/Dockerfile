@@ -32,16 +32,30 @@ ENV DJANGO_SETTINGS_MODULE=config.settings \
 RUN mkdir -p /app/static && \
     python manage.py collectstatic --noinput
 
+# Flexible entrypoint that accepts commands
 RUN echo '#!/bin/sh\n\
 set -e\n\
-echo "Running database migrations..."\n\
-python manage.py migrate --noinput\n\
-echo "Ensuring superuser exists..."\n\
-python manage.py ensure_superuser\n\
-echo "Starting daphne..."\n\
-exec daphne -b 0.0.0.0 -p 8000 config.asgi:application\n' > /entrypoint.sh && \
+\n\
+# If no command provided, run web server\n\
+if [ "$1" = "web" ] || [ -z "$1" ]; then\n\
+  echo "Running database migrations..."\n\
+  python manage.py migrate --noinput\n\
+  echo "Ensuring superuser exists..."\n\
+  python manage.py ensure_superuser\n\
+  echo "Populating Default Flow Templates"\n\
+  python manage.py seed_node_templates\n\
+  echo "Starting daphne..."\n\
+  exec daphne -b 0.0.0.0 -p 8000 config.asgi:application\n\
+elif [ "$1" = "celery" ]; then\n\
+  echo "Starting Celery worker..."\n\
+  exec celery -A config worker --loglevel=info --pool=solo\n\
+else\n\
+  # Run custom command\n\
+  exec "$@"\n\
+fi\n' > /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
+CMD ["web"]

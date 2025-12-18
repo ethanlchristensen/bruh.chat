@@ -1,9 +1,26 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: bruh.chat.redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   bruhbackend:
     container_name: bruh.chat.backend
     build:
       context: ./bruh-backend
       dockerfile: Dockerfile
+    command: "web"
     restart: unless-stopped
     ports:
       - "8001:8000"
@@ -12,11 +29,38 @@ services:
       - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
       - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
       - SECRET_KEY=${SECRET_KEY:-temp-secret-key-change-in-production}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - db_data:/app/db
       - media_data:/app/media
     networks:
       - app-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  celery:
+    container_name: bruh.chat.celery
+    build:
+      context: ./bruh-backend
+      dockerfile: Dockerfile
+    command: celery
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-temp-secret-key-change-in-production}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - db_data:/app/db
+      - media_data:/app/media
+    networks:
+      - app-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      bruhbackend:
+        condition: service_started
 
   bruhfrontend:
     container_name: bruh.chat.frontend
@@ -44,3 +88,4 @@ networks:
 volumes:
   db_data:
   media_data:
+  redis_data:

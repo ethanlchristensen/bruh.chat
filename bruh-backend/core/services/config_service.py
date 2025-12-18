@@ -22,11 +22,17 @@ class OllamaConfig(BaseModel):
     ollama_default_model: Optional[str]
 
 
+class CeleryConfig(BaseModel):
+    celery_broker_url: str = Field(..., min_length=1)
+    celery_result_backend: str = Field(..., min_length=1)
+
+
 class Config(BaseModel):
     open_router: OpenRouterConfig
     ollama: OllamaConfig
     allowed_hosts: List[str]
     media_root: str
+    celery: CeleryConfig
 
 
 class ConfigService:

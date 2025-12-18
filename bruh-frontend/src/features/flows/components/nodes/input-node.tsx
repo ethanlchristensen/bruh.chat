@@ -5,7 +5,6 @@ import {
   type NodeProps,
   type Node,
   useReactFlow,
-  NodeResizer,
 } from "@xyflow/react";
 import { TextCursorInput, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import type { InputNodeData } from "@/types/flow.types";
@@ -42,7 +41,6 @@ export const InputNode = memo(
 
     return (
       <>
-        <NodeResizer isVisible={selected} />
         <div
           className={`
       bg-card rounded-lg shadow-lg text-left

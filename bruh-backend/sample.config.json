@@ -11,5 +11,9 @@
         "localhost",
         "127.0.0.1"
     ],
-    "media_root": "media"
+    "media_root": "media",
+    "celery": {
+        "celery_broker_url": "redis://redis:6379/0",
+        "celery_result_backend": "redis://redis:6379/0"
+    }
 }

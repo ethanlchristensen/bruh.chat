@@ -84,12 +84,22 @@ class OutputNodeData(BaseNodeData):
             raise ValueError("language is required when format is code")
         return self
 
+class JsonExtractionItem(BaseModel):
+    key: str
+    path: str
+    fallback: Optional[Any] = None
+
+class JsonExtractorNodeData(BaseNodeData):
+    extractions: List[JsonExtractionItem] = []
+    strictMode: bool = False
+    outputFormat: Literal["object", "list"] = "object"
+
 
 class FlowNode(BaseModel):
     id: str
-    type: Literal["input", "llm", "output"]
+    type: Literal["input", "llm", "output", "json_extractor"]
     position: NodePosition
-    data: Union[InputNodeData, LLMNodeData, OutputNodeData]
+    data: Union[InputNodeData, LLMNodeData, OutputNodeData, JsonExtractorNodeData]
     selected: Optional[bool] = False
     dragging: Optional[bool] = False
 
@@ -188,7 +198,7 @@ class FlowResponse(BaseModel):
 
 class NodeExecutionResult(BaseModel):
     nodeId: str
-    nodeType: Literal["input", "llm", "output"]
+    nodeType: Literal["input", "llm", "output", "json_extractor"]
     status: Literal["idle", "running", "success", "error"]
     input: Optional[Any] = None
     output: Optional[Any] = None
@@ -268,7 +278,7 @@ class NodeTemplateResponse(BaseModel):
     id: str
     name: str
     description: str
-    type: Literal["input", "llm", "output"]
+    type: Literal["input", "llm", "output", "json_extractor"]
     icon: str
     color: str
     defaultConfig: Dict[str, Any]

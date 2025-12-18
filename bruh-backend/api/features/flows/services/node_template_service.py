@@ -36,7 +36,7 @@ class NodeTemplateService:
             return [{"id": "output", "type": "source", "position": "right"}]
         elif node_type == "output":
             return [{"id": "input", "type": "target", "position": "left"}]
-        elif node_type == "llm":
+        elif node_type in ["llm", "json_extractor"]:
             return [
                 {"id": "input", "type": "target", "position": "left"},
                 {"id": "output", "type": "source", "position": "right"},

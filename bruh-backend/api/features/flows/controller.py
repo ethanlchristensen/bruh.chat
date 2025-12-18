@@ -1,3 +1,4 @@
+# api/features/flows/controller.py
 from typing import List, Optional
 from uuid import UUID
 
@@ -21,6 +22,7 @@ from .schemas import (
 from .services.flow_service import FlowService
 from .services.flow_validation_service import FlowValidationService
 from .services.flow_execution_service import FlowExecutionService
+from .tasks import execute_flow_task  # Import the task
 
 
 @api_controller("/flows", auth=JWTAuth(), tags=["Flows"])
@@ -88,9 +90,7 @@ class FlowController:
     @route.delete("/{flow_id}", response={200: dict, 404: dict})
     async def delete_flow(self, request, flow_id: UUID):
         flow = await sync_to_async(lambda: get_object_or_404(Flow, id=flow_id, user=request.user))()
-
         await sync_to_async(flow.delete)()
-
         return 200, {"message": "Flow deleted successfully"}
 
     @route.post("/{flow_id}/duplicate", response={201: FlowResponse, 404: dict})
@@ -124,14 +124,14 @@ class FlowController:
         status: Optional[str] = None,
     ):
         flow = await sync_to_async(lambda: get_object_or_404(Flow, id=flow_id, user=request.user))()
-
         return await FlowService.get_flow_executions(flow=flow, limit=limit, status=status)
 
     @route.post(
         "/{flow_id}/execute",
-        response={201: FlowExecutionResponse, 400: dict, 404: dict},
+        response={202: FlowExecutionResponse, 400: dict, 404: dict},
     )
     async def execute_flow(self, request, flow_id: UUID, data: FlowExecutionRequest):
+        """Execute a flow in the background"""
         flow = await sync_to_async(lambda: get_object_or_404(Flow, id=flow_id, user=request.user))()
 
         validation = await FlowValidationService.validate_flow(
@@ -155,9 +155,10 @@ class FlowController:
         if error:
             return 400, {"detail": error}
 
-        await FlowExecutionService.execute_flow_async(execution)
+        # Dispatch to Celery worker
+        execute_flow_task.delay(str(execution.id))
 
-        return 201, await FlowService.execution_to_response(execution)
+        return 202, await FlowService.execution_to_response(execution)
 
 
 @api_controller("/flow-templates", auth=JWTAuth(), tags=["Flow Templates"])
@@ -211,7 +212,7 @@ class FlowExecutionController:
     @route.get("/{execution_id}", response={200: FlowExecutionResponse, 404: dict})
     async def get_execution(self, request, execution_id: UUID):
         execution = await sync_to_async(
-            lambda: get_object_or_404(FlowExecution, id=execution_id, user=request.user)
+            lambda: get_object_or_404(FlowExecution.objects.select_related("flow"), id=execution_id, user=request.user)
         )()
 
         return 200, await FlowService.execution_to_response(execution)
@@ -219,7 +220,7 @@ class FlowExecutionController:
     @route.post("/{execution_id}/cancel", response={200: dict, 400: dict, 404: dict})
     async def cancel_execution(self, request, execution_id: UUID):
         execution = await sync_to_async(
-            lambda: get_object_or_404(FlowExecution, id=execution_id, user=request.user)
+            lambda: get_object_or_404(FlowExecution.objects.select_related("flow"), id=execution_id, user=request.user)
         )()
 
         if execution.status not in ["pending", "running"]:
@@ -276,8 +277,6 @@ class NodeTemplateController:
         type: Optional[str] = None,
     ):
         """Get all available node templates"""
-        from asgiref.sync import sync_to_async
-
         queryset = NodeTemplate.objects.filter(is_active=True)
 
         if category:

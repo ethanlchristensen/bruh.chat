@@ -20,7 +20,9 @@ class Command(BaseCommand):
                     "multiline": False,
                     "placeholder": "Enter your input...",
                     "status": "idle",
-                    "handles": [{"id": "output", "type": "source", "position": "right"}],
+                    "handles": [
+                        {"id": "output", "type": "source", "position": "right"}
+                    ],
                 },
                 "display_order": 1,
             },
@@ -37,7 +39,9 @@ class Command(BaseCommand):
                     "multiline": True,
                     "placeholder": "Enter your text...",
                     "status": "idle",
-                    "handles": [{"id": "output", "type": "source", "position": "right"}],
+                    "handles": [
+                        {"id": "output", "type": "source", "position": "right"}
+                    ],
                 },
                 "display_order": 2,
             },
@@ -141,6 +145,32 @@ class Command(BaseCommand):
                     "downloadable": True,
                     "status": "idle",
                     "handles": [{"id": "input", "type": "target", "position": "left"}],
+                },
+                "display_order": 3,
+            },
+            {
+                "name": "JSON Extractor",
+                "description": "Extract values from JSON data using paths",
+                "type": "json_extractor",
+                "icon": "braces",
+                "color": "orange",
+                "category": "processing",
+                "default_config": {
+                    "label": "JSON Extractor",
+                    "extractions": [
+                        {
+                            "key": "output",
+                            "path": "$",
+                            "fallback": None,
+                        }
+                    ],
+                    "strictMode": False,
+                    "outputFormat": "object",
+                    "status": "idle",
+                    "handles": [
+                        {"id": "input", "type": "target", "position": "left"},
+                        {"id": "output", "type": "source", "position": "right"},
+                    ],
                 },
                 "display_order": 3,
             },
