@@ -921,15 +921,15 @@ code {
   }
 
   .react-flow__node-input {
-    @apply bg-transparent! border-none! w-auto! min-w-[400px] h-auto!;
+    @apply bg-transparent! border-none! w-auto! min-w-[400px] max-w-[600px]! p-0! h-auto!;
   }
 
   .react-flow__node-output {
-    @apply bg-transparent! border-none! w-auto! min-w-[400px];
+    @apply bg-transparent! border-none! w-auto! min-w-[400px] max-w-[600px]! p-0! h-auto!;
   }
 
   .react-flow__node-llm {
-    @apply bg-transparent! border-none! w-auto! min-w-[300px] p-0!;
+    @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
   }
 
   .react-flow__node-default {
