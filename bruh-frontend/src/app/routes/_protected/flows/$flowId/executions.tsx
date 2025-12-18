@@ -202,7 +202,10 @@ function FlowExecutionsPage() {
           {!isLoading && executions && executions.length > 0 && (
             <div className="flex flex-col gap-2 pb-4">
               {executions.map((execution) => {
-                const config = statusConfig[execution.status];
+                const effectiveStatus = execution.error
+                  ? "failed"
+                  : execution.status;
+                const config = statusConfig[effectiveStatus];
                 const StatusIcon = config.icon;
 
                 return (

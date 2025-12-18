@@ -98,7 +98,6 @@ function ExecutionDetailPage() {
   return (
     <div className="flex flex-col h-full overflow-auto">
       <div className="container mx-auto max-w-6xl py-8 px-4 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
