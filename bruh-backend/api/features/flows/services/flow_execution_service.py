@@ -123,7 +123,6 @@ class FlowExecutionService:
                 continue
 
             node_type = node["type"]
-
             start_time = datetime.utcnow()
 
             if node_type == "input":
@@ -144,8 +143,13 @@ class FlowExecutionService:
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 continue
 
+            inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
+
+            if not inputs and node_type != "output":
+                logger.info(f"Skipping node {node_id} - no inputs (conditional path not taken)")
+                continue
+
             if node_type == "output":
-                inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
                 end_time = datetime.utcnow()
 
                 execution.execution_data.setdefault("nodeResults", []).append(
@@ -161,8 +165,6 @@ class FlowExecutionService:
                 )
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 continue
-
-            inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
 
             log = await FlowExecutionService.create_node_log(
                 execution=execution,
@@ -196,6 +198,10 @@ class FlowExecutionService:
                     "output": result.get("output"),
                 }
 
+                if node_type == "conditional":
+                    node_result["matchedCondition"] = result.get("matchedCondition")
+                    node_result["outputHandle"] = result.get("outputHandle")
+
                 if not result.get("success"):
                     error = result.get("error")
                     if isinstance(error, str):
@@ -207,7 +213,11 @@ class FlowExecutionService:
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
 
                 if result.get("success"):
-                    node_outputs[node_id] = result.get("output")
+                    # store the full data for routing
+                    if node_type == "conditional":
+                        node_outputs[node_id] = result
+                    else:
+                        node_outputs[node_id] = result.get("output")
                 else:
                     return {
                         "success": False,
@@ -223,7 +233,6 @@ class FlowExecutionService:
                 log.error_message = str(e)
                 await sync_to_async(log.save)()
 
-                # Add failed node to results
                 execution.execution_data.setdefault("nodeResults", []).append(
                     {
                         "nodeId": node_id,
@@ -242,6 +251,7 @@ class FlowExecutionService:
                     "error": f"Node {node_id} crashed: {str(e)}",
                     "failedNodeId": node_id,
                 }
+
         output_nodes = [n for n in nodes if n["type"] == "output"]
         final_output = {}
 
@@ -251,8 +261,6 @@ class FlowExecutionService:
 
             if inputs:
                 final_output[output_id] = inputs.get("input", inputs)
-            else:
-                final_output[output_id] = None
 
         if len(final_output) == 1:
             final_output = list(final_output.values())[0]
@@ -326,10 +334,17 @@ class FlowExecutionService:
 
         for edge in incoming_edges:
             source_id = edge["source"]
+            source_handle = edge.get("sourceHandle", "output")
             target_handle = edge.get("targetHandle", "input")
 
             if source_id in node_outputs:
-                inputs[target_handle] = node_outputs[source_id]
+                output_data = node_outputs[source_id]
+
+                if isinstance(output_data, dict) and "outputHandle" in output_data:
+                    if source_handle == output_data["outputHandle"]:
+                        inputs[target_handle] = output_data["output"]
+                else:
+                    inputs[target_handle] = output_data
 
         if len(inputs) == 1 and "input" not in inputs:
             inputs["input"] = list(inputs.values())[0]

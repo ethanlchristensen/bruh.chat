@@ -97,11 +97,60 @@ class JsonExtractorNodeData(BaseNodeData):
     outputFormat: Literal["object", "list"] = "object"
 
 
+class ConditionItem(BaseModel):
+    id: str
+    operator: Literal[
+        "contains",
+        "equals",
+        "starts_with",
+        "ends_with",
+        "regex",
+        "greater_than",
+        "less_than",
+        "equals_number",
+        "is_empty",
+        "is_not_empty",
+        "length_greater_than",
+        "length_less_than",
+    ]
+    value: str = ""
+    outputHandle: str
+    label: Optional[str] = None
+
+
+class ConditionalNodeData(BaseNodeData):
+    conditions: List[ConditionItem] = []
+    defaultOutputHandle: str = "default"
+    caseSensitive: bool = False
+
+    @field_validator("conditions")
+    @classmethod
+    def validate_conditions(cls, v):
+        if not v:
+            raise ValueError("At least one condition is required")
+
+        # Check for duplicate output handles
+        handles = [c.outputHandle for c in v]
+        if len(handles) != len(set(handles)):
+            raise ValueError("Duplicate output handles found")
+
+        return v
+
+    @field_validator("defaultOutputHandle")
+    @classmethod
+    def validate_default_handle(cls, v):
+        if not v or not v.strip():
+            raise ValueError("defaultOutputHandle cannot be empty")
+        return v
+
+
 class FlowNode(BaseModel):
     id: str
-    type: Literal["input", "llm", "output", "json_extractor"]
+    type: Literal["input", "llm", "output", "json_extractor", "conditional"]
     position: NodePosition
-    data: Union[InputNodeData, LLMNodeData, OutputNodeData, JsonExtractorNodeData]
+    data: Union[
+        InputNodeData, LLMNodeData, OutputNodeData, JsonExtractorNodeData, ConditionalNodeData
+    ]
     selected: Optional[bool] = False
     dragging: Optional[bool] = False
 
@@ -200,7 +249,7 @@ class FlowResponse(BaseModel):
 
 class NodeExecutionResult(BaseModel):
     nodeId: str
-    nodeType: Literal["input", "llm", "output", "json_extractor"]
+    nodeType: Literal["input", "llm", "output", "json_extractor", "conditional"]
     status: Literal["idle", "running", "success", "error"]
     input: Optional[Any] = None
     output: Optional[Any] = None
@@ -208,6 +257,8 @@ class NodeExecutionResult(BaseModel):
     startTime: str
     endTime: Optional[str] = None
     executionTime: Optional[int] = None
+    matchedCondition: Optional[str] = None
+    outputHandle: Optional[str] = None
 
 
 class FlowExecutionRequest(BaseModel):
@@ -280,7 +331,7 @@ class NodeTemplateResponse(BaseModel):
     id: str
     name: str
     description: str
-    type: Literal["input", "llm", "output", "json_extractor"]
+    type: Literal["input", "llm", "output", "json_extractor", "conditional"]
     icon: str
     color: str
     defaultConfig: Dict[str, Any]

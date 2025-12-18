@@ -170,6 +170,45 @@ class Command(BaseCommand):
                 },
                 "display_order": 3,
             },
+            {
+                "name": "Conditional Router",
+                "description": "Route flow to different paths based on conditions",
+                "type": "conditional",
+                "icon": "git-branch",
+                "color": "yellow",
+                "category": "processing",
+                "default_config": {
+                    "label": "Conditional Router",
+                    "conditions": [
+                        {
+                            "id": "condition_1",
+                            "operator": "contains",
+                            "value": "",
+                            "outputHandle": "output_1",
+                            "label": "Condition 1",
+                        }
+                    ],
+                    "defaultOutputHandle": "default",
+                    "caseSensitive": False,
+                    "status": "idle",
+                    "handles": [
+                        {"id": "input", "type": "target", "position": "left"},
+                        {
+                            "id": "output_1",
+                            "type": "source",
+                            "position": "right",
+                            "label": "Condition 1",
+                        },
+                        {
+                            "id": "default",
+                            "type": "source",
+                            "position": "right",
+                            "label": "Default",
+                        },
+                    ],
+                },
+                "display_order": 4,
+            },
         ]
 
         for template_data in templates:
