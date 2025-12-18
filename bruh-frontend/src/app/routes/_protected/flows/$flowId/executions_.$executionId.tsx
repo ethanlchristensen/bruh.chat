@@ -40,6 +40,7 @@ const nodeTypeLabels = {
   llm: "LLM",
   output: "Output",
   json_extractor: "JSON Extractor",
+  conditional: "Conditional",
 };
 
 const formatValue = (value: unknown): string => {
@@ -310,6 +311,25 @@ function ExecutionDetailPage() {
                             <pre className="text-xs font-mono overflow-x-auto max-w-full whitespace-pre-wrap wrap-break-word">
                               {formatValue(result.output) as string}
                             </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {result.matchedCondition && (
+                        <div className="mt-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">
+                            Matched Condition
+                          </p>
+                          <div className="bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-400 rounded p-3">
+                            <p className="text-xs">{result.matchedCondition}</p>
+                            {result.outputHandle && (
+                              <p className="text-xs mt-1">
+                                Output Handle:{" "}
+                                <code className="font-mono">
+                                  {result.outputHandle}
+                                </code>
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}

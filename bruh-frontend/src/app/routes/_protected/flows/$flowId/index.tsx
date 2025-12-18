@@ -33,6 +33,7 @@ import { InputNode } from "@/features/flows/components/nodes/input-node";
 import { LLMNode } from "@/features/flows/components/nodes/llm-node";
 import { OutputNode } from "@/features/flows/components/nodes/output-node";
 import { JSONExtractorNode } from "@/features/flows/components/nodes";
+import { ConditionalNode } from "@/features/flows/components/nodes";
 import { ExecutionDialog } from "@/features/flows/components/execution-dialog";
 import { ExecutionStatusPanel } from "@/features/flows/components/execution-status-panel";
 import {
@@ -57,10 +58,37 @@ const nodeTypes = {
   llm: LLMNode,
   output: OutputNode,
   json_extractor: JSONExtractorNode,
+  conditional: ConditionalNode,
 };
 
 const normalizeNode = (node: FlowNode) => {
-  const { status, output, error, ...dataWithoutRuntime } = node.data;
+  const {
+    status,
+    output,
+    error,
+    input,
+    executionTime,
+    lastExecuted,
+    ...dataWithoutRuntime
+  } = node.data;
+
+  if (node.type === "conditional") {
+    const conditionalData = dataWithoutRuntime as any;
+    return {
+      id: node.id,
+      type: node.type,
+      position: node.position,
+      data: {
+        label: conditionalData.label,
+        description: conditionalData.description || null,
+        handles: conditionalData.handles || [],
+        conditions: conditionalData.conditions || [],
+        defaultOutputHandle: conditionalData.defaultOutputHandle || "default",
+        caseSensitive: conditionalData.caseSensitive || false,
+      },
+    };
+  }
+
   return {
     id: node.id,
     type: node.type,
@@ -213,6 +241,12 @@ function FlowBuilder() {
             ...template.defaultConfig,
             label: template.name,
             status: "idle",
+            ...(template.type === "conditional" && {
+              conditions: template.defaultConfig.conditions || [],
+              defaultOutputHandle:
+                template.defaultConfig.defaultOutputHandle || "default",
+              caseSensitive: template.defaultConfig.caseSensitive || false,
+            }),
             handles: template.defaultConfig.handles || [],
           } as any,
         };
@@ -234,6 +268,12 @@ function FlowBuilder() {
         ...template.defaultConfig,
         label: template.name,
         status: "idle",
+        ...(template.type === "conditional" && {
+          conditions: template.defaultConfig.conditions || [],
+          defaultOutputHandle:
+            template.defaultConfig.defaultOutputHandle || "default",
+          caseSensitive: template.defaultConfig.caseSensitive || false,
+        }),
         handles: template.defaultConfig.handles || [],
       } as any,
     };

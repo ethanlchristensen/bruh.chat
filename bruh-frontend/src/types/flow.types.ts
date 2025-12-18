@@ -1,4 +1,9 @@
-export type NodeType = "input" | "llm" | "output" | "json_extractor";
+export type NodeType =
+  | "input"
+  | "llm"
+  | "output"
+  | "json_extractor"
+  | "conditional";
 
 export type NodeStatus = "idle" | "running" | "success" | "error";
 
@@ -70,6 +75,32 @@ export interface JSONExtractorNodeData extends BaseNodeData {
   executionTime?: number;
 }
 
+export interface ConditionItem {
+  id: string;
+  operator:
+    | "contains"
+    | "equals"
+    | "starts_with"
+    | "ends_with"
+    | "regex"
+    | "greater_than"
+    | "less_than"
+    | "equals_number"
+    | "is_empty"
+    | "is_not_empty"
+    | "length_greater_than"
+    | "length_less_than";
+  value: string;
+  outputHandle: string;
+  label?: string;
+}
+
+export interface ConditionalNodeData extends BaseNodeData {
+  conditions: ConditionItem[];
+  defaultOutputHandle: string;
+  caseSensitive: boolean;
+}
+
 export interface OutputNodeData extends BaseNodeData {
   format: "text" | "markdown" | "json" | "code";
   language?: string;
@@ -78,7 +109,12 @@ export interface OutputNodeData extends BaseNodeData {
   downloadFilename?: string;
 }
 
-export type NodeData = InputNodeData | LLMNodeData | OutputNodeData;
+export type NodeData =
+  | InputNodeData
+  | LLMNodeData
+  | OutputNodeData
+  | JSONExtractorNodeData
+  | ConditionalNodeData;
 
 export interface FlowNode {
   id: string;
@@ -143,6 +179,8 @@ export interface NodeExecutionResult {
   startTime: string;
   endTime?: string;
   executionTime?: number | null;
+  matchedCondition?: string;
+  outputHandle?: string;
 }
 
 export interface FlowExecutionResult {
@@ -195,6 +233,11 @@ export const DEFAULT_NODE_CONFIG = {
     //   { id: 'input', type: 'target' as const, position: 'left' as const }
     // ]
   },
+  conditional: {
+    conditions: [],
+    defaultOutputHandle: "default",
+    caseSensitive: false,
+  },
 } as const;
 
 export interface ValidationError {
@@ -215,17 +258,28 @@ export type NodeTemplateCategory =
   | "logic"
   | "integration";
 
-export interface NodeTemplate {
+type NodeTemplateConfig<T extends NodeType> = T extends "input"
+  ? { defaultConfig: Partial<InputNodeData> }
+  : T extends "llm"
+    ? { defaultConfig: Partial<LLMNodeData> }
+    : T extends "output"
+      ? { defaultConfig: Partial<OutputNodeData> }
+      : T extends "json_extractor"
+        ? { defaultConfig: Partial<JSONExtractorNodeData> }
+        : T extends "conditional"
+          ? { defaultConfig: Partial<ConditionalNodeData> }
+          : { defaultConfig: Partial<NodeData> };
+
+export type NodeTemplate<T extends NodeType = NodeType> = {
   id: string;
   name: string;
   description: string;
-  type: NodeType;
+  type: T;
   icon: string;
   color: string;
-  defaultConfig: Partial<NodeData>;
   category: NodeTemplateCategory;
   isPremium: boolean;
-}
+} & NodeTemplateConfig<T>;
 
 export interface CreateNodeFromTemplateRequest {
   templateId: string;
