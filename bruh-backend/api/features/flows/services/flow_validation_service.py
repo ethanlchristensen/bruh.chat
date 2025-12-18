@@ -170,7 +170,7 @@ class FlowValidationService:
 
         elif node.type == "json_extractor":
             extractions = getattr(node.data, "extractions", [])
-            
+
             if not extractions:
                 errors.append(
                     ValidationError(
@@ -179,7 +179,7 @@ class FlowValidationService:
                         message="JSON extractor must have at least one extraction defined",
                     )
                 )
-            
+
             for idx, extraction in enumerate(extractions):
                 if isinstance(extraction, dict):
                     if not extraction.get("key"):
@@ -190,7 +190,7 @@ class FlowValidationService:
                                 message="Each extraction must have a key",
                             )
                         )
-                    
+
                     if not extraction.get("path"):
                         errors.append(
                             ValidationError(

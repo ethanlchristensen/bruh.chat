@@ -2,11 +2,7 @@ export type NodeType = "input" | "llm" | "output" | "json_extractor";
 
 export type NodeStatus = "idle" | "running" | "success" | "error";
 
-export type NodeExecutionStatus = 
-  | "pending" 
-  | "running" 
-  | "success"
-  | "error";
+export type NodeExecutionStatus = "pending" | "running" | "success" | "error";
 
 export type Provider = "ollama" | "openrouter";
 
@@ -125,15 +121,13 @@ export interface ExecutionContext {
   nodeResults: Map<string, NodeExecutionResult>;
 }
 
-export type NodeInput = 
+export type NodeInput =
   | Record<string, never>
   | { input: string }
   | { input: Record<string, unknown> }
   | Record<string, unknown>;
 
-export type NodeOutput = 
-  | string 
-  | Record<string, unknown>;
+export type NodeOutput = string | Record<string, unknown>;
 
 export interface NodeExecutionResult {
   nodeId: string;

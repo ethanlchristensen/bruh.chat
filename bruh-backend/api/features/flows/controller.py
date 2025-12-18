@@ -211,7 +211,9 @@ class FlowExecutionController:
     @route.get("/{execution_id}", response={200: FlowExecutionResponse, 404: dict})
     async def get_execution(self, request, execution_id: UUID):
         execution = await sync_to_async(
-            lambda: get_object_or_404(FlowExecution.objects.select_related("flow"), id=execution_id, user=request.user)
+            lambda: get_object_or_404(
+                FlowExecution.objects.select_related("flow"), id=execution_id, user=request.user
+            )
         )()
 
         return 200, await FlowService.execution_to_response(execution)
@@ -219,7 +221,9 @@ class FlowExecutionController:
     @route.post("/{execution_id}/cancel", response={200: dict, 400: dict, 404: dict})
     async def cancel_execution(self, request, execution_id: UUID):
         execution = await sync_to_async(
-            lambda: get_object_or_404(FlowExecution.objects.select_related("flow"), id=execution_id, user=request.user)
+            lambda: get_object_or_404(
+                FlowExecution.objects.select_related("flow"), id=execution_id, user=request.user
+            )
         )()
 
         if execution.status not in ["pending", "running"]:

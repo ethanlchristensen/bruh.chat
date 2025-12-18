@@ -84,10 +84,12 @@ class OutputNodeData(BaseNodeData):
             raise ValueError("language is required when format is code")
         return self
 
+
 class JsonExtractionItem(BaseModel):
     key: str
     path: str
     fallback: Optional[Any] = None
+
 
 class JsonExtractorNodeData(BaseNodeData):
     extractions: List[JsonExtractionItem] = []

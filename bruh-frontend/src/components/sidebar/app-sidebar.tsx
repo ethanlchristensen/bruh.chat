@@ -114,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isConnected } = useConversationWebSocket({
     onTitleUpdate: (conversationId, newTitle) => {
       console.log(
-        `[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`
+        `[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`,
       );
       toast.success("Conversation title updated", {
         description: newTitle,
@@ -149,7 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     if (searchQuery.trim()) {
       filtered = filtered.filter((conversation) =>
-        conversation.title.toLowerCase().includes(searchQuery.toLowerCase())
+        conversation.title.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -294,7 +294,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             "group/item relative border-b last:border-b-0",
                             isActive
                               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           )}
                         >
                           {isEditing ? (
@@ -444,7 +444,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           "group/item relative border-b last:border-b-0",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         )}
                       >
                         {isEditing ? (

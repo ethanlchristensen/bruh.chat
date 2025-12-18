@@ -42,14 +42,14 @@ class FlowExecutionService:
     async def execute_flow_async(execution: FlowExecution):
         """Execute the flow with proper node orchestration"""
         await sync_to_async(execution.mark_running)()
-        
+
         try:
             flow_data = execution.flow.flow_data
             nodes = flow_data.get("nodes", [])
             edges = flow_data.get("edges", [])
             initial_input = execution.execution_data.get("initialInput", {})
             variables = execution.execution_data.get("variables", {})
-            
+
             result = await FlowExecutionService.execute_flow(
                 execution=execution,
                 nodes=nodes,
@@ -57,7 +57,7 @@ class FlowExecutionService:
                 initial_input=initial_input,
                 variables=variables,
             )
-            
+
             execution.execution_data["finalOutput"] = result.get("output")
             if result.get("success"):
                 execution.status = "completed"
@@ -68,9 +68,9 @@ class FlowExecutionService:
                     "message": error_msg,
                     "failedNodeId": result.get("failedNodeId"),
                 }
-            
+
             await sync_to_async(execution.mark_completed)(execution.execution_data)
-            
+
         except Exception as e:
             logger.exception(f"Flow execution failed: {e}")
             execution.status = "failed"
@@ -89,19 +89,22 @@ class FlowExecutionService:
         variables: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute flow nodes in topological order"""
-        
+
         execution_order = FlowExecutionService._topological_sort(nodes, edges)
-        
+
         if not execution_order:
-            return {"success": False, "error": "Could not determine execution order (cycle detected?)"}
-        
+            return {
+                "success": False,
+                "error": "Could not determine execution order (cycle detected?)",
+            }
+
         node_outputs: Dict[str, Any] = {}
-        
+
         for node in nodes:
             if node["type"] == "input":
                 node_id = node["id"]
                 node_data = node.get("data", {})
-                
+
                 variable_name = node_data.get("variableName")
                 if variable_name and variable_name in initial_input:
                     node_outputs[node_id] = initial_input[variable_name]
@@ -113,72 +116,76 @@ class FlowExecutionService:
                     node_outputs[node_id] = initial_input[node_id]
                 else:
                     node_outputs[node_id] = ""
-        
+
         for node_id in execution_order:
             node = next((n for n in nodes if n["id"] == node_id), None)
             if not node:
                 continue
-            
+
             node_type = node["type"]
 
             start_time = datetime.utcnow()
-            
+
             if node_type == "input":
                 output_value = node_outputs.get(node_id, "")
                 end_time = datetime.utcnow()
-                
-                execution.execution_data.setdefault("nodeResults", []).append({
-                    "nodeId": node_id,
-                    "nodeType": node_type,
-                    "status": "success",
-                    "startTime": start_time.isoformat(),
-                    "endTime": end_time.isoformat(),
-                    "input": {},
-                    "output": output_value,
-                })
+
+                execution.execution_data.setdefault("nodeResults", []).append(
+                    {
+                        "nodeId": node_id,
+                        "nodeType": node_type,
+                        "status": "success",
+                        "startTime": start_time.isoformat(),
+                        "endTime": end_time.isoformat(),
+                        "input": {},
+                        "output": output_value,
+                    }
+                )
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 continue
-            
+
             if node_type == "output":
                 inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
                 end_time = datetime.utcnow()
-                
-                execution.execution_data.setdefault("nodeResults", []).append({
-                    "nodeId": node_id,
-                    "nodeType": node_type,
-                    "status": "success",
-                    "startTime": start_time.isoformat(),
-                    "endTime": end_time.isoformat(),
-                    "input": inputs,
-                    "output": inputs.get("input", inputs),
-                })
+
+                execution.execution_data.setdefault("nodeResults", []).append(
+                    {
+                        "nodeId": node_id,
+                        "nodeType": node_type,
+                        "status": "success",
+                        "startTime": start_time.isoformat(),
+                        "endTime": end_time.isoformat(),
+                        "input": inputs,
+                        "output": inputs.get("input", inputs),
+                    }
+                )
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
                 continue
-            
+
             inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
-            
+
             log = await FlowExecutionService.create_node_log(
                 execution=execution,
                 node_id=node_id,
                 node_type=node_type,
                 input_data=inputs,
             )
-            
+
             try:
                 result = await FlowExecutionService.execute_node(
                     node_type=node_type,
                     node_data=node.get("data", {}),
                     inputs=inputs,
                 )
-                
+
                 end_time = datetime.utcnow()
-                
+
                 log.output_data = result.get("output")
                 log.status = "completed" if result.get("success") else "failed"
                 if not result.get("success"):
                     log.error_message = result.get("error")
                 await sync_to_async(log.save)()
-                
+
                 node_result = {
                     "nodeId": node_id,
                     "nodeType": node_type,
@@ -188,17 +195,17 @@ class FlowExecutionService:
                     "input": inputs,
                     "output": result.get("output"),
                 }
-                
+
                 if not result.get("success"):
                     error = result.get("error")
                     if isinstance(error, str):
                         node_result["error"] = {"message": error}
                     else:
                         node_result["error"] = error
-                
+
                 execution.execution_data.setdefault("nodeResults", []).append(node_result)
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
-                
+
                 if result.get("success"):
                     node_outputs[node_id] = result.get("output")
                 else:
@@ -207,27 +214,29 @@ class FlowExecutionService:
                         "error": f"Node {node_id} failed: {result.get('error')}",
                         "failedNodeId": node_id,
                     }
-                    
+
             except Exception as e:
                 logger.exception(f"Node {node_id} execution error: {e}")
                 end_time = datetime.utcnow()
-                
+
                 log.status = "failed"
                 log.error_message = str(e)
                 await sync_to_async(log.save)()
-                
+
                 # Add failed node to results
-                execution.execution_data.setdefault("nodeResults", []).append({
-                    "nodeId": node_id,
-                    "nodeType": node_type,
-                    "status": "error",
-                    "startTime": start_time.isoformat(),
-                    "endTime": end_time.isoformat(),
-                    "input": inputs,
-                     "error": {"message": str(e), "type": type(e).__name__},
-                })
+                execution.execution_data.setdefault("nodeResults", []).append(
+                    {
+                        "nodeId": node_id,
+                        "nodeType": node_type,
+                        "status": "error",
+                        "startTime": start_time.isoformat(),
+                        "endTime": end_time.isoformat(),
+                        "input": inputs,
+                        "error": {"message": str(e), "type": type(e).__name__},
+                    }
+                )
                 await sync_to_async(execution.save)(update_fields=["execution_data"])
-                
+
                 return {
                     "success": False,
                     "error": f"Node {node_id} crashed: {str(e)}",
@@ -239,7 +248,7 @@ class FlowExecutionService:
         for output_node in output_nodes:
             output_id = output_node["id"]
             inputs = FlowExecutionService._get_node_inputs(output_id, edges, node_outputs)
-            
+
             if inputs:
                 final_output[output_id] = inputs.get("input", inputs)
             else:
@@ -256,83 +265,75 @@ class FlowExecutionService:
 
     @staticmethod
     async def execute_node(
-        node_type: str,
-        node_data: Dict[str, Any],
-        inputs: Dict[str, Any]
+        node_type: str, node_data: Dict[str, Any], inputs: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute a single node using registered executor"""
         try:
             if not NodeExecutorRegistry.is_registered(node_type):
                 return {
                     "success": False,
-                    "error": f"No executor registered for node type: {node_type}"
+                    "error": f"No executor registered for node type: {node_type}",
                 }
-            
+
             executor = NodeExecutorRegistry.get_executor(node_type)
             result = await executor.execute(node_data, inputs)
             return result
-            
+
         except Exception as e:
             logger.exception(f"Node execution error: {e}")
-            return {
-                "success": False,
-                "error": f"Execution failed: {str(e)}"
-            }
+            return {"success": False, "error": f"Execution failed: {str(e)}"}
 
     @staticmethod
     def _topological_sort(
-        nodes: List[Dict[str, Any]],
-        edges: List[Dict[str, Any]]
+        nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]
     ) -> Optional[List[str]]:
         """Sort nodes in execution order using topological sort"""
-        
+
         graph: Dict[str, List[str]] = {node["id"]: [] for node in nodes}
         in_degree: Dict[str, int] = {node["id"]: 0 for node in nodes}
-        
+
         for edge in edges:
             source = edge["source"]
             target = edge["target"]
             graph[source].append(target)
             in_degree[target] += 1
-        
+
         queue = [node_id for node_id, degree in in_degree.items() if degree == 0]
         result = []
-        
+
         while queue:
             node_id = queue.pop(0)
             result.append(node_id)
-            
+
             for neighbor in graph[node_id]:
                 in_degree[neighbor] -= 1
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
-        
+
         if len(result) == len(nodes):
             return result
-        
+
         return None
 
     @staticmethod
     def _get_node_inputs(
-        node_id: str,
-        edges: List[Dict[str, Any]],
-        node_outputs: Dict[str, Any]
+        node_id: str, edges: List[Dict[str, Any]], node_outputs: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Get input values for a node from connected upstream nodes"""
         inputs = {}
-        
+
         incoming_edges = [e for e in edges if e["target"] == node_id]
-        
+
         for edge in incoming_edges:
             source_id = edge["source"]
             target_handle = edge.get("targetHandle", "input")
-            
+
             if source_id in node_outputs:
                 inputs[target_handle] = node_outputs[source_id]
-        
+
         if len(inputs) == 1 and "input" not in inputs:
             inputs["input"] = list(inputs.values())[0]
-        
+
         return inputs
 
     @staticmethod

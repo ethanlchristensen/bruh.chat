@@ -20,9 +20,7 @@ class Command(BaseCommand):
                     "multiline": False,
                     "placeholder": "Enter your input...",
                     "status": "idle",
-                    "handles": [
-                        {"id": "output", "type": "source", "position": "right"}
-                    ],
+                    "handles": [{"id": "output", "type": "source", "position": "right"}],
                 },
                 "display_order": 1,
             },
@@ -39,9 +37,7 @@ class Command(BaseCommand):
                     "multiline": True,
                     "placeholder": "Enter your text...",
                     "status": "idle",
-                    "handles": [
-                        {"id": "output", "type": "source", "position": "right"}
-                    ],
+                    "handles": [{"id": "output", "type": "source", "position": "right"}],
                 },
                 "display_order": 2,
             },

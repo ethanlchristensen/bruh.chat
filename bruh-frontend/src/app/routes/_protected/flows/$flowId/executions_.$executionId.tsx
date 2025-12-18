@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute(
-  "/_protected/flows/$flowId/executions_/$executionId"
+  "/_protected/flows/$flowId/executions_/$executionId",
 )({
   component: ExecutionDetailPage,
 });
@@ -179,10 +179,10 @@ function ExecutionDetailPage() {
                 {execution.nodeResults.length > 0
                   ? Math.round(
                       (execution.nodeResults.filter(
-                        (n) => n.status === "success"
+                        (n) => n.status === "success",
                       ).length /
                         execution.nodeResults.length) *
-                        100
+                        100,
                     )
                   : 0}
                 %

@@ -11,7 +11,7 @@ class JsonExtractorExecutor(NodeExecutor):
             extractions = node_data.get("extractions", [])
             strict_mode = node_data.get("strictMode", False)
             output_format = node_data.get("outputFormat", "object")
-            
+
             data = json.loads(json_input)
             results = {}
             errors = []
@@ -52,7 +52,9 @@ class JsonExtractorExecutor(NodeExecutor):
 
             return {
                 "success": True,
-                "output": results if output_format != "flat" or len(results) > 1 else list(results.values())[0],
+                "output": results
+                if output_format != "flat" or len(results) > 1
+                else list(results.values())[0],
             }
 
         except json.JSONDecodeError as e:

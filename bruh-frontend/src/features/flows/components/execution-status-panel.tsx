@@ -58,16 +58,16 @@ export function ExecutionStatusPanel({
           };
         }
         return node;
-      })
+      }),
     );
 
     setEdges((edges) =>
       edges.map((edge) => {
         const sourceResult = execution.nodeResults.find(
-          (r) => r.nodeId === edge.source
+          (r) => r.nodeId === edge.source,
         );
         const targetResult = execution.nodeResults.find(
-          (r) => r.nodeId === edge.target
+          (r) => r.nodeId === edge.target,
         );
 
         const shouldAnimate =
@@ -85,7 +85,7 @@ export function ExecutionStatusPanel({
               }
             : edge.style,
         };
-      })
+      }),
     );
   }, [execution, setNodes, setEdges]);
 
@@ -94,7 +94,7 @@ export function ExecutionStatusPanel({
   const totalNodes = getNodes().length;
 
   const completedNodes = execution.nodeResults.filter(
-    (r) => r.status === "success" || r.status === "error"
+    (r) => r.status === "success" || r.status === "error",
   ).length;
 
   const progress = totalNodes > 0 ? (completedNodes / totalNodes) * 100 : 0;

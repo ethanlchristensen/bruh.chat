@@ -81,7 +81,6 @@ export interface FlowExecutionListItem {
   };
 }
 
-
 export const getFlows = (params?: {
   page?: number;
   pageSize?: number;
@@ -176,22 +175,18 @@ export const useCreateFlow = () => {
 
 export const useUpdateFlow = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: updateFlow,
-    onSuccess: (_data, { flowId }) => {
+    onSuccess: (_data, variables) => {
+      const { flowId, data } = variables;
+
       queryClient.setQueryData<Flow>(["flows", flowId], (oldData) => {
         if (!oldData) return oldData;
-
         return {
           ...oldData,
-          nodes: oldData.nodes.map((node) => ({
-            ...node,
-            data: {
-              ...node.data,
-              validationErrors: undefined,
-            },
-          })),
+          name: data.name ?? oldData.name,
+          nodes: data.nodes ?? oldData.nodes,
+          edges: data.edges ?? oldData.edges,
         };
       });
 
@@ -200,14 +195,12 @@ export const useUpdateFlow = () => {
     },
     onError: (error: any) => {
       console.log("Full error:", error);
-
       if (error instanceof ApiError && error.data?.errors) {
         const validationErrors = error.data.errors;
         const errorCount = validationErrors.length;
         const nodeCount = new Set(
           validationErrors.map((e: ValidationError) => e.nodeId),
         ).size;
-
         toast.error(
           `Validation failed: ${errorCount} error${errorCount > 1 ? "s" : ""} in ${nodeCount} node${nodeCount > 1 ? "s" : ""}`,
           {
@@ -224,7 +217,6 @@ export const useUpdateFlow = () => {
           "Failed to save flow. Your changes are still in the editor.",
         );
       }
-
       console.error("Save failed:", error);
     },
   });
@@ -396,7 +388,7 @@ export const getFlowExecutions = ({
   const params = new URLSearchParams();
   params.set("limit", limit.toString());
   if (status) params.set("status", status);
-  
+
   return api.get(`/flows/${flowId}/executions?${params.toString()}`);
 };
 

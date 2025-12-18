@@ -19,27 +19,22 @@ class LLMExecutor(NodeExecutor):
 
             input_text = inputs.get("input", "")
             prompt = prompt_template.replace("{{input}}", str(input_text))
-            
+
             # Validate prompt has content
             if not prompt.strip():
                 return {
-                    "success": False, 
-                    "error": "Prompt is empty. Please provide input or configure the prompt template."
+                    "success": False,
+                    "error": "Prompt is empty. Please provide input or configure the prompt template.",
                 }
-            
+
             message = await service.format_message_payload(
-                content=prompt,
-                attachments=[],
-                model=model
+                content=prompt, attachments=[], model=model
             )
-            
+
             messages = [message]
-            
+
             full_response = ""
-            async for chunk in service.chat_with_messages_stream(
-                messages=messages,
-                model=model
-            ):
+            async for chunk in service.chat_with_messages_stream(messages=messages, model=model):
                 try:
                     chunk_data = json.loads(chunk)
                     delta = chunk_data.get("choices", [{}])[0].get("delta", {})
@@ -48,11 +43,11 @@ class LLMExecutor(NodeExecutor):
                         full_response += content
                 except json.JSONDecodeError:
                     continue
-            
+
             return {
                 "success": True,
                 "output": full_response,
             }
-            
+
         except Exception as e:
             return {"success": False, "error": str(e)}

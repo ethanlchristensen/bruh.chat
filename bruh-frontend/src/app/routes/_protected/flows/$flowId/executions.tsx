@@ -235,7 +235,7 @@ function FlowExecutionsPage() {
                                   new Date(execution.startTime),
                                   {
                                     addSuffix: true,
-                                  }
+                                  },
                                 )}
                               </CardDescription>
                             </div>

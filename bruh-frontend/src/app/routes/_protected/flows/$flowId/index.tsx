@@ -106,7 +106,7 @@ function FlowBuilder() {
 
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(
-    null
+    null,
   );
   const [showExecutionPanel, setShowExecutionPanel] = useState(false);
 
@@ -117,10 +117,16 @@ function FlowBuilder() {
   const executeMutation = useExecuteFlow();
   const { data: execution } = useFlowExecution(
     currentExecutionId,
-    !!currentExecutionId
+    !!currentExecutionId,
   );
   const cancelMutation = useCancelFlowExecution();
   const isSavingRef = useRef(false);
+  const isExecutingRef = useRef(false);
+
+  useEffect(() => {
+    isExecutingRef.current =
+      execution?.status === "pending" || execution?.status === "running";
+  }, [execution?.status]);
 
   useEffect(() => {
     if (flow) {
@@ -134,11 +140,16 @@ function FlowBuilder() {
   }, [flow?.id]);
 
   useEffect(() => {
-    if (originalNodesRef.current.length > 0 && !isSavingRef.current) {
+    if (isSavingRef.current || isExecutingRef.current || showExecutionPanel) {
+      return;
+    }
+
+    if (originalNodesRef.current.length > 0) {
       const normalizedCurrent = normalizeNodes(nodes);
       const normalizedOriginal = originalNodesRef.current;
       const normalizedCurrentEdges = normalizeEdges(edges);
       const normalizedOriginalEdges = originalEdgesRef.current;
+
       const nodesChanged =
         JSON.stringify(normalizedCurrent) !==
         JSON.stringify(normalizedOriginal);
@@ -147,29 +158,30 @@ function FlowBuilder() {
         JSON.stringify(normalizedOriginalEdges);
       const nameChanged = flowName !== originalNameRef.current;
       const hasChanges = nodesChanged || edgesChanged || nameChanged;
+
       setHasUnsavedChanges(hasChanges);
     }
-  }, [nodes, edges, flowName]);
+  }, [nodes, edges, flowName, showExecutionPanel]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) =>
       setNodes(
         (nodesSnapshot) =>
-          applyNodeChanges(changes, nodesSnapshot) as FlowNode[]
+          applyNodeChanges(changes, nodesSnapshot) as FlowNode[],
       ),
-    []
+    [],
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) =>
       setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-    []
+    [],
   );
 
   const onConnect = useCallback(
     (params: Connection) =>
       setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    []
+    [],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -210,7 +222,7 @@ function FlowBuilder() {
         console.error("Failed to drop node:", err);
       }
     },
-    [screenToFlowPosition]
+    [screenToFlowPosition],
   );
 
   const onSelectTemplate = useCallback((template: NodeTemplate) => {
@@ -231,22 +243,25 @@ function FlowBuilder() {
   const handleSave = () => {
     isSavingRef.current = true;
 
+    const normalizedNodes = normalizeNodes(nodes) as FlowNode[];
+    const normalizedEdges = normalizeEdges(edges) as Edge[];
+
     updateMutation.mutate(
       {
         flowId,
         data: {
           name: flowName,
-          nodes,
-          edges,
+          nodes: normalizedNodes,
+          edges: normalizedEdges,
         },
       },
       {
         onSuccess: () => {
           originalNodesRef.current = JSON.parse(
-            JSON.stringify(normalizeNodes(nodes))
+            JSON.stringify(normalizedNodes),
           );
           originalEdgesRef.current = JSON.parse(
-            JSON.stringify(normalizeEdges(edges))
+            JSON.stringify(normalizedEdges),
           );
           originalNameRef.current = flowName;
 
@@ -260,7 +275,7 @@ function FlowBuilder() {
           console.error("❌ Save failed:", error);
           isSavingRef.current = false;
         },
-      }
+      },
     );
   };
 
@@ -286,7 +301,7 @@ function FlowBuilder() {
           console.error("Execution failed to start:", error);
           console.error("Error details:", JSON.stringify(error, null, 2));
         },
-      }
+      },
     );
   };
 
@@ -307,14 +322,18 @@ function FlowBuilder() {
           output: undefined,
           error: undefined,
         },
-      }))
+      })),
     );
     setEdges((edges) =>
       edges.map((edge) => ({
         ...edge,
         animated: false,
-      }))
+      })),
     );
+
+    setTimeout(() => {
+      setHasUnsavedChanges(false);
+    }, 50);
   };
 
   const isExecuting =
