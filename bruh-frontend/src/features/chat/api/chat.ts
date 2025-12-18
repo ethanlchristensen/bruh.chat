@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { ChatRequest, GeneratedImage, Reasoning } from "@/types/api";
-import type { Intent } from "@/types/intent";
+import type { ChatRequest, GeneratedImage, Reasoning } from "@/types/api.types";
+import type { Intent } from "@/types/intent.types";
 
 type StreamEvent =
   | {

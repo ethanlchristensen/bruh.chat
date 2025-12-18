@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { toast } from "sonner";
-import type { User } from "@/types/api";
+import type { User } from "@/types/api.types";
 
 export const profileKeys = {
   all: ["profile"] as const,

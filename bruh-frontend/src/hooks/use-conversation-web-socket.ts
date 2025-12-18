@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useWebSocket } from "./use-websocket";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ConversationsResponse } from "@/types/api";
+import type { ConversationsResponse } from "@/types/api.types";
 
 interface ConversationUpdateHandlers {
   onTitleUpdate?: (conversationId: string, newTitle: string) => void;

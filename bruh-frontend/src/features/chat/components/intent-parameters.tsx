@@ -1,7 +1,7 @@
-import { INTENTS, type Intent } from "@/types/intent";
+import { INTENTS, type Intent } from "@/types/intent.types";
 import { AspectRatioSelector } from "./aspect-ratio-selector";
 import { PersonaSelector } from "./persaona-selector";
-import type { AspectRatio } from "@/types/image";
+import type { AspectRatio } from "@/types/image.types";
 import { modelSupportsAspectRatio } from "@/components/shared/model-selector/models";
 
 type IntentParametersProps = {

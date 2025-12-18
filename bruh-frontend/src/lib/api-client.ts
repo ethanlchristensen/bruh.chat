@@ -1,3 +1,4 @@
+// src/lib/api-client.ts
 import { env } from "@/config/env";
 import urlJoin from "url-join";
 
@@ -8,6 +9,19 @@ type RequestConfig = {
   maxBodyLength?: number;
 };
 
+// Add custom error class
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
 function getTokenExpiry(token: string): number {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -16,6 +30,7 @@ function getTokenExpiry(token: string): number {
     return Date.now();
   }
 }
+
 class ApiClient {
   private baseURL: string;
   private isRefreshing: boolean = false;
@@ -39,7 +54,6 @@ class ApiClient {
         return false;
       }
 
-      // Add 30 second buffer to refresh before actual expiry
       const isValid = expiresAt > Date.now() + 30000;
 
       if (!isValid) {
@@ -53,7 +67,6 @@ class ApiClient {
   }
 
   private async ensureValidToken(): Promise<void> {
-    // Skip validation for auth endpoints
     if (this.isRefreshing) {
       await this.refreshPromise;
       return;
@@ -134,21 +147,18 @@ class ApiClient {
     const isStreaming = config.headers?.Accept === "text/event-stream";
     const headers = new Headers();
 
-    // Set default headers
     headers.set("Content-Type", "application/json");
     headers.set(
       "Accept",
       isStreaming ? "text/event-stream" : "application/json",
     );
 
-    // Add any custom headers from config
     if (config.headers) {
       Object.entries(config.headers).forEach(([key, value]) => {
         headers.set(key, value);
       });
     }
 
-    // Add auth token if available
     const tokens = localStorage.getItem("auth_tokens");
     if (tokens) {
       const authTokens = JSON.parse(tokens);
@@ -180,10 +190,9 @@ class ApiClient {
         }
       }
 
-      // If refresh failed or retry failed, redirect to login
       console.log("[ApiClient] Redirecting to login due to auth failure...");
       window.location.href = "/login";
-      throw new Error("Unauthorized");
+      throw new ApiError("Unauthorized", 401, null);
     }
 
     if (!response.ok) {
@@ -202,7 +211,8 @@ class ApiClient {
         window.location.href = "/login";
       }
 
-      throw new Error(errorMessage);
+      // Throw custom error with full data preserved
+      throw new ApiError(errorMessage, response.status, errorData);
     }
     return response;
   }
@@ -216,7 +226,6 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-    // Skip token check for auth endpoints
     if (!endpoint.includes("/token/")) {
       await this.ensureValidToken();
     }
@@ -246,7 +255,6 @@ class ApiClient {
     config: RequestConfig = {},
   ): Promise<T> {
     try {
-      // Skip token check for auth endpoints
       if (!endpoint.includes("/token/")) {
         await this.ensureValidToken();
       }

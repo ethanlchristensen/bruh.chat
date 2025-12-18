@@ -896,6 +896,7 @@ code {
     100% {
       filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
     }
+
     50% {
       filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
     }
@@ -917,5 +918,59 @@ code {
       var(--foreground),
       color-mix(in oklab, var(--muted-foreground) 60%, transparent)
     );
+  }
+
+  .react-flow__node-input {
+    @apply bg-transparent! border-none! w-auto! min-w-[400px] h-auto!;
+  }
+
+  .react-flow__node-output {
+    @apply bg-transparent! border-none! w-auto! min-w-[400px];
+  }
+
+  .react-flow__node-llm {
+    @apply bg-transparent! border-none! w-auto! min-w-[300px] p-0!;
+  }
+
+  .react-flow__node-default {
+    @apply bg-transparent! border-none! w-auto!;
+  }
+
+  .react-flow__controls {
+    @apply bg-card! border border-border! shadow-lg! rounded-lg! overflow-hidden! p-1!;
+  }
+
+  .react-flow__controls-button {
+    @apply bg-transparent! text-muted-foreground! border-none! m-0! rounded-md! transition-colors duration-200!;
+  }
+
+  .react-flow__controls-button:hover {
+    @apply bg-accent! text-accent-foreground!;
+  }
+
+  .node-running {
+    animation: pulse-glow 2s ease-in-out infinite;
+    border-color: hsl(var(--primary)) !important;
+  }
+
+  .node-success {
+    border-color: hsl(var(--success)) !important;
+  }
+
+  .node-error {
+    border-color: hsl(var(--destructive)) !important;
+  }
+}
+
+@layer utilities {
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 20px 5px hsl(var(--primary) / 0.6);
+    }
   }
 }

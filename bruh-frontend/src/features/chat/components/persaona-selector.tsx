@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, User, UserSearch, UserPlus } from "lucide-react";
 import { usePersonasQuery } from "@/features/persona/api/persona";
-import type { Persona } from "@/types/api";
+import type { Persona } from "@/types/api.types";
 import { Link } from "@tanstack/react-router";
 
 type PersonaSelectorProps = {

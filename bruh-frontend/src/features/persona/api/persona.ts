@@ -5,7 +5,7 @@ import type {
   PersonaCreateRequest,
   PersonaGenerationRequest,
   PersonaUpdateRequest,
-} from "@/types/api";
+} from "@/types/api.types";
 import { api } from "@/lib/api-client";
 
 const PERSONAS_KEY = ["personas"];

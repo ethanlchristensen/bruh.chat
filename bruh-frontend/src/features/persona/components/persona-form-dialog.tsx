@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Upload, X } from "lucide-react";
 import { ModelSelector } from "@/components/shared/model-selector/model-selector";
-import type { Persona, PersonaCreateRequest } from "@/types/api";
+import type { Persona, PersonaCreateRequest } from "@/types/api.types";
 
 interface PersonaFormDialogProps {
   open: boolean;

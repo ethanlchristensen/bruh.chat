@@ -38,7 +38,7 @@ import {
   useUploadPersonaImageMutation,
   useDeletePersonaImageMutation,
 } from "../api/persona";
-import type { Persona, PersonaCreateRequest } from "@/types/api";
+import type { Persona, PersonaCreateRequest } from "@/types/api.types";
 import { toast } from "sonner";
 import { ModelSelector } from "@/components/shared/model-selector/model-selector";
 

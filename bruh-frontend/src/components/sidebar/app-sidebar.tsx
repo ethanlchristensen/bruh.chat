@@ -7,6 +7,7 @@ import {
   Check,
   X,
   Users,
+  Network,
 } from "lucide-react";
 import {
   Link,
@@ -66,6 +67,12 @@ const data = {
       title: "Personas",
       url: "/personas",
       icon: Users,
+      isActive: true,
+    },
+    {
+      title: "Flows",
+      url: "/flows",
+      icon: Network,
       isActive: true,
     },
     {

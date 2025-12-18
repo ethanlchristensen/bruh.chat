@@ -1,5 +1,5 @@
 import { User, Bot, Download, Users } from "lucide-react";
-import type { Message as MessageType } from "@/types/api";
+import type { Message as MessageType } from "@/types/api.types";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
 import { ReasoningSection } from "./reasoning-section";
 
@@ -174,9 +174,9 @@ export const Message = ({ message }: MessageProps) => {
           )}
 
           {isUser ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              <MarkdownRenderer content={content} />
-            </p>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              <MarkdownRenderer content={message.content} />
+            </div>
           ) : (
             <MarkdownRenderer content={content} />
           )}

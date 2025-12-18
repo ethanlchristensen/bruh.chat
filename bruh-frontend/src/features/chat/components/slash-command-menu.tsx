@@ -1,5 +1,9 @@
 import { useEffect, useRef } from "react";
-import { type Intent, type IntentCommand, getIntentIcon } from "@/types/intent";
+import {
+  type Intent,
+  type IntentCommand,
+  getIntentIcon,
+} from "@/types/intent.types";
 
 type SlashCommandMenuProps = {
   commands: IntentCommand[];

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Brain } from "lucide-react";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
-import type { GeneratedReasoningImage } from "@/types/api";
+import type { GeneratedReasoningImage } from "@/types/api.types";
 
 type ReasoningSectionProps = {
   content: string;

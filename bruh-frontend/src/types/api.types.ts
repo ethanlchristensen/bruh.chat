@@ -1,5 +1,5 @@
-import type { AspectRatio } from "./image";
-import type { Intent } from "./intent";
+import type { AspectRatio } from "./image.types";
+import type { Intent } from "./intent.types";
 
 export type BaseEntity = {
   id: string;

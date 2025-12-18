@@ -5,7 +5,7 @@ import {
   getAspectRatioLabel,
   DEFAULT_ASPECT_RATIO,
   type AspectRatio,
-} from "@/types/image";
+} from "@/types/image.types";
 
 type AspectRatioSelectorProps = {
   selectedRatio?: AspectRatio;

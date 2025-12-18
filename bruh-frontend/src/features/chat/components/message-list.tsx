@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Message as MessageComponent } from "./message";
 import { MessageSquare, Loader2 } from "lucide-react";
-import type { Message } from "@/types/api";
+import type { Message } from "@/types/api.types";
 
 type MessageListProps = {
   messages: Message[];

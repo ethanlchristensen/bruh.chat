@@ -8,15 +8,15 @@ import { useUserAvailableModels } from "@/components/shared/model-selector/model
 import { usePersonasQuery } from "@/features/persona/api/persona";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
-import { INTENTS } from "@/types/intent";
+import { INTENTS } from "@/types/intent.types";
 import type {
   ConversationsResponse,
   Conversation,
   Message,
   Reasoning,
-} from "@/types/api";
-import type { Intent } from "@/types/intent";
-import type { AspectRatio } from "@/types/image";
+} from "@/types/api.types";
+import type { Intent } from "@/types/intent.types";
+import type { AspectRatio } from "@/types/image.types";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

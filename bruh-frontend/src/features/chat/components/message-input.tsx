@@ -11,13 +11,13 @@ import {
   type Intent,
   isValidIntent,
   getIntentIcon,
-} from "@/types/intent";
+} from "@/types/intent.types";
 import {
   DEFAULT_ASPECT_RATIO,
   isValidAspectRatio,
   type AspectRatio,
-} from "@/types/image";
-import { type IntentCommand, getAvailableIntents } from "@/types/intent";
+} from "@/types/image.types";
+import { type IntentCommand, getAvailableIntents } from "@/types/intent.types";
 import { toast } from "sonner";
 
 type MessageInputProps = {

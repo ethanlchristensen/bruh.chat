@@ -6,7 +6,7 @@ import {
   type ConversationDetailResponse,
   type Conversation,
   type ConversationCreateRequest,
-} from "@/types/api";
+} from "@/types/api.types";
 import { toast } from "sonner";
 
 export const getConversations = (): Promise<ConversationsResponse> => {
