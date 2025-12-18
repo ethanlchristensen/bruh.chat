@@ -67,19 +67,19 @@ const data = {
       title: "Personas",
       url: "/personas",
       icon: Users,
-      isActive: false,
+      isActive: true,
     },
     {
       title: "Flows",
       url: "/flows",
       icon: Network,
-      isActive: false,
+      isActive: true,
     },
     {
       title: "About",
       url: "/about",
       icon: Info,
-      isActive: false,
+      isActive: true,
     },
   ],
 };
@@ -114,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isConnected } = useConversationWebSocket({
     onTitleUpdate: (conversationId, newTitle) => {
       console.log(
-        `[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`,
+        `[Sidebar] Title updated via websocket for conversation ${conversationId} -> ${newTitle}`
       );
       toast.success("Conversation title updated", {
         description: newTitle,
@@ -149,19 +149,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     if (searchQuery.trim()) {
       filtered = filtered.filter((conversation) =>
-        conversation.title.toLowerCase().includes(searchQuery.toLowerCase()),
+        conversation.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     return filtered;
   }, [conversations, showRecentOnly, searchQuery]);
 
-  const activeItem = React.useMemo(
-    () =>
-      data.navMain.find((item) => location.pathname.includes(item.url)) ||
-      data.navMain[0],
-    [location.pathname],
-  );
+  const activeItem = React.useMemo(() => {
+    const firstSegment = location.pathname.split("/")[1];
+    const matchPath = firstSegment ? `/${firstSegment}` : "/";
+
+    return (
+      data.navMain.find((item) => item.url === matchPath) || data.navMain[0]
+    );
+  }, [location.pathname]);
 
   const handleStartEdit = (conversation: any) => {
     setEditingId(conversation.id);
@@ -292,7 +294,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             "group/item relative border-b last:border-b-0",
                             isActive
                               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                         >
                           {isEditing ? (
@@ -442,7 +444,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           "group/item relative border-b last:border-b-0",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         )}
                       >
                         {isEditing ? (
