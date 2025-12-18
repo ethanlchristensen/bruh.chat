@@ -3,6 +3,7 @@
 help:
 	@echo Available commands:
 	@echo   make dev         - Start all services (Redis + Celery + Backend + Frontend)
+	@echo   make dev-detached         - Start all services detached (Redis + Celery + Backend + Frontend)
 	@echo   make stop        - Stop all services
 	@echo   make restart     - Restart all services
 	@echo   make logs        - View all logs

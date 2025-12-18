@@ -111,7 +111,7 @@ export const OutputNode = memo(({ data, selected }: NodeProps<OutputNode>) => {
 
       {data.status !== "idle" && (
         <div
-          className={`px-4 py-2 text-xs border-t border-border flex items-center gap-1.5 rounded-b ${
+          className={`px-4 py-2 text-xs border-t border-border flex items-center gap-1.5 rounded-b-lg ${
             data.status === "success"
               ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
               : data.status === "error"

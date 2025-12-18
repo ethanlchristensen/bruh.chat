@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 import { NodeTemplateSelector } from "@/features/flows/components/node-selector";
 import { InputNode } from "@/features/flows/components/nodes/input-node";
@@ -57,6 +58,31 @@ const nodeTypes = {
   output: OutputNode,
   json_extractor: JSONExtractorNode,
 };
+
+const normalizeNode = (node: FlowNode) => {
+  const { status, output, error, ...dataWithoutRuntime } = node.data;
+  return {
+    id: node.id,
+    type: node.type,
+    position: node.position,
+    data: dataWithoutRuntime,
+  };
+};
+
+const normalizeNodes = (nodes: FlowNode[]) => nodes.map(normalizeNode);
+
+const normalizeEdge = (edge: Edge) => {
+  const { animated, ...edgeWithoutRuntime } = edge;
+  return {
+    id: edgeWithoutRuntime.id,
+    source: edgeWithoutRuntime.source,
+    target: edgeWithoutRuntime.target,
+    sourceHandle: edgeWithoutRuntime.sourceHandle,
+    targetHandle: edgeWithoutRuntime.targetHandle,
+  };
+};
+
+const normalizeEdges = (edges: Edge[]) => edges.map(normalizeEdge);
 
 let id = 0;
 const getId = () => `dndnode_${id++}_${Date.now()}`;
@@ -94,25 +120,33 @@ function FlowBuilder() {
     !!currentExecutionId
   );
   const cancelMutation = useCancelFlowExecution();
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     if (flow) {
       setNodes(flow.nodes);
       setEdges(flow.edges);
       setFlowName(flow.name);
-
-      originalNodesRef.current = flow.nodes;
-      originalEdgesRef.current = flow.edges;
+      originalNodesRef.current = normalizeNodes(flow.nodes) as FlowNode[];
+      originalEdgesRef.current = normalizeEdges(flow.edges) as Edge[];
       originalNameRef.current = flow.name;
     }
   }, [flow?.id]);
 
   useEffect(() => {
-    if (originalNodesRef.current.length > 0) {
-      const hasChanges =
-        JSON.stringify(nodes) !== JSON.stringify(originalNodesRef.current) ||
-        JSON.stringify(edges) !== JSON.stringify(originalEdgesRef.current) ||
-        flowName !== originalNameRef.current;
+    if (originalNodesRef.current.length > 0 && !isSavingRef.current) {
+      const normalizedCurrent = normalizeNodes(nodes);
+      const normalizedOriginal = originalNodesRef.current;
+      const normalizedCurrentEdges = normalizeEdges(edges);
+      const normalizedOriginalEdges = originalEdgesRef.current;
+      const nodesChanged =
+        JSON.stringify(normalizedCurrent) !==
+        JSON.stringify(normalizedOriginal);
+      const edgesChanged =
+        JSON.stringify(normalizedCurrentEdges) !==
+        JSON.stringify(normalizedOriginalEdges);
+      const nameChanged = flowName !== originalNameRef.current;
+      const hasChanges = nodesChanged || edgesChanged || nameChanged;
       setHasUnsavedChanges(hasChanges);
     }
   }, [nodes, edges, flowName]);
@@ -195,6 +229,8 @@ function FlowBuilder() {
   }, []);
 
   const handleSave = () => {
+    isSavingRef.current = true;
+
     updateMutation.mutate(
       {
         flowId,
@@ -206,9 +242,23 @@ function FlowBuilder() {
       },
       {
         onSuccess: () => {
-          originalNodesRef.current = nodes;
-          originalEdgesRef.current = edges;
+          originalNodesRef.current = JSON.parse(
+            JSON.stringify(normalizeNodes(nodes))
+          );
+          originalEdgesRef.current = JSON.parse(
+            JSON.stringify(normalizeEdges(edges))
+          );
           originalNameRef.current = flowName;
+
+          setHasUnsavedChanges(false);
+
+          setTimeout(() => {
+            isSavingRef.current = false;
+          }, 100);
+        },
+        onError: (error) => {
+          console.error("❌ Save failed:", error);
+          isSavingRef.current = false;
         },
       }
     );
@@ -285,13 +335,14 @@ function FlowBuilder() {
     <div className="flex flex-col w-full h-full bg-background">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => navigate({ to: "/flows" })}
-            className="p-2 hover:bg-accent rounded-lg"
             disabled={isExecuting}
           >
             <ArrowLeft className="w-5 h-5" />
-          </button>
+          </Button>
 
           {isEditingName ? (
             <input
@@ -315,12 +366,6 @@ function FlowBuilder() {
             </h1>
           )}
 
-          {hasUnsavedChanges && (
-            <span className="text-xs text-muted-foreground">
-              • Unsaved changes
-            </span>
-          )}
-
           {isExecuting && (
             <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -330,25 +375,33 @@ function FlowBuilder() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          {hasUnsavedChanges && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+              </span>
+              Unsaved changes
+            </span>
+          )}
+          <Button
             onClick={handleSave}
             disabled={
               !hasUnsavedChanges || updateMutation.isPending || isExecuting
             }
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             {updateMutation.isPending ? "Saving..." : "Save"}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
             onClick={() => setExecutionDialogOpen(true)}
             disabled={isExecuting || nodes.length === 0}
-            className="flex items-center gap-2 px-4 py-2 border border-input rounded-lg hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play className="w-4 h-4" />
             Run
-          </button>
+          </Button>
 
           <button
             onClick={() =>
