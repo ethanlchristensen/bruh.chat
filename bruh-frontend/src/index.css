@@ -932,6 +932,14 @@ code {
     @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
   }
 
+  .react-flow__node-json_extractor {
+    @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
+  }
+
+  .react-flow__node-conditional {
+    @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
+  }
+
   .react-flow__node-default {
     @apply bg-transparent! border-none! w-auto!;
   }

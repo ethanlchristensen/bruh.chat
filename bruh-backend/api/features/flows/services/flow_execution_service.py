@@ -6,6 +6,7 @@ import logging
 
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
+from celery.result import AsyncResult
 
 from ..models import Flow, FlowExecution, NodeExecutionLog
 from ..executors.registry import NodeExecutorRegistry
@@ -57,6 +58,15 @@ class FlowExecutionService:
                 initial_input=initial_input,
                 variables=variables,
             )
+
+            if result.get("cancelled"):
+                execution.status = "cancelled"
+                execution.execution_data["error"] = {
+                    "message": "Execution cancelled by user",
+                    "cancelledAt": datetime.utcnow().isoformat(),
+                }
+                await sync_to_async(execution.save)()
+                return
 
             execution.execution_data["finalOutput"] = result.get("output")
             if result.get("success"):
@@ -118,6 +128,15 @@ class FlowExecutionService:
                     node_outputs[node_id] = ""
 
         for node_id in execution_order:
+            await sync_to_async(execution.refresh_from_db)(fields=["status"])
+            if execution.status == "cancelled":
+                logger.info(f"Execution {execution.id} was cancelled, stopping execution")
+                return {
+                    "success": False,
+                    "error": "Execution cancelled by user",
+                    "cancelled": True,
+                }
+
             node = next((n for n in nodes if n["id"] == node_id), None)
             if not node:
                 continue
@@ -358,9 +377,17 @@ class FlowExecutionService:
         try:
             execution.status = "cancelled"
             await sync_to_async(execution.save)(update_fields=["status"])
+
+            if execution.celery_task_id:
+                AsyncResult(execution.celery_task_id).revoke(terminate=True)
+                logger.info(
+                    f"Revoked Celery task {execution.celery_task_id} for execution {execution.id}"
+                )
+
             return True, None
 
         except Exception as e:
+            logger.exception(f"Failed to cancel execution {execution.id}: {e}")
             return False, str(e)
 
     @staticmethod

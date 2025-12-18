@@ -154,8 +154,10 @@ class FlowController:
         if error:
             return 400, {"detail": error}
 
-        # Dispatch to Celery worker
-        execute_flow_task.delay(str(execution.id))
+        # Dispatch to Celery worker and store task ID
+        task = execute_flow_task.delay(str(execution.id))
+        execution.celery_task_id = task.id
+        await sync_to_async(execution.save)(update_fields=["celery_task_id"])
 
         return 202, await FlowService.execution_to_response(execution)
 

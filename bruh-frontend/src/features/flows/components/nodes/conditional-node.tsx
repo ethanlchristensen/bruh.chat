@@ -314,17 +314,15 @@ export const ConditionalNode = memo(
           </div>
         )}
 
-        {/* Input Handle */}
         <Handle
           type="target"
           position={Position.Left}
           id="input"
-          className="!bg-purple-500 !w-3 !h-3"
+          className="bg-purple-500! w-3! h-3!"
         />
 
-        {/* Condition Output Handles - Fixed positioning */}
         {conditions.map((condition, index) => {
-          const totalHandles = conditions.length + 1; // +1 for default
+          const totalHandles = conditions.length + 1;
           const step = 100 / (totalHandles + 1);
           const topPercent = step * (index + 1);
 
@@ -334,18 +332,17 @@ export const ConditionalNode = memo(
               type="source"
               position={Position.Right}
               id={condition.outputHandle}
-              className="!bg-purple-500 !w-3 !h-3"
+              className="bg-purple-500! w-3! h-3!"
               style={{ top: `${topPercent}%` }}
             />
           );
         })}
 
-        {/* Default Output Handle */}
         <Handle
           type="source"
           position={Position.Right}
           id={data.defaultOutputHandle || "default"}
-          className="!bg-gray-500 !w-3 !h-3"
+          className="bg-gray-500! w-3! h-3!"
           style={{
             top: `${(100 / (conditions.length + 2)) * (conditions.length + 1)}%`,
           }}

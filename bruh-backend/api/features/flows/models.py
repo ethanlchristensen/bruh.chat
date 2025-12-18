@@ -77,6 +77,8 @@ class FlowExecution(models.Model):
     error_message = models.TextField(blank=True, default="")
     failed_node_id = models.CharField(max_length=255, blank=True, default="")
 
+    celery_task_id = models.CharField(max_length=255, null=True, blank=True)
+
     class Meta:
         ordering = ["-start_time"]
         indexes = [

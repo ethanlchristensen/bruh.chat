@@ -64,7 +64,7 @@ export const JSONExtractorNode = memo(
     return (
       <div
         className={`
-      bg-card rounded-lg shadow-lg text-left
+      bg-card rounded-lg shadow-lg text-left overflow-hidden
       ${selected ? "border-2 border-orange-500" : "border-2 border-border"}
     `}
       >
@@ -178,7 +178,7 @@ export const JSONExtractorNode = memo(
                 Output Preview
               </label>
               <div className="border border-border rounded p-2 bg-muted max-h-[120px] overflow-auto">
-                <pre className="text-xs whitespace-pre-wrap font-mono text-foreground">
+                <pre className="text-xs whitespace-pre font-mono text-foreground min-w-0">
                   {typeof data.output === "string"
                     ? data.output
                     : JSON.stringify(data.output, null, 2)}
