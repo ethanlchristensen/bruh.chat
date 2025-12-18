@@ -27,12 +27,8 @@ jobs:
       - name: Deploy with Docker Compose
         run: |
           echo "Stopping existing prod services (if any)..."
-          docker compose down bruhbackend --remove-orphans
-          docker compose down bruhfrontend --remove-orphans
-
+          docker compose down --remove-orphans
           echo "Building and starting prod services..."
-          docker compose up -d --build bruhbackend
-          docker compose up -d --build bruhfrontend
-
+          docker compose up -d --build 
           echo "Cleaning up old Docker images..."
           docker image prune -af
