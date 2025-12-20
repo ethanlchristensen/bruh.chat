@@ -337,9 +337,19 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for more 
 ![Personas Screenshot](README/personas.png)
 
 #### Flows
-![Flows Screenshot](README/flows.png)
-![Ran Flows](README/flow_execution.png)
-![Single Flow Execution](README/ran_flows.png)
+Condtional & Image Generation
+![Flows Condtional Image Gen](README/flow-image.png)
+
+Error Handling & Cancelation
+![Flows Error Handlin](README/flow-errors.png)
+![Flows Cancelation](README/flows-cancel.png)
+
+Loop Dection
+![Flow Loop Detection](README/flows-loop.png)
+
+Execution History & Execution Details
+![Execution History](README/flow-executions.png)
+![Execution Details](README/flow-execution-details.png)
 
 ---
 
