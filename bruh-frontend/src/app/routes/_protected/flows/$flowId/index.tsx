@@ -34,6 +34,8 @@ import { LLMNode } from "@/features/flows/components/nodes/llm-node";
 import { OutputNode } from "@/features/flows/components/nodes/output-node";
 import { JSONExtractorNode } from "@/features/flows/components/nodes";
 import { ConditionalNode } from "@/features/flows/components/nodes";
+import { ImageOutputNode } from "@/features/flows/components/nodes/image-output-node";
+import { ImageGenNode } from "@/features/flows/components/nodes/image-gen-node";
 import { ExecutionDialog } from "@/features/flows/components/execution-dialog";
 import { ExecutionStatusPanel } from "@/features/flows/components/execution-status-panel";
 import {
@@ -42,7 +44,7 @@ import {
   useDeleteFlow,
 } from "@/features/flows/api/flows";
 
-import type { FlowNode, NodeTemplate } from "@/types/flow.types";
+import type { FlowNode, NodeTemplate, NodeData } from "@/types/flow.types";
 import {
   useExecuteFlow,
   useFlowExecution,
@@ -59,6 +61,8 @@ const nodeTypes = {
   output: OutputNode,
   json_extractor: JSONExtractorNode,
   conditional: ConditionalNode,
+  image_output: ImageOutputNode,
+  image_gen: ImageGenNode,
 };
 
 const normalizeNode = (node: FlowNode) => {
@@ -69,6 +73,7 @@ const normalizeNode = (node: FlowNode) => {
     input,
     executionTime,
     lastExecuted,
+    skipReason,
     ...dataWithoutRuntime
   } = node.data;
 
@@ -100,7 +105,7 @@ const normalizeNode = (node: FlowNode) => {
 const normalizeNodes = (nodes: FlowNode[]) => nodes.map(normalizeNode);
 
 const normalizeEdge = (edge: Edge) => {
-  const { animated, ...edgeWithoutRuntime } = edge;
+  const { animated, style, ...edgeWithoutRuntime } = edge;
   return {
     id: edgeWithoutRuntime.id,
     source: edgeWithoutRuntime.source,
@@ -191,14 +196,99 @@ function FlowBuilder() {
     }
   }, [nodes, edges, flowName, showExecutionPanel]);
 
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) =>
-      setNodes(
-        (nodesSnapshot) =>
-          applyNodeChanges(changes, nodesSnapshot) as FlowNode[],
-      ),
-    [],
-  );
+  useEffect(() => {
+    if (!execution || !execution.nodeResults) return;
+
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => {
+        const result = execution.nodeResults.find((r) => r.nodeId === node.id);
+        if (!result) return node;
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            status: result.status,
+            output: result.output,
+            error: result.error?.message,
+            input: result.input,
+            executionTime: result.executionTime,
+            skipReason: result.skipReason,
+          } as NodeData,
+        } as FlowNode;
+      }),
+    );
+
+    if (execution.status === "running" || execution.status === "completed") {
+      setEdges((currentEdges) =>
+        currentEdges.map((edge) => {
+          const sourceResult = execution.nodeResults.find(
+            (r) => r.nodeId === edge.source,
+          );
+
+          const targetResult = execution.nodeResults.find(
+            (r) => r.nodeId === edge.target,
+          );
+
+          const isActive =
+            sourceResult?.status === "success" &&
+            (targetResult?.status === "running" ||
+              targetResult?.status === "success" ||
+              targetResult?.status === "error") &&
+            (!sourceResult.outputHandle ||
+              sourceResult.outputHandle === edge.sourceHandle);
+
+          const isSkipped =
+            sourceResult?.status === "skipped" ||
+            targetResult?.status === "skipped";
+
+          let edgeClass = "";
+          if (isActive) {
+            edgeClass = "active";
+          } else if (isSkipped) {
+            edgeClass = "skipped";
+          } else if (execution.status === "completed") {
+            edgeClass = "inactive";
+          }
+
+          return {
+            ...edge,
+            animated: isActive,
+            className: edgeClass,
+          };
+        }),
+      );
+    }
+  }, [execution]);
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((currentNodes) => {
+      const updatedNodes = applyNodeChanges(
+        changes,
+        currentNodes,
+      ) as FlowNode[];
+
+      return updatedNodes.map((node) => {
+        const originalNode = currentNodes.find((n) => n.id === node.id);
+        if (originalNode && originalNode.data) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              status: originalNode.data.status || node.data.status,
+              output: originalNode.data.output || node.data.output,
+              error: originalNode.data.error || node.data.error,
+              input: originalNode.data.input || node.data.input,
+              executionTime:
+                originalNode.data.executionTime || node.data.executionTime,
+              skipReason: originalNode.data.skipReason || node.data.skipReason,
+            },
+          };
+        }
+        return node;
+      });
+    });
+  }, []);
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) =>
@@ -361,6 +451,7 @@ function FlowBuilder() {
           status: "idle",
           output: undefined,
           error: undefined,
+          skipReason: undefined,
         },
       })),
     );
@@ -368,6 +459,8 @@ function FlowBuilder() {
       edges.map((edge) => ({
         ...edge,
         animated: false,
+        className: undefined,
+        style: undefined,
       })),
     );
 

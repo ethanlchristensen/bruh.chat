@@ -6,9 +6,12 @@ import {
   type Node,
   useReactFlow,
 } from "@xyflow/react";
-import { Brain, Zap, Info, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Brain, Zap, Info } from "lucide-react";
 import type { LLMNodeData } from "@/types/flow.types";
 import { ModelSelector } from "@/components/shared/model-selector/model-selector";
+import { NodeContainer } from "./shared/node-container";
+import { NodeHeader } from "./shared/node-header";
+import { NodeStatusFooter } from "./shared/node-status-footer";
 
 type LLMNode = Node<LLMNodeData>;
 
@@ -24,23 +27,12 @@ export const LLMNode = memo(({ data, selected, id }: NodeProps<LLMNode>) => {
   };
 
   return (
-    <div
-      className={`flex flex-col rounded-lg shadow-lg bg-card text-left
-      ${selected ? "border-2 border-primary" : "border border-border"}
-      ${selected ? "border-2 border-primary" : "border border-border"}
-      ${data.status === "running" ? "node-running" : ""}
-      ${data.status === "success" ? "node-success" : ""}
-      ${data.status === "error" ? "node-error" : ""}
-    `}
-    >
-      <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium flex items-center gap-2">
-        <Icon className="w-4 h-4" />
-        <span>{data.label}</span>
-      </div>
+    <NodeContainer selected={selected}>
+      <NodeHeader icon={Icon} label={data.label} />
 
       <div className="p-4 space-y-3">
         <div className="space-y-1">
-          <div className="text-xs text-muted-foreground">Model</div>
+          <div className="text-xs font-medium text-muted-foreground">Model</div>
           <ModelSelector
             selectedModelId={data.model}
             onModelSelect={handleModelSelect}
@@ -51,7 +43,9 @@ export const LLMNode = memo(({ data, selected, id }: NodeProps<LLMNode>) => {
 
         {data.provider && (
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Provider</div>
+            <div className="text-xs font-medium text-muted-foreground">
+              Provider
+            </div>
             <div className="text-sm font-medium capitalize text-foreground">
               {data.provider}
             </div>
@@ -59,7 +53,9 @@ export const LLMNode = memo(({ data, selected, id }: NodeProps<LLMNode>) => {
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Temperature</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            Temperature
+          </span>
           <span className="text-sm font-medium text-foreground">
             {data.temperature}
           </span>
@@ -91,48 +87,26 @@ export const LLMNode = memo(({ data, selected, id }: NodeProps<LLMNode>) => {
         )}
       </div>
 
-      {data.status !== "idle" && (
-        <div
-          className={`px-4 py-2 text-xs border-t border-border flex items-center gap-1.5 rounded-b-lg ${
-            data.status === "success"
-              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-              : data.status === "error"
-                ? "bg-destructive/10 text-destructive"
-                : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-          }`}
-        >
-          {data.status === "running" ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Processing...
-            </>
-          ) : data.status === "success" ? (
-            <>
-              <CheckCircle2 className="w-3 h-3" />
-              Complete{data.executionTime ? ` (${data.executionTime}ms)` : ""}
-            </>
-          ) : (
-            <>
-              <XCircle className="w-3 h-3" />
-              {data.error || "Error"}
-            </>
-          )}
-        </div>
-      )}
+      <NodeStatusFooter
+        status={data.status}
+        error={data.error}
+        executionTime={data.executionTime}
+        skipReason={data.skipReason}
+      />
 
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        className="bg-primary! w-3! h-3!"
+        className="bg-primary! w-3.5! h-3.5! border-4! border-background! shadow-sm"
       />
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        className="bg-primary! w-3! h-3!"
+        className="bg-primary! w-3.5! h-3.5! border-4! border-background! shadow-sm"
       />
-    </div>
+    </NodeContainer>
   );
 });
 

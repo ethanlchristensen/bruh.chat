@@ -208,6 +208,20 @@ export const useOpenRouterStructuredModelsByProvider = (options = {}) => {
   });
 };
 
+export const useOpenRouterImageModelsByProvider = (options = {}) => {
+  return useQuery({
+    queryKey: ["openrouter-image-models-by-provider"],
+    queryFn: async () => {
+      const response = await api.get<Record<string, OpenRouterModel[]>>(
+        "/ai/models/openrouter/image-generation/by-provider",
+      );
+      return response;
+    },
+    staleTime: 1000 * 60 * 5,
+    ...options,
+  });
+};
+
 export const useOllamaModels = (options = {}) => {
   return useQuery({
     queryKey: ["ollama-models"],

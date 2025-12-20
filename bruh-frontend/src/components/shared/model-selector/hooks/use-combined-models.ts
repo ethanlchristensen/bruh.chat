@@ -4,27 +4,36 @@ import type { ModelProvider } from "../types";
 export const useCombinedModels = ({
   allModelsByProvider,
   structuredModelsByProvider,
+  imageModelsByProvider,
   ollamaModelsByFamily,
   provider,
   ollamaStatus,
   structuredOutputOnly,
+  imageOnly,
   searchQuery,
 }: {
   allModelsByProvider: any;
   structuredModelsByProvider: any;
+  imageModelsByProvider: any;
   ollamaModelsByFamily: any;
   provider: ModelProvider;
   ollamaStatus: any;
   structuredOutputOnly: boolean;
+  imageOnly: boolean;
   searchQuery: string;
 }) => {
   const combinedModels = useMemo(() => {
     const combined: Record<string, any[]> = {};
 
     if (provider === "openrouter" || provider === "both") {
-      const openRouterModels = structuredOutputOnly
-        ? structuredModelsByProvider
-        : allModelsByProvider;
+      let openRouterModels;
+      if (imageOnly) {
+        openRouterModels = imageModelsByProvider;
+      } else if (structuredOutputOnly) {
+        openRouterModels = structuredModelsByProvider;
+      } else {
+        openRouterModels = allModelsByProvider;
+      }
 
       if (openRouterModels) {
         Object.entries(openRouterModels).forEach(([providerName, models]) => {
@@ -36,6 +45,7 @@ export const useCombinedModels = ({
     }
 
     if (
+      !imageOnly &&
       (provider === "ollama" || provider === "both") &&
       ollamaModelsByFamily &&
       ollamaStatus?.running
@@ -52,10 +62,12 @@ export const useCombinedModels = ({
   }, [
     allModelsByProvider,
     structuredModelsByProvider,
+    imageModelsByProvider,
     ollamaModelsByFamily,
     provider,
     ollamaStatus,
     structuredOutputOnly,
+    imageOnly,
   ]);
 
   const filteredModels = useMemo(() => {

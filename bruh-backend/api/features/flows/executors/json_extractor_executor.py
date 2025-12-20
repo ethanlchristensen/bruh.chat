@@ -50,6 +50,18 @@ class JsonExtractorExecutor(NodeExecutor):
                     "output": results,
                 }
 
+            # Return single value directly for singleValue format
+            if output_format == "singleValue":
+                if len(results) == 1:
+                    return {"success": True, "output": list(results.values())[0]}
+                elif len(results) == 0:
+                    return {"success": False, "error": "No extractions configured"}
+                else:
+                    return {
+                        "success": False,
+                        "error": "singleValue format requires exactly one extraction",
+                    }
+
             return {
                 "success": True,
                 "output": results

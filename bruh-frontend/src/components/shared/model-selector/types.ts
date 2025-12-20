@@ -6,6 +6,7 @@ export type ModelSelectorProps = {
   onModelSelect: (modelId: string, provider: string) => void;
   variant?: ModelSelectorVariant;
   structuredOutputOnly?: boolean;
+  imageOnly?: boolean;
   provider?: ModelProvider;
 };
 

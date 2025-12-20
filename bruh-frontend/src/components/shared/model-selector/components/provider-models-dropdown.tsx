@@ -16,6 +16,7 @@ type ProviderModelsDropdownProps = {
   onModelSelect: (modelId: string, provider: string) => void;
   onClose: () => void;
   structuredOutputOnly: boolean;
+  imageOnly: boolean;
   ollamaStatus: { running: boolean } | undefined;
   provider: ModelProvider;
 };
@@ -31,19 +32,22 @@ export const ProviderModelsDropdown = ({
   onModelSelect,
   onClose,
   structuredOutputOnly,
+  imageOnly,
   ollamaStatus,
   provider,
 }: ProviderModelsDropdownProps) => {
+  const title = imageOnly
+    ? "Image Models"
+    : structuredOutputOnly
+      ? "Structured Output Models"
+      : "Select Model";
+
   return (
     <div className="absolute bottom-full mb-2 left-0 w-96 bg-popover border rounded-lg shadow-lg z-50 flex flex-col max-h-128">
       <div className="p-3 border-b space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-sm">
-              {structuredOutputOnly
-                ? "Structured Output Models"
-                : "Select Model"}
-            </h3>
+            <h3 className="font-semibold text-sm">{title}</h3>
             <p className="text-xs text-muted-foreground">
               Browse models by provider
             </p>
@@ -59,7 +63,7 @@ export const ProviderModelsDropdown = ({
           </Button>
         </div>
 
-        {(provider === "ollama" || provider === "both") && (
+        {(provider === "ollama" || provider === "both") && !imageOnly && (
           <OllamaStatusIndicator status={ollamaStatus} />
         )}
 

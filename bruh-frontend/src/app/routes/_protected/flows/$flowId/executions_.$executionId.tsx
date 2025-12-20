@@ -6,6 +6,7 @@ import {
   XCircle,
   Loader2,
   Download,
+  RouteOff,
 } from "lucide-react";
 import { useFlowExecution } from "@/features/flows/api/flows";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const statusConfig = {
   completed: { icon: CheckCircle2, label: "Completed", color: "bg-green-500" },
   failed: { icon: XCircle, label: "Failed", color: "bg-red-500" },
   cancelled: { icon: XCircle, label: "Cancelled", color: "bg-gray-500" },
+  skipped: { icon: RouteOff, label: "Skipped", color: "bg-amber-500" },
 };
 
 const nodeTypeLabels = {
@@ -41,6 +43,8 @@ const nodeTypeLabels = {
   output: "Output",
   json_extractor: "JSON Extractor",
   conditional: "Conditional",
+  image_gen: "Image Gen",
+  image_output: "Image Output",
 };
 
 const formatValue = (value: unknown): string => {
@@ -288,6 +292,17 @@ function ExecutionDetailPage() {
                           {nodeStatus.label}
                         </Badge>
                       </div>
+
+                      {result.status === "skipped" && result.skipReason && (
+                        <div className="mt-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">
+                            Skip Reason
+                          </p>
+                          <div className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 rounded p-3">
+                            <p className="text-xs">{result.skipReason}</p>
+                          </div>
+                        </div>
+                      )}
 
                       {result.input && (
                         <div className="mt-3">

@@ -3,6 +3,7 @@ from .base_executor import NodeExecutor
 from .json_extractor_executor import JsonExtractorExecutor
 from .llm_executor import LLMExecutor
 from .conditional_executor import ConditionalExecutor
+from .image_gen_executor import ImageGenExecutor
 
 
 class NodeExecutorRegistry:
@@ -30,3 +31,4 @@ class NodeExecutorRegistry:
 NodeExecutorRegistry.register("json_extractor", JsonExtractorExecutor)
 NodeExecutorRegistry.register("llm", LLMExecutor)
 NodeExecutorRegistry.register("conditional", ConditionalExecutor)
+NodeExecutorRegistry.register("image_gen", ImageGenExecutor)

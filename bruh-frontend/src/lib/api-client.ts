@@ -1,4 +1,3 @@
-// src/lib/api-client.ts
 import { env } from "@/config/env";
 import urlJoin from "url-join";
 

@@ -44,7 +44,7 @@ class FlowValidationService:
 
             if node.type == "input":
                 input_nodes.append(node.id)
-            elif node.type == "output":
+            elif node.type in ["output", "image_output"]:
                 output_nodes.append(node.id)
 
         if not input_nodes:

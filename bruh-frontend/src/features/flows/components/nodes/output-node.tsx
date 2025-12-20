@@ -1,4 +1,3 @@
-// src/features/flows/components/nodes/output-node.tsx
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import {
@@ -8,12 +7,12 @@ import {
   Code,
   Copy,
   Download,
-  Loader2,
-  CheckCircle2,
-  XCircle,
 } from "lucide-react";
 import type { OutputNodeData } from "@/types/flow.types";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
+import { NodeContainer } from "./shared/node-container";
+import { NodeHeader } from "./shared/node-header";
+import { NodeStatusFooter } from "./shared/node-status-footer";
 
 type OutputNode = Node<OutputNodeData>;
 
@@ -51,19 +50,8 @@ export const OutputNode = memo(({ data, selected }: NodeProps<OutputNode>) => {
   };
 
   return (
-    <div
-      className={`
-      bg-card rounded-lg shadow-lg text-left
-      ${selected ? "border-2 border-primary" : "border-2 border-border"}
-      ${data.status === "running" ? "node-running" : ""}
-      ${data.status === "success" ? "node-success" : ""}
-      ${data.status === "error" ? "node-error" : ""}
-    `}
-    >
-      <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium flex items-center gap-2">
-        <Icon className="w-4 h-4" />
-        <span>{data.label}</span>
-      </div>
+    <NodeContainer selected={selected}>
+      <NodeHeader icon={Icon} label={data.label} />
 
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
@@ -109,42 +97,22 @@ export const OutputNode = memo(({ data, selected }: NodeProps<OutputNode>) => {
         )}
       </div>
 
-      {data.status !== "idle" && (
-        <div
-          className={`px-4 py-2 text-xs border-t border-border flex items-center gap-1.5 rounded-b-lg ${
-            data.status === "success"
-              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-              : data.status === "error"
-                ? "bg-destructive/10 text-destructive"
-                : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-          }`}
-        >
-          {data.status === "running" ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Running...
-            </>
-          ) : data.status === "success" ? (
-            <>
-              <CheckCircle2 className="w-3 h-3" />
-              Complete
-            </>
-          ) : (
-            <>
-              <XCircle className="w-3 h-3" />
-              {data.error || "Error"}
-            </>
-          )}
-        </div>
-      )}
+      <NodeStatusFooter
+        status={data.status}
+        error={data.error}
+        executionTime={data.executionTime}
+        runningText="Running..."
+        successText="Complete"
+        skipReason={data.skipReason}
+      />
 
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        className="bg-primary! w-3! h-3!"
+        className="bg-primary! w-3.5! h-3.5! border-4! border-background! shadow-sm"
       />
-    </div>
+    </NodeContainer>
   );
 });
 

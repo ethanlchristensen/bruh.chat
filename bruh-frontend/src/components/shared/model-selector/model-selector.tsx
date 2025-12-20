@@ -5,6 +5,7 @@ import {
   useUserAvailableModels,
   useOpenRouterModelsByProvider,
   useOpenRouterStructuredModelsByProvider,
+  useOpenRouterImageModelsByProvider,
   useAddModel,
   useOllamaModels,
   useOllamaStructuredModelsByFamily,
@@ -23,12 +24,12 @@ export const ModelSelector = ({
   onModelSelect,
   variant = "user-models",
   structuredOutputOnly = false,
+  imageOnly = false,
   provider = "both",
 }: ModelSelectorProps) => {
   const state = useModelSelectorState();
   const addModelMutation = useAddModel();
 
-  // Data fetching hooks
   const { data: userModels, isLoading: isLoadingUserModels } =
     useUserAvailableModels({ enabled: variant === "user-models" });
 
@@ -44,6 +45,7 @@ export const ModelSelector = ({
     enabled:
       (variant === "by-provider" || state.showAddModel) &&
       !structuredOutputOnly &&
+      !imageOnly &&
       (provider === "openrouter" || provider === "both"),
   });
 
@@ -52,8 +54,20 @@ export const ModelSelector = ({
     isLoading: isLoadingStructuredModels,
   } = useOpenRouterStructuredModelsByProvider({
     enabled:
-      variant === "by-provider" &&
+      (variant === "by-provider" || state.showAddModel) &&
       structuredOutputOnly &&
+      !imageOnly &&
+      (provider === "openrouter" || provider === "both"),
+  });
+
+  const {
+    data: imageModelsByProvider,
+    isLoading: isLoadingImageModels,
+    refetch: fetchImageModels,
+  } = useOpenRouterImageModelsByProvider({
+    enabled:
+      (variant === "by-provider" || state.showAddModel) &&
+      imageOnly &&
       (provider === "openrouter" || provider === "both"),
   });
 
@@ -62,12 +76,14 @@ export const ModelSelector = ({
       ? useOllamaStructuredModelsByFamily({
           enabled:
             ollamaStatus?.running &&
+            !imageOnly &&
             (variant === "by-provider" || state.showAddModel) &&
             (provider === "ollama" || provider === "both"),
         })
       : useOllamaModels({
           enabled:
             ollamaStatus?.running &&
+            !imageOnly &&
             (variant === "by-provider" || state.showAddModel) &&
             (provider === "ollama" || provider === "both"),
         });
@@ -75,18 +91,21 @@ export const ModelSelector = ({
   const { filteredModels } = useCombinedModels({
     allModelsByProvider,
     structuredModelsByProvider,
+    imageModelsByProvider,
     ollamaModelsByFamily,
     provider,
     ollamaStatus,
     structuredOutputOnly,
+    imageOnly,
     searchQuery: state.searchQuery,
   });
 
-  const isLoading = structuredOutputOnly
-    ? isLoadingStructuredModels || isLoadingOllamaModels
-    : isLoadingAllModels || isLoadingOllamaModels;
+  const isLoading = imageOnly
+    ? isLoadingImageModels
+    : structuredOutputOnly
+      ? isLoadingStructuredModels || isLoadingOllamaModels
+      : isLoadingAllModels || isLoadingOllamaModels;
 
-  // Auto-expand providers when searching
   useEffect(() => {
     if (state.searchQuery.trim() && filteredModels) {
       state.setExpandedProviders(new Set(Object.keys(filteredModels)));
@@ -100,11 +119,12 @@ export const ModelSelector = ({
   const handleShowAddModels = () => {
     state.setShowAddModel(true);
     state.setIsOpen(false);
-    if (
-      !structuredOutputOnly &&
-      (provider === "openrouter" || provider === "both")
-    ) {
-      fetchAllModels();
+    if (provider === "openrouter" || provider === "both") {
+      if (imageOnly) {
+        fetchImageModels();
+      } else if (!structuredOutputOnly) {
+        fetchAllModels();
+      }
     }
   };
 
@@ -127,7 +147,6 @@ export const ModelSelector = ({
     }
   };
 
-  // BY-PROVIDER VARIANT
   if (variant === "by-provider") {
     return (
       <div className="relative">
@@ -155,6 +174,7 @@ export const ModelSelector = ({
               structuredOutputOnly={structuredOutputOnly}
               ollamaStatus={ollamaStatus}
               provider={provider}
+              imageOnly={imageOnly}
             />
           </>
         )}
@@ -162,7 +182,6 @@ export const ModelSelector = ({
     );
   }
 
-  // USER-MODELS VARIANT
   if (isLoadingUserModels) {
     return (
       <div className="text-sm text-muted-foreground">Loading models...</div>
@@ -200,6 +219,7 @@ export const ModelSelector = ({
               onClose={() => state.setShowAddModel(false)}
               ollamaStatus={ollamaStatus}
               provider={provider}
+              imageOnly={imageOnly}
             />
           </>
         )}
@@ -248,6 +268,7 @@ export const ModelSelector = ({
             onClose={() => state.setShowAddModel(false)}
             ollamaStatus={ollamaStatus}
             provider={provider}
+            imageOnly={imageOnly}
           />
         </>
       )}

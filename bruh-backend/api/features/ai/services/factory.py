@@ -21,6 +21,12 @@ class AIServiceProtocol(Protocol):
         image_config: dict = None,
     ) -> AsyncGenerator[str, None]: ...
 
+    async def supports_image_generation(self, model_id: str, use_cache: bool = True) -> bool:
+        return False
+
+    async def supports_aspect_ratio(self, model_id: str, use_cache: bool = True) -> bool:
+        return False
+
 
 def get_ai_service(provider: str) -> AIServiceProtocol:
     if provider == "ollama":

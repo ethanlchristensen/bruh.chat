@@ -940,6 +940,29 @@ code {
     @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
   }
 
+  .react-flow__node-image_output {
+    @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
+  }
+
+  .react-flow__node-image_gen {
+    @apply bg-transparent! border-none! w-auto! min-w-[300px] max-w-[600px]! p-0! h-auto!;
+  }
+
+  .react-flow__edge.active {
+    stroke: #22c55e !important;
+    stroke-width: 2 !important;
+  }
+
+  .react-flow__edge.skipped {
+    stroke: #fbbf24 !important;
+    stroke-dasharray: 5, 5;
+    opacity: 0.6;
+  }
+
+  .react-flow__edge.inactive {
+    opacity: 0.3;
+  }
+
   .react-flow__node-default {
     @apply bg-transparent! border-none! w-auto!;
   }
@@ -968,6 +991,64 @@ code {
   .node-error {
     border-color: hsl(var(--destructive)) !important;
   }
+
+  .copilot-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
+    background-size: 120px 120px;
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+  }
+
+  .copilot-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.6;
+  }
+
+  .blob-1 {
+    background: var(--primary);
+    width: 150px;
+    height: 150px;
+    top: -40px;
+    left: -40px;
+    animation: blob-float 10s infinite ease-in-out alternate;
+  }
+
+  .blob-2 {
+    background: #a855f7;
+    width: 160px;
+    height: 160px;
+    bottom: -50px;
+    right: -50px;
+    animation: blob-float 14s infinite ease-in-out alternate-reverse;
+  }
+
+  .blob-3 {
+    background: #38bdf8;
+    width: 120px;
+    height: 120px;
+    top: 40%;
+    left: 40%;
+    opacity: 0.4;
+    animation: blob-wander 20s infinite ease-in-out;
+  }
+
+  .copilot-shimmer {
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.4) 45%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0.4) 55%,
+      transparent 70%
+    );
+    background-size: 250% 250%;
+    background-position: 0% 0%;
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+    animation: shimmer-swipe 5s infinite linear;
+  }
 }
 
 @layer utilities {
@@ -979,6 +1060,56 @@ code {
 
     50% {
       box-shadow: 0 0 20px 5px hsl(var(--primary) / 0.6);
+    }
+  }
+
+  @keyframes blob-float {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+      transform: translate(30px, -20px) scale(1.1);
+    }
+
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+
+  @keyframes blob-wander {
+    0% {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    33% {
+      transform: translate(30%, -30%) rotate(120deg);
+    }
+
+    66% {
+      transform: translate(-20%, 40%) rotate(240deg);
+    }
+
+    100% {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
+  @keyframes shimmer-swipe {
+    0% {
+      background-position: 100% 100%;
+    }
+
+    20% {
+      background-position: 0% 0%;
+    }
+
+    100% {
+      background-position: 0% 0%;
     }
   }
 }

@@ -11,7 +11,14 @@ from .features.conversations.models import (
 )
 from .features.personas.models import Persona
 from .features.users.models import Profile, UserAddedModel
-from .features.flows.models import Flow, FlowExecution, FlowTemplate, NodeExecutionLog, NodeTemplate
+from .features.flows.models import (
+    Flow,
+    FlowExecution,
+    FlowTemplate,
+    NodeExecutionLog,
+    NodeTemplate,
+    FlowGeneratedImage,
+)
 
 # CORE MODELS
 admin.site.register(Conversation)
@@ -37,3 +44,4 @@ admin.site.register(FlowExecution)
 admin.site.register(FlowTemplate)
 admin.site.register(NodeExecutionLog)
 admin.site.register(NodeTemplate)
+admin.site.register(FlowGeneratedImage)

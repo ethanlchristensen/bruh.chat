@@ -2,7 +2,14 @@ from .features.ai.models import AIResponse
 from .features.conversations.models import Conversation, Message
 from .features.personas.models import Persona
 from .features.users.models import Profile, UserAddedModel
-from .features.flows.models import Flow, FlowExecution, FlowTemplate, NodeExecutionLog, NodeTemplate
+from .features.flows.models import (
+    Flow,
+    FlowExecution,
+    FlowTemplate,
+    NodeExecutionLog,
+    NodeTemplate,
+    FlowGeneratedImage,
+)
 
 __all__ = [
     "AIResponse",
@@ -16,4 +23,5 @@ __all__ = [
     "FlowTemplate",
     "NodeExecutionLog",
     "NodeTemplate",
+    "FlowGeneratedImage",
 ]

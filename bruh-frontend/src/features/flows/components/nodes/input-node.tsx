@@ -6,8 +6,14 @@ import {
   type Node,
   useReactFlow,
 } from "@xyflow/react";
-import { TextCursorInput, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { TextCursorInput } from "lucide-react";
 import type { InputNodeData } from "@/types/flow.types";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { NodeContainer } from "./shared/node-container";
+import { NodeHeader } from "./shared/node-header";
+import { NodeStatusFooter } from "./shared/node-status-footer";
 
 type InputNode = Node<InputNodeData>;
 
@@ -40,113 +46,92 @@ export const InputNode = memo(
     );
 
     return (
-      <>
-        <div
-          className={`
-      bg-card rounded-lg shadow-lg text-left
-      ${selected ? "border-2 border-primary" : "border-2 border-border"}
-      ${selected ? "border-2 border-primary" : "border border-border"}
-      ${data.status === "running" ? "node-running" : ""}
-      ${data.status === "success" ? "node-success" : ""}
-      ${data.status === "error" ? "node-error" : ""}
-    `}
-        >
-          <div className="bg-primary text-primary-foreground px-4 py-2 rounded-t-md font-medium flex items-center gap-2">
-            <TextCursorInput className="w-4 h-4" />
-            <span>{data.label}</span>
-          </div>
+      <NodeContainer selected={selected}>
+        <NodeHeader icon={TextCursorInput} label={data.label} />
 
-          <div className="p-4 flex flex-col gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Variable Name
-              </label>
-              <input
-                type="text"
-                value={data.variableName || ""}
-                onChange={handleVariableNameChange}
-                placeholder="e.g., userInput"
-                className="w-full border border-input bg-background rounded px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <p className="text-xs text-muted-foreground">
-                Use alphanumeric characters and underscores only
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Placeholder Text
-              </label>
-              <input
-                type="text"
-                value={data.placeholder || ""}
-                onChange={handlePlaceholderChange}
-                placeholder="Enter placeholder..."
-                className="w-full border border-input bg-background rounded px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Value Preview
-              </label>
-              {data.multiline ? (
-                <textarea
-                  value={data.value || ""}
-                  onChange={handleValueChange}
-                  placeholder={data.placeholder}
-                  className="w-full border border-input bg-background rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  rows={4}
-                />
-              ) : (
-                <input
-                  type="text"
-                  value={data.value || ""}
-                  onChange={handleValueChange}
-                  placeholder={data.placeholder}
-                  className="w-full border border-input bg-background rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              )}
-            </div>
-          </div>
-
-          {data.status !== "idle" && (
-            <div
-              className={`px-4 py-2 text-xs border-t border-border flex items-center gap-1.5 rounded-b-lg ${
-                data.status === "success"
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                  : data.status === "error"
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-              }`}
+        <div className="p-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="variable-name"
+              className="text-xs font-medium text-muted-foreground"
             >
-              {data.status === "running" ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Running...
-                </>
-              ) : data.status === "success" ? (
-                <>
-                  <CheckCircle2 className="w-3 h-3" />
-                  Complete
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-3 h-3" />
-                  {data.error || "Error"}
-                </>
-              )}
-            </div>
-          )}
+              Variable Name
+            </Label>
+            <Input
+              id="variable-name"
+              type="text"
+              value={data.variableName || ""}
+              onChange={handleVariableNameChange}
+              placeholder="e.g., userInput"
+              className="h-8 text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Use alphanumeric characters and underscores only
+            </p>
+          </div>
 
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="output"
-            className="bg-primary! w-3! h-3!"
-          />
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="placeholder"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              Placeholder Text
+            </Label>
+            <Input
+              id="placeholder"
+              type="text"
+              value={data.placeholder || ""}
+              onChange={handlePlaceholderChange}
+              placeholder="Enter placeholder..."
+              className="h-8 text-xs"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="value-preview"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              Value Preview
+            </Label>
+            {data.multiline ? (
+              <Textarea
+                id="value-preview"
+                value={data.value || ""}
+                onChange={handleValueChange}
+                placeholder={data.placeholder}
+                className="text-sm resize-none min-h-20"
+                rows={4}
+              />
+            ) : (
+              <Input
+                id="value-preview"
+                type="text"
+                value={data.value || ""}
+                onChange={handleValueChange}
+                placeholder={data.placeholder}
+                className="h-9 text-sm"
+              />
+            )}
+          </div>
         </div>
-      </>
+
+        <NodeStatusFooter
+          status={data.status}
+          error={data.error}
+          executionTime={data.executionTime}
+          runningText="Running..."
+          successText="Complete"
+          skipReason={data.skipReason}
+        />
+
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          className="bg-primary! w-3.5! h-3.5! border-4! border-background! shadow-sm"
+        />
+      </NodeContainer>
     );
   },
 );

@@ -17,6 +17,7 @@ type AddModelsDialogProps = {
   onClose: () => void;
   ollamaStatus: { running: boolean } | undefined;
   provider: ModelProvider;
+  imageOnly: boolean;
 };
 
 export const AddModelsDialog = ({
@@ -31,13 +32,16 @@ export const AddModelsDialog = ({
   onClose,
   ollamaStatus,
   provider,
+  imageOnly,
 }: AddModelsDialogProps) => {
   return (
     <div className="absolute bottom-full mb-2 left-0 w-96 bg-popover border rounded-lg shadow-lg z-50 flex flex-col max-h-128">
       <div className="p-3 border-b space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-sm">Add Models</h3>
+            <h3 className="font-semibold text-sm">
+              {imageOnly ? "Add Image Models" : "Add Models"}
+            </h3>
             <p className="text-xs text-muted-foreground">
               Expand to browse models by provider
             </p>
@@ -53,7 +57,7 @@ export const AddModelsDialog = ({
           </Button>
         </div>
 
-        {(provider === "ollama" || provider === "both") && (
+        {(provider === "ollama" || provider === "both") && !imageOnly && (
           <OllamaStatusIndicator status={ollamaStatus} />
         )}
 

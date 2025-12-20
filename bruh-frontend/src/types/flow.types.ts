@@ -1,13 +1,22 @@
+import type { AspectRatio } from "./image.types";
+
 export type NodeType =
   | "input"
   | "llm"
   | "output"
   | "json_extractor"
-  | "conditional";
+  | "conditional"
+  | "image_gen"
+  | "image_output";
 
-export type NodeStatus = "idle" | "running" | "success" | "error";
+export type NodeStatus = "idle" | "running" | "success" | "error" | "skipped";
 
-export type NodeExecutionStatus = "pending" | "running" | "success" | "error";
+export type NodeExecutionStatus =
+  | "pending"
+  | "running"
+  | "success"
+  | "error"
+  | "skipped";
 
 export type Provider = "ollama" | "openrouter";
 
@@ -34,6 +43,7 @@ export interface BaseNodeData {
   output?: unknown;
   executionTime?: number;
   lastExecuted?: string;
+  skipReason?: string;
 
   // Index signature for React Flow compatibility
   [key: string]: unknown;
@@ -70,7 +80,7 @@ export interface JSONExtractorNodeData extends BaseNodeData {
     fallback: string | null;
   }>;
   strictMode: boolean;
-  outputFormat: "object" | "array";
+  outputFormat: "object" | "array" | "flat" | "singleValue";
   output?: any;
   executionTime?: number;
 }
@@ -109,12 +119,31 @@ export interface OutputNodeData extends BaseNodeData {
   downloadFilename?: string;
 }
 
+export interface ImageGenNodeData extends BaseNodeData {
+  provider: Provider;
+  model: string;
+  promptTemplate: string;
+  asepctRatio?: AspectRatio;
+  retryDelay: number;
+}
+
+export interface ImageOutputNodeData extends BaseNodeData {
+  alt: string;
+  maxWidth?: number;
+  maxHeight?: number;
+  showPrompt: boolean;
+  downloadable: boolean;
+  downloadFilename?: string;
+}
+
 export type NodeData =
   | InputNodeData
   | LLMNodeData
   | OutputNodeData
   | JSONExtractorNodeData
-  | ConditionalNodeData;
+  | ConditionalNodeData
+  | ImageGenNodeData
+  | ImageOutputNodeData;
 
 export interface FlowNode {
   id: string;
@@ -181,6 +210,7 @@ export interface NodeExecutionResult {
   executionTime?: number | null;
   matchedCondition?: string;
   outputHandle?: string;
+  skipReason?: string;
 }
 
 export interface FlowExecutionResult {
@@ -268,7 +298,11 @@ type NodeTemplateConfig<T extends NodeType> = T extends "input"
         ? { defaultConfig: Partial<JSONExtractorNodeData> }
         : T extends "conditional"
           ? { defaultConfig: Partial<ConditionalNodeData> }
-          : { defaultConfig: Partial<NodeData> };
+          : T extends "image_gen"
+            ? { defaultConfig: Partial<ImageGenNodeData> }
+            : T extends "image_output"
+              ? { defaultConfig: Partial<ImageOutputNodeData> }
+              : { defaultConfig: Partial<NodeData> };
 
 export type NodeTemplate<T extends NodeType = NodeType> = {
   id: string;

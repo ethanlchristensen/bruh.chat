@@ -220,7 +220,9 @@ class OpenRouterService:
         all_models = await self.get_all_models_flat(use_cache=use_cache)
 
         image_models = [
-            model for model in all_models if "image" in model.get("output_modalities", [])
+            model
+            for model in all_models
+            if "image" in model.get("architecture", {}).get("output_modalities", [])
         ]
 
         if use_cache:
@@ -234,7 +236,7 @@ class OpenRouterService:
         if not model:
             return False
 
-        return "image" in model.get("output_modalities", [])
+        return "image" in model.get("architecture", {}).get("output_modalities", [])
 
     async def supports_aspect_ratio(self, model_id: str, use_cache: bool = True) -> bool:
         """Check if an image generation model supports aspect ratios. Only Gemini does at the moment."""
@@ -397,6 +399,28 @@ class OpenRouterService:
             return False
 
         return "structured_outputs" in model.get("supported_parameters", [])
+
+    async def models_with_image_generation(self, use_cache: bool = True) -> dict:
+        """
+        Get models organized by provider, filtered to only those supporting image generation
+        """
+        image_models = await self.get_all_image_generation_models(use_cache=use_cache)
+
+        models = {}
+
+        for model in image_models:
+            model_id = model.get("id")
+            model_name = model.get("name")
+
+            if model_id:
+                provider = model_id.split("/")[0]
+                if provider:
+                    if provider in models:
+                        models[provider].append({"id": model_id, "name": model_name})
+                    else:
+                        models[provider] = [{"id": model_id, "name": model_name}]
+
+        return models
 
     def clear_cache(self):
         """Clear the models cache"""

@@ -30,20 +30,6 @@ class NodeTemplateService:
         except Exception as e:
             return None, str(e)
 
-    @staticmethod
-    def get_default_handles(node_type: str) -> list:
-        if node_type == "input":
-            return [{"id": "output", "type": "source", "position": "right"}]
-        elif node_type == "output":
-            return [{"id": "input", "type": "target", "position": "left"}]
-        elif node_type in ["llm", "json_extractor"]:
-            return [
-                {"id": "input", "type": "target", "position": "left"},
-                {"id": "output", "type": "source", "position": "right"},
-            ]
-        else:
-            return []
-
 
 @lru_cache
 def get_node_template_service() -> NodeTemplateService:

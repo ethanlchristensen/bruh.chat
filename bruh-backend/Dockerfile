@@ -44,6 +44,8 @@ if [ "$1" = "web" ] || [ -z "$1" ]; then\n\
   python manage.py ensure_superuser\n\
   echo "Populating Default Flow Templates"\n\
   python manage.py seed_node_templates\n\
+  echo "Fxing old node types"\n\
+  python manage.py add_node_types\n\
   echo "Starting daphne..."\n\
   exec daphne -b 0.0.0.0 -p 8000 config.asgi:application\n\
 elif [ "$1" = "celery" ]; then\n\

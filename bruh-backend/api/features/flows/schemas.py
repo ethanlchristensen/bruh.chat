@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional, List, Dict, Any, Literal, Union
+from typing import Optional, List, Dict, Any, Literal, Union, Annotated
 from datetime import datetime
 
 
@@ -16,9 +16,12 @@ class NodeHandle(BaseModel):
 
 
 class BaseNodeData(BaseModel):
+    nodeType: Literal[
+        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+    ]
     label: str
     description: Optional[str] = None
-    status: Literal["idle", "running", "success", "error"] = "idle"
+    status: Literal["idle", "running", "success", "error", "skipped", "cancelled"] = "idle"
     error: Optional[str] = None
     input: Optional[Any] = None
     output: Optional[Any] = None
@@ -28,6 +31,7 @@ class BaseNodeData(BaseModel):
 
 
 class InputNodeData(BaseNodeData):
+    nodeType: Literal["input"] = "input"
     value: str = ""
     multiline: bool = False
     placeholder: Optional[str] = "Enter your input..."
@@ -43,6 +47,7 @@ class InputNodeData(BaseNodeData):
 
 
 class LLMNodeData(BaseNodeData):
+    nodeType: Literal["llm"] = "llm"
     provider: Literal["ollama", "openrouter"]
     model: str
     systemPrompt: Optional[str] = None
@@ -72,6 +77,7 @@ class LLMNodeData(BaseNodeData):
 
 
 class OutputNodeData(BaseNodeData):
+    nodeType: Literal["output"] = "output"
     format: Literal["text", "markdown", "json", "code"] = "text"
     language: Optional[str] = None
     copyable: bool = True
@@ -92,9 +98,10 @@ class JsonExtractionItem(BaseModel):
 
 
 class JsonExtractorNodeData(BaseNodeData):
+    nodeType: Literal["json_extractor"] = "json_extractor"
     extractions: List[JsonExtractionItem] = []
     strictMode: bool = False
-    outputFormat: Literal["object", "list"] = "object"
+    outputFormat: Literal["object", "list", "flat", "singleValue"] = "singleValue"
 
 
 class ConditionItem(BaseModel):
@@ -119,6 +126,7 @@ class ConditionItem(BaseModel):
 
 
 class ConditionalNodeData(BaseNodeData):
+    nodeType: Literal["conditional"] = "conditional"
     conditions: List[ConditionItem] = []
     defaultOutputHandle: str = "default"
     caseSensitive: bool = False
@@ -129,7 +137,6 @@ class ConditionalNodeData(BaseNodeData):
         if not v:
             raise ValueError("At least one condition is required")
 
-        # Check for duplicate output handles
         handles = [c.outputHandle for c in v]
         if len(handles) != len(set(handles)):
             raise ValueError("Duplicate output handles found")
@@ -144,12 +151,59 @@ class ConditionalNodeData(BaseNodeData):
         return v
 
 
+class ImageGenNodeData(BaseNodeData):
+    nodeType: Literal["image_gen"] = "image_gen"
+    provider: Literal["openrouter"]
+    model: str
+    promptTemplate: str = "{{input}}"
+    aspectRatio: Literal[
+        "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"
+    ] = "1:1"
+    maxRetries: int = Field(default=3, ge=0, le=10)
+    retryDelay: int = Field(default=1000, ge=0)
+
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, v):
+        if not v or not v.strip():
+            raise ValueError("model cannot be empty")
+        return v
+
+    @field_validator("promptTemplate")
+    @classmethod
+    def validate_prompt_template(cls, v):
+        if not v or not v.strip():
+            raise ValueError("promptTemplate cannot be empty")
+        return v
+
+
+class ImageOutputNodeData(BaseNodeData):
+    nodeType: Literal["image_output"] = "image_output"
+    alt: Optional[str] = "Generated image"
+    maxWidth: Optional[int] = Field(default=None, gt=0, le=2048)
+    maxHeight: Optional[int] = Field(default=None, gt=0, le=2048)
+    showPrompt: bool = True
+    downloadable: bool = True
+    downloadFilename: Optional[str] = None
+
+
 class FlowNode(BaseModel):
     id: str
-    type: Literal["input", "llm", "output", "json_extractor", "conditional"]
+    type: Literal[
+        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+    ]
     position: NodePosition
-    data: Union[
-        InputNodeData, LLMNodeData, OutputNodeData, JsonExtractorNodeData, ConditionalNodeData
+    data: Annotated[
+        Union[
+            InputNodeData,
+            LLMNodeData,
+            OutputNodeData,
+            JsonExtractorNodeData,
+            ConditionalNodeData,
+            ImageGenNodeData,
+            ImageOutputNodeData,
+        ],
+        Field(discriminator="nodeType"),
     ]
     selected: Optional[bool] = False
     dragging: Optional[bool] = False
@@ -160,6 +214,20 @@ class FlowNode(BaseModel):
         if not v or not v.strip():
             raise ValueError("node id cannot be empty")
         return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_node_type(cls, data):
+        """Populate nodeType in data from type field if missing"""
+        if isinstance(data, dict):
+            node_type = data.get("type")
+            node_data = data.get("data", {})
+
+            if isinstance(node_data, dict) and "nodeType" not in node_data and node_type:
+                node_data["nodeType"] = node_type
+                data["data"] = node_data
+
+        return data
 
     class ConfigDict:
         from_attributes = True
@@ -249,16 +317,18 @@ class FlowResponse(BaseModel):
 
 class NodeExecutionResult(BaseModel):
     nodeId: str
-    nodeType: Literal["input", "llm", "output", "json_extractor", "conditional"]
-    status: Literal["idle", "running", "success", "error"]
+    nodeType: Literal[
+        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+    ]
+    status: Literal["idle", "running", "success", "error", "skipped", "cancelled"]
     input: Optional[Any] = None
     output: Optional[Any] = None
     error: Optional[Dict[str, Any]] = None
-    startTime: str
-    endTime: Optional[str] = None
+    startTime: Optional[str] = None
     executionTime: Optional[int] = None
     matchedCondition: Optional[str] = None
     outputHandle: Optional[str] = None
+    skipReason: Optional[str] = None
 
 
 class FlowExecutionRequest(BaseModel):
@@ -286,7 +356,7 @@ class ExecutionStatusUpdate(BaseModel):
     executionId: str
     status: Literal["pending", "running", "completed", "failed", "cancelled"]
     nodeId: Optional[str] = None
-    nodeStatus: Optional[Literal["idle", "running", "success", "error"]] = None
+    nodeStatus: Optional[Literal["idle", "running", "success", "error", "skipped"]] = None
     output: Optional[Any] = None
     error: Optional[str] = None
     timestamp: str
@@ -331,7 +401,9 @@ class NodeTemplateResponse(BaseModel):
     id: str
     name: str
     description: str
-    type: Literal["input", "llm", "output", "json_extractor", "conditional"]
+    type: Literal[
+        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+    ]
     icon: str
     color: str
     defaultConfig: Dict[str, Any]

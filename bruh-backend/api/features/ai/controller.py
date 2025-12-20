@@ -87,38 +87,38 @@ class AIController:
     @route.get("/models/openrouter", response=List[OpenRouterModelSchema])
     async def get_all_openrouter_models(self, request):
         """Get all available models from OpenRouter"""
-        service = get_open_router_service()
-        return await service.get_all_models_flat()
+        return await self.open_router_service.get_all_models_flat()
 
     @route.post("/models/openrouter")
     async def get_openrouter_model_by_id(self, request, data: GetOpenRouterModelRequestSchema):
         """Get a specific model from OpenRouter by its ID"""
         model_id = data.model_id
-        service = get_open_router_service()
-        return await service.get_model_by_id(model_id=model_id)
+        return await self.open_router_service.get_model_by_id(model_id=model_id)
 
     @route.get("/models/openrouter/by-provider", response=dict)
     async def get_openrouter_models_by_provider(self, request):
         """Get all models organized by provider"""
-        service = get_open_router_service()
-        return await service.models()
+        return await self.open_router_service.models()
 
     @route.get("/models/openrouter/structured", response=List[OpenRouterModelSchema])
     async def get_structured_output_models(self, request):
         """Get all models that support structured outputs"""
-        service = get_open_router_service()
-        return await service.get_all_structured_output_models()
+        return await self.open_router_service.get_all_structured_output_models()
 
     @route.get("/models/openrouter/image-generation", response=List[OpenRouterModelSchema])
     async def get_image_generation_models(self, request):
         """Get all models that support image generation"""
         return await self.open_router_service.get_all_image_generation_models()
 
+    @route.get("/models/openrouter/image-generation/by-provider", response=dict)
+    async def get_image_generation_models_by_provider(self, request):
+        """Get image generation models organized by provider"""
+        return await self.open_router_service.models_with_image_generation()
+
     @route.get("/models/openrouter/structured/by-provider", response=dict)
     async def get_structured_output_models_by_provider(self, request):
         """Get models with structured outputs organized by provider"""
-        service = get_open_router_service()
-        return await service.models_with_structured_outputs()
+        return await self.open_router_service.models_with_structured_outputs()
 
     # ollama
     @route.get("/models/ollama")

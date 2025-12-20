@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
+
 import uuid
+import base64
 
 
 class Flow(models.Model):
@@ -267,6 +270,8 @@ class NodeTemplate(models.Model):
             ("input", "Input"),
             ("llm", "LLM"),
             ("output", "Output"),
+            ("image_gen", "Image Generation"),
+            ("image_output", "Image Output"),
         ],
     )
 
@@ -299,3 +304,60 @@ class NodeTemplate(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.type})"
+
+
+def flow_generated_image_upload_to(instance, filename):
+    """Generate upload path for flow-generated images"""
+    return f"flow_images/{instance.execution.start_time.strftime('%Y/%m/%d')}/{filename}"
+
+
+class FlowGeneratedImage(models.Model):
+    """Stores AI-generated images from flow executions"""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    execution = models.ForeignKey(
+        FlowExecution, related_name="generated_images", on_delete=models.CASCADE
+    )
+    node_id = models.CharField(max_length=255)
+    image = models.ImageField(upload_to=flow_generated_image_upload_to)
+    prompt = models.TextField()
+    model_used = models.CharField(max_length=350)
+    aspect_ratio = models.CharField(max_length=10, null=True, blank=True)
+    width = models.IntegerField(null=True, blank=True)
+    height = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Flow image {self.id} - node {self.node_id}"
+
+    @staticmethod
+    def save_from_base64(
+        execution,
+        node_id: str,
+        base64_data: str,
+        prompt: str,
+        model_used: str,
+        aspect_ratio: str | None = None,
+    ):
+        """Create a FlowGeneratedImage from base64 data URL"""
+        if "," in base64_data:
+            format_prefix, base64_string = base64_data.split(",", 1)
+        else:
+            base64_string = base64_data
+
+        image_data = base64.b64decode(base64_string)
+        filename = f"{uuid.uuid4()}.png"
+
+        generated_image = FlowGeneratedImage(
+            execution=execution,
+            node_id=node_id,
+            prompt=prompt,
+            model_used=model_used,
+            aspect_ratio=aspect_ratio,
+        )
+
+        generated_image.image.save(filename, ContentFile(image_data), save=True)
+        return generated_image
