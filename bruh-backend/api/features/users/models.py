@@ -27,6 +27,7 @@ class Profile(models.Model):
     default_model = models.TextField(blank=True, null=True)
     default_provider = models.TextField(blank=True, null=True)
     default_aux_model = models.TextField(blank=True, null=True)
+    default_aux_model_provider = models.TextField(blank=True, null=True)
 
     # ai title generation
     auto_generate_titles = models.BooleanField(

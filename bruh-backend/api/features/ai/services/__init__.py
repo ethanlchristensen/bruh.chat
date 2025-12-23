@@ -6,6 +6,8 @@ from .chat_orchestration_service import (
 )
 from .ollama_sevice import OllamaService, get_ollama_service
 from .open_router_service import OpenRouterService, get_open_router_service
+from .factory import get_ai_service, get_user_aux_model
+from .base import AIServiceBase
 
 __all__ = [
     "OpenRouterService",
@@ -16,4 +18,7 @@ __all__ = [
     "ChatErrorResponse",
     "OllamaService",
     "get_ollama_service",
+    "AIServiceBase",
+    "get_ai_service",
+    "get_user_aux_model",
 ]

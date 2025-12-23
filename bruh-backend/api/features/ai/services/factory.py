@@ -1,36 +1,41 @@
-from typing import Any, AsyncGenerator, List, Protocol
+from typing import Any, AsyncGenerator, List, Tuple, Optional
 
+from asgiref.sync import sync_to_async
+
+from .base import AIServiceBase
 from .ollama_sevice import get_ollama_service
 from .open_router_service import get_open_router_service
+from api.features.users.models import Profile
 
 
-class AIServiceProtocol(Protocol):
-    """The contract both services must fulfill"""
+def get_ai_service(provider: str) -> AIServiceBase:
+    """
+    Factory function to get the appropriate AI service based on provider
 
-    async def validate_model_id(self, model_id: str) -> bool: ...
+    Args:
+        provider: Either "ollama" or "openrouter"
 
-    async def format_message_payload(
-        self, content: str, attachments: List[Any], model: str = None
-    ) -> dict: ...
+    Returns:
+        An instance of AIServiceBase (OllamaService or OpenRouterService)
 
-    async def chat_with_messages_stream(
-        self,
-        messages: list[dict],
-        model: str = None,
-        modalities: list[str] = None,
-        image_config: dict = None,
-    ) -> AsyncGenerator[str, None]: ...
-
-    async def supports_image_generation(self, model_id: str, use_cache: bool = True) -> bool:
-        return False
-
-    async def supports_aspect_ratio(self, model_id: str, use_cache: bool = True) -> bool:
-        return False
-
-
-def get_ai_service(provider: str) -> AIServiceProtocol:
+    Raises:
+        ValueError: If provider is unknown
+    """
     if provider == "ollama":
         return get_ollama_service()
     elif provider == "openrouter":
         return get_open_router_service()
     raise ValueError(f"Unknown AI provider: {provider}")
+
+
+async def get_user_aux_model(user) -> Tuple[str, str] | Tuple[None, None]:
+    """Get user's default AUX model from their profile"""
+
+    @sync_to_async
+    def _get_model():
+        if hasattr(user, "profile") and user.profile:
+            profile: Profile = user.profile
+            return profile.default_aux_model, profile.default_aux_model_provider
+        return None, None
+
+    return await _get_model()

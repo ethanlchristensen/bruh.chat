@@ -6,15 +6,17 @@ from functools import lru_cache
 from typing import AsyncGenerator, Optional
 
 import ollama
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.core.files.uploadedfile import UploadedFile
 
 from core.services import get_config
+from .base import AIServiceBase
 
 logger = logging.getLogger(__name__)
 
 
-class OllamaService:
+class OllamaService(AIServiceBase):
     MODELS_CACHE_KEY = "ollama_all_models_data"
     STRUCTURED_MODELS_CACHE_KEY = "ollama_structured_models_data"
     VISION_MODELS_CACHE_KEY = "ollama_vision_models_data"
@@ -28,6 +30,32 @@ class OllamaService:
         self.default_model = config.ollama.ollama_default_model
         self.host = config.ollama.ollama_host
         self.client = ollama.AsyncClient(host=self.host)
+
+    def _get_conversation_starters_schema(self) -> dict:
+        """Get Ollama-style schema"""
+        return {
+            "type": "object",
+            "properties": {
+                "starters": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "question": {
+                                "type": "string",
+                                "description": "The generated question related to the topic.",
+                            },
+                            "category": {
+                                "type": "string",
+                                "description": "The topic category the question belongs to.",
+                            },
+                        },
+                        "required": ["question", "category"],
+                    },
+                }
+            },
+            "required": ["starters"],
+        }
 
     @staticmethod
     def encode_image_to_base64(file: UploadedFile) -> str:
@@ -148,9 +176,10 @@ class OllamaService:
     async def chat_with_structured_output(
         self,
         messages: list[dict],
-        response_schema: dict,
+        response_format: dict,
         model: Optional[str] = None,
         temperature: Optional[float] = None,
+        message_instance=None,
     ) -> dict:
         """Chat with structured JSON output"""
         if not model and not self.default_model:
@@ -161,7 +190,7 @@ class OllamaService:
             options["temperature"] = temperature
 
         schema_instruction = (
-            f"\nRespond with valid JSON matching this schema: {json.dumps(response_schema)}"
+            f"\nRespond with valid JSON matching this schema: {json.dumps(response_format)}"
         )
 
         modified_messages = messages.copy()
@@ -181,20 +210,64 @@ class OllamaService:
                 },
             )
 
+        model_used = model or self.default_model
+        logger.info(f"[Ollama Structured] Starting request - Model: {model_used}")
+
         response = await self.client.chat(
-            model=model or self.default_model,
+            model=model_used,
             messages=modified_messages,
             options=options if options else None,
             format="json",
         )
 
+        await self._log_structured_response(response, message_instance, model_used)
+
         content = response["message"]["content"]
 
         try:
-            return json.loads(content)
+            parsed_response = json.loads(content)
+            logger.info(f"✅ [Ollama Structured] Success - Tokens: {response.get('eval_count', 0)}")
+            return parsed_response
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {content}")
+            logger.error(f"❌ [Ollama Structured] JSON parse failed: {content}")
             raise ValueError(f"Invalid JSON response from model: {e}")
+
+    async def _log_structured_response(self, response, message_instance, model_used: str):
+        """Extract and log metrics from Ollama structured output response"""
+        from api.features.ai.models import AIResponse
+
+        if hasattr(response, "model_dump"):
+            response_dict = response.model_dump()
+        elif hasattr(response, "dict"):
+            response_dict = response.dict()
+        else:
+            response_dict = dict(response)
+
+        prompt_tokens = response_dict.get("prompt_eval_count", 0)
+        completion_tokens = response_dict.get("eval_count", 0)
+        total_tokens = prompt_tokens + completion_tokens
+
+        @sync_to_async
+        def save_ai_response():
+            """Save AIResponse in sync context"""
+            return AIResponse.objects.create(
+                message=message_instance,
+                provider="ollama",
+                raw_payload=response_dict,
+                request_id=f"ollama-{response_dict.get('created_at', 'unknown')}",
+                model_used=model_used,
+                finish_reason=response_dict.get("done_reason"),
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                is_structured_output=True,
+            )
+
+        try:
+            ai_response = await save_ai_response()
+            logger.debug(f"Saved AIResponse: {ai_response.id} (Structured Output)")
+        except Exception as e:
+            logger.error(f"Failed to save AIResponse: {e}", exc_info=True)
 
     async def format_message_payload(
         self, content: str, attachments: list, model: str = None
@@ -465,6 +538,12 @@ class OllamaService:
         """Generate embeddings for a prompt"""
         response = await self.client.embeddings(model=model, prompt=prompt, options=options)
         return response.get("embedding", [])
+
+    async def supports_image_generation(self, model_id: str, use_cache: bool = True) -> bool:
+        return False
+
+    async def supports_aspect_ratio(self, model_id: str, use_cache: bool = True) -> bool:
+        return False
 
     def clear_cache(self):
         """Clear all caches"""

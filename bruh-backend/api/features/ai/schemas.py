@@ -111,3 +111,23 @@ class OpenRouterModelSchema(Schema):
 
 class GetOpenRouterModelRequestSchema(Schema):
     model_id: str
+
+
+class ConversationStarterSchema(Schema):
+    question: str
+    category: str
+
+
+class GenerateConversationStartersRequest(Schema):
+    topics: list[str]
+    num_questions: int = 5
+
+
+class GenerateConversationStartersResponse(Schema):
+    success: bool = True
+    starters: list[ConversationStarterSchema]
+
+
+class GenerateConversationStartersErrorResponse(Schema):
+    success: bool = False
+    error: str

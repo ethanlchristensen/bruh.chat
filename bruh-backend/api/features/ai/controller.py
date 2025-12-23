@@ -1,5 +1,5 @@
-# api/features/ai/controller.py
 import json
+import logging
 from typing import AsyncIterator, List, Optional
 from uuid import UUID
 
@@ -12,12 +12,19 @@ from ninja_jwt.authentication import JWTAuth
 from .schemas import (
     GetOpenRouterModelRequestSchema,
     OpenRouterModelSchema,
+    GenerateConversationStartersRequest,
+    GenerateConversationStartersResponse,
+    GenerateConversationStartersErrorResponse,
 )
 from .services import (
     get_chat_orchestration_service,
     get_ollama_service,
     get_open_router_service,
+    get_user_aux_model,
+    get_ai_service,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @api_controller("/ai", auth=JWTAuth(), tags=["AI"])
@@ -186,10 +193,65 @@ class AIController:
     ):
         """Copy an Ollama model to a new name"""
         await self.ollama_service.copy_model(source, destination)
-        return {"success": True, "message": f"Model copied from {source} to {destination}"}
+        return {
+            "success": True,
+            "message": f"Model copied from {source} to {destination}",
+        }
 
     @route.get("/ollama/status")
     async def check_ollama_status(self, request):
         """Check if Ollama service is running"""
         is_running = await self.ollama_service.is_running()
         return {"running": is_running}
+
+    @route.post(
+        "/conversation-starters/generate",
+        response={
+            200: GenerateConversationStartersResponse,
+            400: GenerateConversationStartersErrorResponse,
+        },
+    )
+    async def generate_conversation_starters(
+        self, request, data: GenerateConversationStartersRequest
+    ):
+        """
+        Generate conversation starter questions that users can click to begin a new chat.
+        Uses the user's default AUX model with structured output support.
+        """
+        try:
+            user = request.auth
+
+            aux_model, provider = await get_user_aux_model(user)
+
+            if not aux_model:
+                return 400, {
+                    "success": False,
+                    "error": "User does not have a default AUX model configured",
+                }
+
+            logger.info(f"Attempting to get converstaion starters for {provider}")
+
+            ai_service = get_ai_service(provider)
+
+            supports_structured = await ai_service.supports_structured_outputs(aux_model)
+
+            if not supports_structured:
+                return 400, {
+                    "success": False,
+                    "error": f"Model {aux_model} does not support structured outputs",
+                }
+
+            payload = await ai_service.generate_conversation_starters(
+                topics=data.topics, num_questions=data.num_questions, model=aux_model
+            )
+
+            starters = payload.get("starters")
+
+            if not starters:
+                return 400, {"success": False, "error": f"Starters not present in AI response"}
+
+            return 200, {"success": True, "starters": starters}
+
+        except Exception as e:
+            logger.error(f"Error generating conversation starters: {str(e)}")
+            return 400, {"success": False, "error": str(e)}

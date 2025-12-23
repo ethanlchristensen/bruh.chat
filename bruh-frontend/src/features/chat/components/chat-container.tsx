@@ -8,6 +8,7 @@ import { useUserAvailableModels } from "@/components/shared/model-selector/model
 import { usePersonasQuery } from "@/features/persona/api/persona";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
+import { ConversationLanding } from "./conversation-landing";
 import { INTENTS } from "@/types/intent.types";
 import type {
   ConversationsResponse,
@@ -423,6 +424,10 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     });
   };
 
+  const handleStartConversation = (message: string) => {
+    handleSendMessage(message, undefined, INTENTS.CHAT);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -433,34 +438,40 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
-      <div className="relative flex flex-col flex-1 min-h-0">
-        <MessageList
-          ref={messageListRef}
-          messages={messages}
-          isLoading={
-            createChatMutation.isPending && streamingMessageId === null
-          }
-          onScrollStateChange={setIsScrolledUp}
-        />
+      {!conversationId && messages.length === 0 ? (
+        <div className="flex-1 overflow-y-auto">
+          <ConversationLanding onStartConversation={handleStartConversation} />
+        </div>
+      ) : (
+        <div className="relative flex flex-col flex-1 min-h-0">
+          <MessageList
+            ref={messageListRef}
+            messages={messages}
+            isLoading={
+              createChatMutation.isPending && streamingMessageId === null
+            }
+            onScrollStateChange={setIsScrolledUp}
+          />
 
-        {isScrolledUp && (
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-background from-20% to-transparent pointer-events-none z-10" />
-        )}
+          {isScrolledUp && (
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-background from-20% to-transparent pointer-events-none z-10" />
+          )}
 
-        {isScrolledUp && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <Button
-              onClick={handleScrollToBottom}
-              className="shadow-lg"
-              variant={"secondary"}
-              size={"sm"}
-            >
-              <ArrowDown className="h-4 w-4" />
-              <span className="text-sm font-medium">Back to bottom</span>
-            </Button>
-          </div>
-        )}
-      </div>
+          {isScrolledUp && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <Button
+                onClick={handleScrollToBottom}
+                className="shadow-lg"
+                variant={"secondary"}
+                size={"sm"}
+              >
+                <ArrowDown className="h-4 w-4" />
+                <span className="text-sm font-medium">Back to bottom</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="shrink-0 relative z-20 bg-background">
         <MessageInput

@@ -54,12 +54,17 @@ class AIResponse(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    is_structured_output = models.BooleanField(default=False, null=True)
+
     class Meta:
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["-created_at", "model_used"]),
             models.Index(fields=["provider"]),
+            models.Index(fields=["is_structured_output"]),
+            models.Index(fields=["provider", "is_structured_output"]),
         ]
 
     def __str__(self):
-        return f"[{self.provider}] {self.model_used} - {self.request_id[:10]}"
+        structured_flag = " [STRUCTURED]" if self.is_structured_output else ""
+        return f"[{self.provider}] {self.model_used}{structured_flag} - {self.request_id[:10]}"

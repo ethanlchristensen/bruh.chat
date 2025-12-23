@@ -10,6 +10,7 @@ class ProfileSchema(Schema):
     default_model: Optional[str] = None
     default_aux_model: Optional[str] = None
     default_provider: Optional[str] = None
+    default_aux_model_provider: Optional[str] = None
     auto_generate_titles: Optional[bool] = None
     title_generation_frequency: Optional[int] = None
 
@@ -25,6 +26,7 @@ class ProfileUpdateSchema(Schema):
     default_model: Optional[str] = None
     default_aux_model: Optional[str] = None
     default_provider: Optional[str] = None
+    default_aux_model_provider: Optional[str] = None
     auto_generate_titles: Optional[bool] = None
     title_generation_frequency: Optional[int] = None
 

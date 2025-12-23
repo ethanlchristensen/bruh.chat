@@ -44,6 +44,9 @@ export default function ProfileCard() {
   const [defaultAuxModel, setDefaultAuxModel] = useState<string | undefined>(
     undefined,
   );
+  const [defaultAuxModelProvider, setDefaultAuxModelProvider] = useState<
+    string | undefined
+  >(undefined);
   const [autoGenerateTitles, setAutoGenerateTitles] = useState(false);
   const [titleGenerationFrequency, setTitleGenerationFrequency] =
     useState<number>(4);
@@ -55,6 +58,7 @@ export default function ProfileCard() {
     defaultModel: undefined as string | undefined,
     defaultProvider: undefined as string | undefined,
     defaultAuxModel: undefined as string | undefined,
+    defaultAuxModelProvider: undefined as string | undefined,
     autoGenerateTitles: false,
     titleGenerationFrequency: 4,
   });
@@ -66,6 +70,8 @@ export default function ProfileCard() {
         defaultModel: user.profile.default_model || undefined,
         defaultProvider: user.profile.default_provider || undefined,
         defaultAuxModel: user.profile.default_aux_model || undefined,
+        defaultAuxModelProvider:
+          user.profile.default_aux_model_provider || undefined,
         autoGenerateTitles: user.profile.auto_generate_titles ?? false,
         titleGenerationFrequency: user.profile.title_generation_frequency ?? 4,
       };
@@ -74,6 +80,7 @@ export default function ProfileCard() {
       setDefaultModel(values.defaultModel);
       setDefaultProvider(values.defaultProvider);
       setDefaultAuxModel(values.defaultAuxModel);
+      setDefaultAuxModelProvider(values.defaultAuxModelProvider);
       setAutoGenerateTitles(values.autoGenerateTitles);
       setTitleGenerationFrequency(values.titleGenerationFrequency);
       setInitialValues(values);
@@ -134,6 +141,15 @@ export default function ProfileCard() {
         hasChanges = true;
       }
 
+      if (
+        defaultAuxModel !== initialValues.defaultAuxModel ||
+        defaultAuxModelProvider !== initialValues.defaultAuxModelProvider
+      ) {
+        updates.default_aux_model = defaultAuxModel || null;
+        updates.default_aux_model_provider = defaultAuxModelProvider || null;
+        hasChanges = true;
+      }
+
       if (autoGenerateTitles !== initialValues.autoGenerateTitles) {
         updates.auto_generate_titles = autoGenerateTitles;
         hasChanges = true;
@@ -160,6 +176,7 @@ export default function ProfileCard() {
         defaultModel,
         defaultProvider,
         defaultAuxModel,
+        defaultAuxModelProvider,
         autoGenerateTitles,
         titleGenerationFrequency,
       });
@@ -314,7 +331,10 @@ export default function ProfileCard() {
               variant="by-provider"
               structuredOutputOnly={true}
               selectedModelId={defaultAuxModel}
-              onModelSelect={setDefaultAuxModel}
+              onModelSelect={(modelId, provider) => {
+                setDefaultAuxModel(modelId);
+                setDefaultAuxModelProvider(provider);
+              }}
             />
             <p className="text-xs text-muted-foreground">
               Secondary model for auxiliary tasks that also utilize structured

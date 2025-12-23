@@ -22,6 +22,7 @@ export interface UserProfile {
   default_model: string;
   default_provider: string;
   default_aux_model: string;
+  default_aux_model_provider: string;
   auto_generate_titles: boolean;
   title_generation_frequency: number;
 }
@@ -212,4 +213,24 @@ export interface PersonaGenerationRequest {
   prompt: string;
   target_provider: string;
   suggested_model: string;
+}
+
+export interface ConversationStarter {
+  question: string;
+  category: string;
+}
+
+export interface GenerateConversationStartersRequest {
+  topics: string[];
+  num_questions?: number;
+}
+
+export interface GenerateConversationStartersResponse {
+  success: boolean;
+  starters: ConversationStarter[];
+}
+
+export interface GenerateConversationStartersErrorResponse {
+  success: boolean;
+  error: string;
 }

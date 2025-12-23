@@ -11,8 +11,10 @@ from ninja_jwt.authentication import JWTAuth
 
 from api.features.ai.services.ollama_sevice import get_ollama_service
 from api.features.ai.services.open_router_service import get_open_router_service
+from api.features.ai.services import get_ai_service
 
 from .permissons import IsAdmin
+from .models import Profile
 from .schemas import (
     AddModelSchema,
     BulkAddModelsSchema,
@@ -51,19 +53,13 @@ class UserController:
     @route.patch("/me/profile", response={200: UserSchema, 400: dict})
     async def update_current_user_profile(self, request, data: ProfileUpdateSchema):
         user = request.user
-        profile = await sync_to_async(lambda: user.profile)()
+        profile: Profile = await sync_to_async(lambda: user.profile)()
 
         data_dict = data.dict(exclude_unset=True)
 
-        # Get provider from data or use existing
         provider = data_dict.get("default_provider", profile.default_provider)
-
-        # Validate default_model
         if "default_model" in data_dict and data_dict["default_model"]:
-            if provider == "ollama":
-                service = get_ollama_service()
-            else:
-                service = get_open_router_service()
+            service = get_ai_service(provider)
             is_valid = await service.validate_model_id(data_dict["default_model"])
 
             if not is_valid:
@@ -71,13 +67,11 @@ class UserController:
                     "detail": f"Invalid model ID for {provider}: {data_dict['default_model']}"
                 }
 
-        # Validate default_aux_model
+        aux_provider = data_dict.get(
+            "default_aux_model_provider", profile.default_aux_model_provider
+        )
         if "default_aux_model" in data_dict and data_dict["default_aux_model"]:
-            if provider == "ollama":
-                service = get_ollama_service()
-            else:
-                service = get_open_router_service()
-
+            service = get_ai_service(aux_provider)
             is_valid = await service.validate_model_id(data_dict["default_aux_model"])
 
             if not is_valid:

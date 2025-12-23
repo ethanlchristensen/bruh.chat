@@ -1,18 +1,22 @@
+import json
 import base64
 import logging
 from functools import lru_cache
 from typing import Optional
 
 import httpx
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.core.files.uploadedfile import UploadedFile
 
 from core.services import get_config
+from api.features.ai.models import AIResponse
+from .base import AIServiceBase
 
 logger = logging.getLogger(__name__)
 
 
-class OpenRouterService:
+class OpenRouterService(AIServiceBase):
     MODELS_CACHE_KEY = "openrouter_all_models_data"
     STRUCTURED_MODELS_CACHE_KEY = "openrouter_structured_models_data"
     IMAGE_GEN_MODELS_CACHE_KEY = "openrouter_image_gen_models_data"
@@ -42,6 +46,41 @@ class OpenRouterService:
         self.default_model = config.open_router.open_router_default_model
         self.api_key = config.open_router.open_router_api_key
         self.base_url = "https://openrouter.ai/api/v1"
+
+    def _get_conversation_starters_schema(self) -> dict:
+        """Get OpenRouter-style schema"""
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "conversation_starters",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "starters": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "question": {
+                                        "type": "string",
+                                        "description": "The generated question related to the topic.",
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "description": "The topic category the question belongs to.",
+                                    },
+                                },
+                                "required": ["question", "category"],
+                                "additionalProperties": False,
+                            },
+                        }
+                    },
+                    "required": ["starters"],
+                    "additionalProperties": False,
+                },
+            },
+        }
 
     def _get_headers(self) -> dict:
         return {
@@ -179,6 +218,7 @@ class OpenRouterService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        message_instance=None,
     ) -> dict:
         """
         Chat with structured output using JSON schema
@@ -189,6 +229,7 @@ class OpenRouterService:
             model: Model ID (should support structured outputs)
             temperature: Optional temperature
             max_tokens: Optional max tokens
+            message_instance: Optional Message instance to link AIResponse to
         """
         url = f"{self.base_url}/chat/completions"
 
@@ -203,12 +244,97 @@ class OpenRouterService:
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
 
+        logger.info(f"🔄 [OpenRouter Structured] Starting request - Model: {payload['model']}")
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url, json=payload, headers=self._get_headers(), timeout=60.0
             )
             response.raise_for_status()
-            return response.json()
+
+            data = response.json()
+
+            await self._log_structured_response(data, message_instance)
+
+            content = data["choices"][0]["message"]["content"]
+
+            try:
+                parsed_response = json.loads(content)
+                logger.info(
+                    f"[OpenRouter Structured] Success - Tokens: {data.get('usage', {}).get('total_tokens', 0)}"
+                )
+                return parsed_response
+            except json.JSONDecodeError as e:
+                logger.error(f"[OpenRouter Structured] JSON parse failed: {content}")
+                raise ValueError(f"Invalid JSON response from model: {e}")
+
+    async def _log_structured_response(self, data: dict, message_instance=None):
+        """Extract and log metrics from structured output response"""
+
+        usage = data.get("usage", {})
+        model_used = data.get("model", "unknown")
+        request_id = data.get("id", "unknown")
+
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("completion_tokens", 0)
+        image_tokens = usage.get("completion_tokens_details", {}).get("image_tokens", 0)
+        reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+        total_tokens = usage.get("total_tokens", 0)
+
+        pricing_data = {}
+        model_data = await self.get_model_by_id(model_id=model_used)
+        if model_data:
+            pricing_data = model_data.get("pricing", {})
+
+        prompt_cost = float(pricing_data.get("prompt", 0)) * prompt_tokens
+        completion_cost = float(pricing_data.get("completion", 0)) * completion_tokens
+        reasoning_cost = float(pricing_data.get("image", 0)) * reasoning_tokens
+
+        cost_details = usage.get("cost_details", {})
+        actual_cost = usage.get("cost", 0)
+
+        @sync_to_async
+        def save_ai_response():
+            """Save AIResponse in sync context"""
+            return AIResponse.objects.create(
+                message=message_instance,
+                provider="openrouter",
+                raw_payload=data,
+                request_id=request_id,
+                model_used=model_used,
+                finish_reason=data.get("choices", [{}])[0].get("finish_reason"),
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                image_tokens=image_tokens,
+                reasoning_tokens=reasoning_tokens,
+                total_tokens=total_tokens,
+                estimated_prompt_cost=prompt_cost,
+                estimated_completion_cost=completion_cost,
+                estimated_reasoning_cost=reasoning_cost,
+                cost=float(actual_cost),
+                upstream_inference_cost=(
+                    float(cost_details.get("upstream_inference_cost", 0))
+                    if cost_details.get("upstream_inference_cost")
+                    else None
+                ),
+                upstream_inference_prompt_cost=(
+                    float(cost_details.get("upstream_inference_prompt_cost", 0))
+                    if cost_details.get("upstream_inference_prompt_cost")
+                    else None
+                ),
+                upstream_inference_completions_cost=(
+                    float(cost_details.get("upstream_inference_completions_cost", 0))
+                    if cost_details.get("upstream_inference_completions_cost")
+                    else None
+                ),
+                is_structured_output=True,
+            )
+
+        try:
+            ai_response = await save_ai_response()
+            logger.debug(f"Saved AIResponse: {ai_response.id} (Structured Output)")
+        except Exception as e:
+            logger.error(f"Failed to save AIResponse: {e}", exc_info=True)
 
     async def get_all_image_generation_models(self, use_cache: bool = True) -> list[dict]:
         """Get all models that support image generation"""
