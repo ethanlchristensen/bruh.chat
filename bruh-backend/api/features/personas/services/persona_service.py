@@ -110,10 +110,8 @@ class PersonaService:
             target_provider: The provider the persona will use (openrouter/ollama)
             suggested_model: Optional specific model for the persona to use
         """
-        # Get the AI service for generation
         service = get_ai_service(aux_provider)
 
-        # Check if the aux model supports structured outputs
         supports_structured = await service.supports_structured_outputs(aux_model, use_cache=True)
 
         if not supports_structured:
@@ -122,7 +120,6 @@ class PersonaService:
                 "Please set a different default AUX model in your profile."
             )
 
-        # Build the generation prompt
         system_prompt = f"""You are an expert AI persona designer. Your task is to create a detailed AI persona based on the user's description.
 
 The persona should be designed to work with {target_provider} as its provider.
@@ -150,7 +147,6 @@ Generate a complete persona specification."""
             {"role": "user", "content": user_prompt},
         ]
 
-        # Define the response schema
         response_schema = {
             "type": "object",
             "properties": {
@@ -178,9 +174,8 @@ Generate a complete persona specification."""
             "required": ["name", "description", "instructions", "example_dialogue"],
         }
 
-        # Get structured output from AI
         if aux_provider == "openrouter":
-            response_format = {
+            response_schema = {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "persona_generation",
@@ -189,27 +184,15 @@ Generate a complete persona specification."""
                 },
             }
 
-            response = await service.chat_with_structured_output(
-                messages=messages,
-                response_format=response_format,
-                model=aux_model,
-            )
+        persona_data = await service.chat_with_structured_output(
+            messages=messages,
+            response_format=response_schema,
+            model=aux_model,
+        )
 
-            content = response["choices"][0]["message"]["content"]
-            persona_data = json.loads(content)
-
-        else:  # ollama
-            persona_data = await service.chat_with_structured_output(
-                messages=messages,
-                response_schema=response_schema,
-                model=aux_model,
-            )
-
-        # Determine the model to use for the persona
         target_service = get_ai_service(target_provider)
 
         if suggested_model:
-            # Validate the suggested model
             is_valid = await target_service.validate_model_id(suggested_model)
             if not is_valid:
                 logger.warning(f"Suggested model {suggested_model} is invalid, using default")
@@ -217,7 +200,6 @@ Generate a complete persona specification."""
             else:
                 model_id = suggested_model
         else:
-            # Use the default model for the target provider
             model_id = target_service.default_model
 
         return {
