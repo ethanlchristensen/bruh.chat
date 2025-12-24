@@ -49,7 +49,9 @@ class AIServiceBase(ABC):
         prompt = f"""Generate {num_questions} engaging conversation starter questions across these topics: {topics_text}.
 These questions will be displayed in a UI for users to click and start a new conversation.
 Make them interesting, thought-provoking, and varied in style (some philosophical, some practical, some creative).
-Mix the topics - don't focus on just one. Each question should stand alone and be immediately engaging."""
+Mix the topics - don't focus on just one. Each question should stand alone and be immediately engaging.
+These are conversation starters for a chat with an AI.
+Ensure the question generated keeps this in mind as it will be the first message a user sends to start a chat with an AI model."""
 
         messages = [
             {
