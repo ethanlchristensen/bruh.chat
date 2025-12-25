@@ -45,6 +45,11 @@ const nodeTypeLabels = {
   conditional: "Conditional",
   image_gen: "Image Gen",
   image_output: "Image Output",
+  variable_get: "Variable Get",
+  variable_set: "Variable Set",
+  text_transformer: "Text Transformer",
+  template: "Template Renderer",
+  merge: "Merge",
 };
 
 const formatValue = (value: unknown): string => {

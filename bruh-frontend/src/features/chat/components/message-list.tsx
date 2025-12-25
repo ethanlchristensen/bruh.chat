@@ -13,12 +13,13 @@ type MessageListProps = {
   messages: Message[];
   isLoading?: boolean;
   onScrollStateChange?: (isScrolledUp: boolean) => void;
+  isStreaming?: boolean;
 };
 
 export const MessageList = forwardRef<
   { scrollToBottom: () => void },
   MessageListProps
->(({ messages, isLoading, onScrollStateChange }, ref) => {
+>(({ messages, isLoading, onScrollStateChange, isStreaming }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -33,15 +34,20 @@ export const MessageList = forwardRef<
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 
-    return distanceFromBottom < 150;
+    return distanceFromBottom < 25;
   };
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     if (!messagesEndRef.current || !containerRef.current) return;
 
     isScrollingToBottom.current = true;
+    setAutoScroll(true);
+
+    // Immediately notify parent that we're at the bottom
+    onScrollStateChange?.(false);
+
     messagesEndRef.current.scrollIntoView({
-      behavior,
+      behavior: isStreaming ? "instant" : behavior,
       block: "end",
     });
 
@@ -51,16 +57,29 @@ export const MessageList = forwardRef<
   };
 
   useImperativeHandle(ref, () => ({
-    scrollToBottom: () => scrollToBottom("smooth"),
+    scrollToBottom: () => {
+      setAutoScroll(true);
+      scrollToBottom("smooth");
+    },
   }));
 
   const handleScroll = () => {
     if (isScrollingToBottom.current) return;
 
     const nearBottom = checkIfNearBottom();
-    setAutoScroll(nearBottom);
 
-    onScrollStateChange?.(!nearBottom);
+    if (!nearBottom) {
+      if (autoScroll) {
+        setAutoScroll(false);
+        onScrollStateChange?.(true);
+      }
+      return;
+    }
+
+    if (nearBottom && !autoScroll) {
+      setAutoScroll(true);
+      onScrollStateChange?.(false);
+    }
   };
 
   useEffect(() => {
@@ -69,7 +88,7 @@ export const MessageList = forwardRef<
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isStreaming, autoScroll]);
 
   // Handle scrolling during updates
   useEffect(() => {

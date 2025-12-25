@@ -7,7 +7,12 @@ export type NodeType =
   | "json_extractor"
   | "conditional"
   | "image_gen"
-  | "image_output";
+  | "image_output"
+  | "variable_get"
+  | "variable_set"
+  | "text_transformer"
+  | "template"
+  | "merge";
 
 export type NodeStatus = "idle" | "running" | "success" | "error" | "skipped";
 
@@ -19,6 +24,20 @@ export type NodeExecutionStatus =
   | "skipped";
 
 export type Provider = "ollama" | "openrouter";
+
+export type TextTransformOperationType =
+  | "trim"
+  | "uppercase"
+  | "lowercase"
+  | "capitalize"
+  | "replace"
+  | "regex_replace"
+  | "split"
+  | "join"
+  | "substring"
+  | "prefix"
+  | "suffix"
+  | "remove_whitespace";
 
 export interface NodePosition {
   x: number;
@@ -83,6 +102,7 @@ export interface JSONExtractorNodeData extends BaseNodeData {
   outputFormat: "object" | "array" | "flat" | "singleValue";
   output?: any;
   executionTime?: number;
+  setAsVariables?: boolean;
 }
 
 export interface ConditionItem {
@@ -136,6 +156,138 @@ export interface ImageOutputNodeData extends BaseNodeData {
   downloadFilename?: string;
 }
 
+export interface VariableGetNodeData extends BaseNodeData {
+  variableName: string;
+  fallbackValue?: any;
+}
+
+export interface VariableSetNodeData extends BaseNodeData {
+  variableName: string;
+  valueSource: "input" | "static";
+  staticValue?: any;
+}
+
+export interface BaseTransformOperation {
+  id: string;
+  type: TextTransformOperationType;
+  enabled: boolean;
+}
+
+export interface TrimOperation extends BaseTransformOperation {
+  type: "trim";
+  config?: Record<string, never>;
+}
+
+export interface UppercaseOperation extends BaseTransformOperation {
+  type: "uppercase";
+  config?: Record<string, never>;
+}
+
+export interface LowercaseOperation extends BaseTransformOperation {
+  type: "lowercase";
+  config?: Record<string, never>;
+}
+
+export interface CapitalizeOperation extends BaseTransformOperation {
+  type: "capitalize";
+  config?: Record<string, never>;
+}
+
+export interface ReplaceOperation extends BaseTransformOperation {
+  type: "replace";
+  config: {
+    find: string;
+    replace: string;
+  };
+}
+
+export interface RegexReplaceOperation extends BaseTransformOperation {
+  type: "regex_replace";
+  config: {
+    pattern: string;
+    replace: string;
+    flags?: string;
+  };
+}
+
+export interface SplitOperation extends BaseTransformOperation {
+  type: "split";
+  config: {
+    delimiter: string;
+    maxSplits?: number;
+    outputFormat?: "array" | "lines";
+  };
+}
+
+export interface JoinOperation extends BaseTransformOperation {
+  type: "join";
+  config: {
+    delimiter: string;
+  };
+}
+
+export interface SubstringOperation extends BaseTransformOperation {
+  type: "substring";
+  config: {
+    start: number;
+    end?: number;
+  };
+}
+
+export interface PrefixOperation extends BaseTransformOperation {
+  type: "prefix";
+  config: {
+    value: string;
+  };
+}
+
+export interface SuffixOperation extends BaseTransformOperation {
+  type: "suffix";
+  config: {
+    value: string;
+  };
+}
+
+export interface RemoveWhitespaceOperation extends BaseTransformOperation {
+  type: "remove_whitespace";
+  config: {
+    mode: "all" | "extra" | "leading" | "trailing";
+  };
+}
+
+export type TextTransformOperation =
+  | TrimOperation
+  | UppercaseOperation
+  | LowercaseOperation
+  | CapitalizeOperation
+  | ReplaceOperation
+  | RegexReplaceOperation
+  | SplitOperation
+  | JoinOperation
+  | SubstringOperation
+  | PrefixOperation
+  | SuffixOperation
+  | RemoveWhitespaceOperation;
+
+export interface TextTransformerNodeData extends BaseNodeData {
+  operations: TextTransformOperation[];
+}
+
+export interface TemplateNodeData extends BaseNodeData {
+  template: string;
+  variables: Record<string, any>;
+  escapeHtml: boolean;
+}
+
+export interface MergeNodeData extends BaseNodeData {
+  nodeType: "merge";
+  mergeStrategy?: "object" | "flatten" | "array" | "concat" | "first" | "last";
+  waitForAll?: boolean;
+  timeout?: number;
+  output?: any;
+  inputCount?: number;
+}
+
 export type NodeData =
   | InputNodeData
   | LLMNodeData
@@ -143,7 +295,12 @@ export type NodeData =
   | JSONExtractorNodeData
   | ConditionalNodeData
   | ImageGenNodeData
-  | ImageOutputNodeData;
+  | ImageOutputNodeData
+  | VariableGetNodeData
+  | VariableSetNodeData
+  | TextTransformerNodeData
+  | TemplateNodeData
+  | MergeNodeData;
 
 export interface FlowNode {
   id: string;
@@ -268,6 +425,24 @@ export const DEFAULT_NODE_CONFIG = {
     defaultOutputHandle: "default",
     caseSensitive: false,
   },
+  variable_get: {
+    variableName: "",
+    fallbackValue: undefined,
+  },
+  variable_set: {
+    variableName: "",
+    valueSource: "input" as const,
+    staticValue: undefined,
+  },
+  text_transformer: {
+    operations: [
+      {
+        id: "op_1",
+        type: "trim" as const,
+        enabled: true,
+      },
+    ],
+  },
 } as const;
 
 export interface ValidationError {
@@ -302,7 +477,17 @@ type NodeTemplateConfig<T extends NodeType> = T extends "input"
             ? { defaultConfig: Partial<ImageGenNodeData> }
             : T extends "image_output"
               ? { defaultConfig: Partial<ImageOutputNodeData> }
-              : { defaultConfig: Partial<NodeData> };
+              : T extends "variable_get"
+                ? { defaultConfig: Partial<VariableGetNodeData> }
+                : T extends "variable_set"
+                  ? { defaultConfig: Partial<VariableSetNodeData> }
+                  : T extends "text_transformer"
+                    ? { defaultConfig: Partial<TextTransformerNodeData> }
+                    : T extends "template"
+                      ? { defaultConfig: Partial<TemplateNodeData> }
+                      : T extends "merge"
+                        ? { defaultConfig: Partial<MergeNodeData> }
+                        : { defaultConfig: Partial<NodeData> };
 
 export type NodeTemplate<T extends NodeType = NodeType> = {
   id: string;

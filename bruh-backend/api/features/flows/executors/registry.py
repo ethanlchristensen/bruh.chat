@@ -4,6 +4,11 @@ from .json_extractor_executor import JsonExtractorExecutor
 from .llm_executor import LLMExecutor
 from .conditional_executor import ConditionalExecutor
 from .image_gen_executor import ImageGenExecutor
+from .variable_get_executor import VariableGetExecutor
+from .variable_set_executor import VariableSetExecutor
+from .text_transformer_executor import TextTransformerExecutor
+from .template_node_executor import TemplateExecutor
+from .merge_executor import MergeExecutor
 
 
 class NodeExecutorRegistry:
@@ -32,3 +37,8 @@ NodeExecutorRegistry.register("json_extractor", JsonExtractorExecutor)
 NodeExecutorRegistry.register("llm", LLMExecutor)
 NodeExecutorRegistry.register("conditional", ConditionalExecutor)
 NodeExecutorRegistry.register("image_gen", ImageGenExecutor)
+NodeExecutorRegistry.register("variable_get", VariableGetExecutor)
+NodeExecutorRegistry.register("variable_set", VariableSetExecutor)
+NodeExecutorRegistry.register("text_transformer", TextTransformerExecutor)
+NodeExecutorRegistry.register("template", TemplateExecutor)
+NodeExecutorRegistry.register("merge", MergeExecutor)

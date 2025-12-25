@@ -62,6 +62,13 @@ export const JSONExtractorNode = memo(
       [id, updateNodeData],
     );
 
+    const handleSetAsVariablesToggle = useCallback(
+      (checked: boolean) => {
+        updateNodeData(id, { setAsVariables: checked });
+      },
+      [id, updateNodeData],
+    );
+
     const handleOutputFormatChange = useCallback(
       (value: string) => {
         updateNodeData(id, {
@@ -207,6 +214,20 @@ export const JSONExtractorNode = memo(
               id="strict-mode"
               checked={data.strictMode || false}
               onCheckedChange={handleStrictModeToggle}
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-2">
+            <Label
+              htmlFor="set-as-variables"
+              className="text-xs font-medium text-muted-foreground cursor-pointer"
+            >
+              Set to Variables
+            </Label>
+            <Switch
+              id="set-as-variables"
+              checked={data.setAsVariables || false}
+              onCheckedChange={handleSetAsVariablesToggle}
             />
           </div>
 

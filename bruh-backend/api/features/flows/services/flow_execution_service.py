@@ -115,7 +115,8 @@ class FlowExecutionService:
         executed_nodes: Set[str] = set()
         skipped_nodes: Set[str] = set()
 
-        # Process input nodes first (level 0)
+        flow_variables = variables.copy()
+
         for node in nodes:
             if node["type"] == "input":
                 node_id = node["id"]
@@ -124,8 +125,8 @@ class FlowExecutionService:
                 variable_name = node_data.get("variableName")
                 if variable_name and variable_name in initial_input:
                     node_outputs[node_id] = initial_input[variable_name]
-                elif variable_name and variable_name in variables:
-                    node_outputs[node_id] = variables[variable_name]
+                elif variable_name and variable_name in flow_variables:
+                    node_outputs[node_id] = flow_variables[variable_name]
                 elif "value" in node_data:
                     node_outputs[node_id] = node_data["value"]
                 elif node_id in initial_input:
@@ -149,7 +150,6 @@ class FlowExecutionService:
 
         await sync_to_async(execution.save)(update_fields=["execution_data"])
 
-        # parrallel execution
         for level_idx, level_nodes in enumerate(execution_levels):
             await sync_to_async(execution.refresh_from_db)(fields=["status"])
             if execution.status == "cancelled":
@@ -183,6 +183,8 @@ class FlowExecutionService:
 
                 inputs = FlowExecutionService._get_node_inputs(node_id, edges, node_outputs)
 
+                inputs["__variables__"] = flow_variables
+
                 if not inputs and node["type"] not in ["output", "image_output"]:
                     logger.info(f"Skipping node {node_id} - no inputs (conditional path not taken)")
                     nodes_to_skip.append((node_id, "No input data - conditional branch not taken"))
@@ -195,10 +197,10 @@ class FlowExecutionService:
                     inputs=inputs,
                     edges=edges,
                     node_outputs=node_outputs,
+                    flow_variables=flow_variables,
                 )
                 tasks.append((node_id, task))
 
-            # mark skipped nodes
             for node_id, reason in nodes_to_skip:
                 await FlowExecutionService._mark_node_skipped(
                     execution, nodes_dict[node_id], reason
@@ -211,7 +213,6 @@ class FlowExecutionService:
                     if isinstance(result, Exception):
                         logger.exception(f"Node {node_id} failed with exception: {result}")
 
-                        # marked skipped down stream nodes
                         downstream = FlowExecutionService._get_downstream_nodes(
                             node_id, edges, nodes_dict, executed_nodes | skipped_nodes
                         )
@@ -230,7 +231,6 @@ class FlowExecutionService:
                         }
 
                     if not result.get("success"):
-                        # marked skipped down stream nodes
                         downstream = FlowExecutionService._get_downstream_nodes(
                             node_id, edges, nodes_dict, executed_nodes | skipped_nodes
                         )
@@ -251,10 +251,24 @@ class FlowExecutionService:
                     node = nodes_dict[node_id]
                     executed_nodes.add(node_id)
 
+                    if "setVariable" in result:
+                        var_info = result["setVariable"]
+                        flow_variables[var_info["name"]] = var_info["value"]
+                        logger.info(f"Updated variable '{var_info['name']}' = {var_info['value']}")
+
+                    if "setVariables" in result:
+                        variables_dict = result["setVariables"]
+                        for var_name, var_value in variables_dict.items():
+                            flow_variables[var_name] = var_value
+                            logger.info(f"Updated variable '{var_name}' = {var_value}")
+
                     if node["type"] == "conditional":
                         node_outputs[node_id] = result
                     else:
                         node_outputs[node_id] = result.get("output")
+
+        execution.execution_data["variables"] = flow_variables
+        await sync_to_async(execution.save)(update_fields=["execution_data"])
 
         output_nodes = [n for n in nodes if n["type"] in ["output", "image_output"]]
         final_output = {}
@@ -337,6 +351,7 @@ class FlowExecutionService:
         inputs: Dict[str, Any],
         edges: List[Dict[str, Any]],
         node_outputs: Dict[str, Any],
+        flow_variables: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute a single node and update execution data"""
         node_id = node["id"]

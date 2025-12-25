@@ -6,7 +6,7 @@ import {
   type Node,
   useReactFlow,
 } from "@xyflow/react";
-import { TextCursorInput } from "lucide-react";
+import { TextCursorInput, Info } from "lucide-react";
 import type { InputNodeData } from "@/types/flow.types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,14 @@ export const InputNode = memo(
 
     return (
       <NodeContainer selected={selected}>
+        {/* Added Callout Banner */}
+        {!data.variableName && (
+          <div className="text-xs text-amber-600 dark:text-amber-400 px-4 py-2 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900 rounded-t-xl">
+            <Info className="w-3 h-3" />
+            Please set a variable name to continue
+          </div>
+        )}
+
         <NodeHeader icon={TextCursorInput} label={data.label} />
 
         <div className="p-4 space-y-4">

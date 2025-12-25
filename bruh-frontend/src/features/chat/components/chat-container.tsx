@@ -451,6 +451,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
               createChatMutation.isPending && streamingMessageId === null
             }
             onScrollStateChange={setIsScrolledUp}
+            isStreaming={streamingMessageId !== null}
           />
 
           {isScrolledUp && (

@@ -11,6 +11,7 @@ class JsonExtractorExecutor(NodeExecutor):
             extractions = node_data.get("extractions", [])
             strict_mode = node_data.get("strictMode", False)
             output_format = node_data.get("outputFormat", "object")
+            set_as_variables = node_data.get("setAsVariables", False)  # NEW
 
             data = json.loads(json_input)
             results = {}
@@ -50,10 +51,14 @@ class JsonExtractorExecutor(NodeExecutor):
                     "output": results,
                 }
 
-            # Return single value directly for singleValue format
+            response = {"success": True}
+
+            if set_as_variables:
+                response["setVariables"] = results
+
             if output_format == "singleValue":
                 if len(results) == 1:
-                    return {"success": True, "output": list(results.values())[0]}
+                    response["output"] = list(results.values())[0]
                 elif len(results) == 0:
                     return {"success": False, "error": "No extractions configured"}
                 else:
@@ -61,13 +66,14 @@ class JsonExtractorExecutor(NodeExecutor):
                         "success": False,
                         "error": "singleValue format requires exactly one extraction",
                     }
+            elif output_format == "flat" and len(results) == 1:
+                response["output"] = list(results.values())[0]  # Unwrap single value
+            else:
+                response["output"] = (
+                    results  # Always return object for "object", "array", or multiple items
+                )
 
-            return {
-                "success": True,
-                "output": results
-                if output_format != "flat" or len(results) > 1
-                else list(results.values())[0],
-            }
+            return response
 
         except json.JSONDecodeError as e:
             return {"success": False, "error": f"Invalid JSON: {str(e)}"}

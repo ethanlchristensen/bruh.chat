@@ -15,9 +15,24 @@ class NodeHandle(BaseModel):
     label: Optional[str] = None
 
 
+# BASE NODE
 class BaseNodeData(BaseModel):
     nodeType: Literal[
-        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+        "input",
+        "llm",
+        "output",
+        "json_extractor",
+        "conditional",
+        "image_gen",
+        "image_output",
+        "text_transformer",
+        "http_request",
+        "variable_get",
+        "variable_set",
+        "delay",
+        "merge",
+        "code",
+        "template",
     ]
     label: str
     description: Optional[str] = None
@@ -30,6 +45,7 @@ class BaseNodeData(BaseModel):
     handles: List[NodeHandle]
 
 
+# INPUT NODE
 class InputNodeData(BaseNodeData):
     nodeType: Literal["input"] = "input"
     value: str = ""
@@ -46,6 +62,7 @@ class InputNodeData(BaseNodeData):
         return v
 
 
+# LLM NODE
 class LLMNodeData(BaseNodeData):
     nodeType: Literal["llm"] = "llm"
     provider: Literal["ollama", "openrouter"]
@@ -76,6 +93,7 @@ class LLMNodeData(BaseNodeData):
         return v
 
 
+# OUTPUT NODE
 class OutputNodeData(BaseNodeData):
     nodeType: Literal["output"] = "output"
     format: Literal["text", "markdown", "json", "code"] = "text"
@@ -91,6 +109,7 @@ class OutputNodeData(BaseNodeData):
         return self
 
 
+# JSON EXTRACTOR NODE
 class JsonExtractionItem(BaseModel):
     key: str
     path: str
@@ -102,8 +121,10 @@ class JsonExtractorNodeData(BaseNodeData):
     extractions: List[JsonExtractionItem] = []
     strictMode: bool = False
     outputFormat: Literal["object", "list", "flat", "singleValue"] = "singleValue"
+    setAsVariables: bool = False
 
 
+# CONDITIONAL NODE
 class ConditionItem(BaseModel):
     id: str
     operator: Literal[
@@ -151,6 +172,7 @@ class ConditionalNodeData(BaseNodeData):
         return v
 
 
+# IMAGE GEN NODE
 class ImageGenNodeData(BaseNodeData):
     nodeType: Literal["image_gen"] = "image_gen"
     provider: Literal["openrouter"]
@@ -187,10 +209,152 @@ class ImageOutputNodeData(BaseNodeData):
     downloadFilename: Optional[str] = None
 
 
+# TRANSFORMER NODE
+class TransformOperation(BaseModel):
+    id: str
+    type: Literal[
+        "trim",
+        "uppercase",
+        "lowercase",
+        "capitalize",
+        "replace",
+        "regex_replace",
+        "split",
+        "join",
+        "substring",
+        "prefix",
+        "suffix",
+        "remove_whitespace",
+    ]
+    enabled: bool = True
+    config: Optional[Dict[str, Any]] = None
+
+
+class TextTransformerNodeData(BaseNodeData):
+    nodeType: Literal["text_transformer"] = "text_transformer"
+    operations: List[TransformOperation] = []
+
+    @field_validator("operations")
+    @classmethod
+    def validate_operations(cls, v):
+        if not v:
+            raise ValueError("At least one operation is required")
+        return v
+
+
+# HTTP NODE
+class HttpRequestNodeData(BaseNodeData):
+    nodeType: Literal["http_request"] = "http_request"
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
+    url: str
+    headers: Dict[str, str] = {}
+    queryParams: Dict[str, str] = {}
+    body: Optional[str] = None
+    bodyType: Literal["json", "form", "text", "none"] = "json"
+    timeout: int = Field(default=30000, ge=1000, le=300000)
+    followRedirects: bool = True
+    maxRetries: int = Field(default=3, ge=0, le=10)
+    retryDelay: int = Field(default=1000, ge=0)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v):
+        if not v or not v.strip():
+            raise ValueError("url cannot be empty")
+        return v
+
+
+# VARIABLE NODES
+class VariableGetNodeData(BaseNodeData):
+    nodeType: Literal["variable_get"] = "variable_get"
+    variableName: str
+    fallbackValue: Optional[Any] = None
+
+    @field_validator("variableName")
+    @classmethod
+    def validate_variable_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError("variableName cannot be empty")
+        return v
+
+
+class VariableSetNodeData(BaseNodeData):
+    nodeType: Literal["variable_set"] = "variable_set"
+    variableName: str
+    valueSource: Literal["input", "static"] = "input"
+    staticValue: Optional[Any] = None
+
+    @field_validator("variableName")
+    @classmethod
+    def validate_variable_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError("variableName cannot be empty")
+        return v
+
+
+# MERGE NODE
+class MergeNodeData(BaseNodeData):
+    nodeType: Literal["merge"] = "merge"
+    mergeStrategy: Literal["object", "flatten", "array", "concat", "first", "last"] = "object"
+    waitForAll: bool = True
+    timeout: Optional[int] = Field(default=30000, ge=1000, le=300000)
+
+
+# CODE EXECUTION NODE
+class CodeNodeData(BaseNodeData):
+    nodeType: Literal["code"] = "code"
+    language: Literal["python"] = "python"
+    code: str = "return input;"
+    timeout: int = Field(default=5000, ge=100, le=30000)
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v):
+        if not v or not v.strip():
+            raise ValueError("code cannot be empty")
+        return v
+
+
+# TEMPLATE NODE
+class TemplateNodeData(BaseNodeData):
+    nodeType: Literal["template"] = "template"
+    template: str
+    variables: Dict[str, Any] = {}
+    escapeHtml: bool = False
+
+    @field_validator("template")
+    @classmethod
+    def validate_template(cls, v):
+        if not v or not v.strip():
+            raise ValueError("template cannot be empty")
+        return v
+
+
+# DELAY NODE
+class DelayNodeData(BaseNodeData):
+    nodeType: Literal["delay"] = "delay"
+    delayMs: int = Field(ge=0, le=60000)
+    passThrough: bool = True
+
+
 class FlowNode(BaseModel):
     id: str
     type: Literal[
-        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+        "input",
+        "llm",
+        "output",
+        "json_extractor",
+        "conditional",
+        "image_gen",
+        "image_output",
+        "text_transformer",
+        "http_request",
+        "variable_get",
+        "variable_set",
+        "delay",
+        "merge",
+        "code",
+        "template",
     ]
     position: NodePosition
     data: Annotated[
@@ -202,6 +366,14 @@ class FlowNode(BaseModel):
             ConditionalNodeData,
             ImageGenNodeData,
             ImageOutputNodeData,
+            TextTransformerNodeData,
+            HttpRequestNodeData,
+            VariableGetNodeData,
+            VariableSetNodeData,
+            DelayNodeData,
+            MergeNodeData,
+            CodeNodeData,
+            TemplateNodeData,
         ],
         Field(discriminator="nodeType"),
     ]
@@ -318,7 +490,21 @@ class FlowResponse(BaseModel):
 class NodeExecutionResult(BaseModel):
     nodeId: str
     nodeType: Literal[
-        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+        "input",
+        "llm",
+        "output",
+        "json_extractor",
+        "conditional",
+        "image_gen",
+        "image_output",
+        "text_transformer",
+        "http_request",
+        "variable_get",
+        "variable_set",
+        "delay",
+        "merge",
+        "code",
+        "template",
     ]
     status: Literal["idle", "running", "success", "error", "skipped", "cancelled"]
     input: Optional[Any] = None
@@ -402,7 +588,21 @@ class NodeTemplateResponse(BaseModel):
     name: str
     description: str
     type: Literal[
-        "input", "llm", "output", "json_extractor", "conditional", "image_gen", "image_output"
+        "input",
+        "llm",
+        "output",
+        "json_extractor",
+        "conditional",
+        "image_gen",
+        "image_output",
+        "text_transformer",
+        "http_request",
+        "variable_get",
+        "variable_set",
+        "delay",
+        "merge",
+        "code",
+        "template",
     ]
     icon: str
     color: str

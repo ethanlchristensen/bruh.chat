@@ -36,6 +36,11 @@ import { JSONExtractorNode } from "@/features/flows/components/nodes";
 import { ConditionalNode } from "@/features/flows/components/nodes";
 import { ImageOutputNode } from "@/features/flows/components/nodes/image-output-node";
 import { ImageGenNode } from "@/features/flows/components/nodes/image-gen-node";
+import { VariableGetNode } from "@/features/flows/components/nodes/variable-get-node";
+import { VariableSetNode } from "@/features/flows/components/nodes/variable-set-node";
+import { TextTransformerNode } from "@/features/flows/components/nodes";
+import { TemplateNode } from "@/features/flows/components/nodes/template-node";
+import { MergeNode } from "@/features/flows/components/nodes/merge-node";
 import { ExecutionDialog } from "@/features/flows/components/execution-dialog";
 import { ExecutionStatusPanel } from "@/features/flows/components/execution-status-panel";
 import {
@@ -63,6 +68,11 @@ const nodeTypes = {
   conditional: ConditionalNode,
   image_output: ImageOutputNode,
   image_gen: ImageGenNode,
+  variable_get: VariableGetNode,
+  variable_set: VariableSetNode,
+  text_transformer: TextTransformerNode,
+  template: TemplateNode,
+  merge: MergeNode,
 };
 
 const normalizeNode = (node: FlowNode) => {
