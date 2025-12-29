@@ -13,20 +13,13 @@ export const ContentLayout = ({
   fullHeight = false,
 }: ContentLayoutProps) => {
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-sidebar relative">
-      {/* Overlay Controls */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-3 pointer-events-none">
-        <div className="pointer-events-auto">
-          <SidebarTrigger />
-        </div>
-        <div className="pointer-events-auto">
-          <ThemeToggle />
-        </div>
-      </div>
-
-      {/* Content */}
+    <div className="flex flex-col h-screen overflow-hidden bg-sidebar">
+      <header className="bg-transparent flex shrink-0 items-center justify-between gap-1 px-1 pt-1">
+        <SidebarTrigger />
+        <ThemeToggle />
+      </header>
       {fullHeight ? (
-        <div className="flex-1 min-h-0 overflow-hidden bg-background my-2 mr-2 rounded-lg">
+        <div className="flex-1 min-h-0 overflow-hidden bg-background mx-2 mb-2 rounded-lg">
           {children}
         </div>
       ) : (
