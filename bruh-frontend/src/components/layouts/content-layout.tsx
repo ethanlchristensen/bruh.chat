@@ -19,7 +19,7 @@ export const ContentLayout = ({
         <ThemeToggle />
       </header>
       {fullHeight ? (
-        <div className="flex-1 min-h-0 overflow-hidden bg-background mx-2 mb-2 rounded-lg">
+        <div className="flex-1 min-h-0 overflow-hidden bg-background mr-2 mb-2 rounded-lg">
           {children}
         </div>
       ) : (
