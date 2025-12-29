@@ -1,3 +1,4 @@
+// src/app/routes/_protected/flows/index.tsx
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -45,6 +46,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
 import type {
   InputNodeData,
   OutputNodeData,
@@ -139,6 +146,14 @@ function FlowsListPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="container mx-auto max-w-6xl py-8 px-4 space-y-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Flows</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -223,14 +238,12 @@ function FlowsListPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {data.items.map((flow) => (
                 <Link
+                  key={flow.id}
                   to="/flows/$flowId"
                   params={{ flowId: flow.id }}
                   className="flex-1 min-w-0"
                 >
-                  <Card
-                    key={flow.id}
-                    className="group hover:border-primary/50 transition-colors"
-                  >
+                  <Card className="group hover:border-primary/50 transition-colors">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="group-hover:text-primary transition-colors line-clamp-1">

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -15,7 +15,7 @@ import {
   type EdgeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Save, Play, ArrowLeft, Trash2, Loader2, History } from "lucide-react";
+import { Save, Play, Trash2, Loader2, History } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 import { NodeTemplateSelector } from "@/features/flows/components/node-selector";
 import { InputNode } from "@/features/flows/components/nodes/input-node";
@@ -495,39 +503,45 @@ function FlowBuilder() {
 
   return (
     <div className="flex flex-col w-full h-full bg-background">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background gap-2">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate({ to: "/flows" })}
-            disabled={isExecuting}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-
-          {isEditingName ? (
-            <input
-              type="text"
-              value={flowName}
-              onChange={(e) => setFlowName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") setIsEditingName(false);
-              }}
-              className="px-2 py-1 border border-input rounded text-lg font-semibold"
-              autoFocus
-              disabled={isExecuting}
-            />
-          ) : (
-            <h1
-              onClick={() => !isExecuting && setIsEditingName(true)}
-              className={`text-lg font-semibold ${!isExecuting ? `cursor-pointer hover:text-primary` : `cursor-not-allowed opacity-50`}`}
-            >
-              {flowName}
-            </h1>
-          )}
-
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/flows">Flows</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    value={flowName}
+                    onChange={(e) => setFlowName(e.target.value)}
+                    onBlur={() => setIsEditingName(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") setIsEditingName(false);
+                      if (e.key === "Escape") {
+                        setFlowName(originalNameRef.current);
+                        setIsEditingName(false);
+                      }
+                    }}
+                    className="px-2 py-0.5 border border-input rounded text-sm font-medium bg-background"
+                    autoFocus
+                    disabled={isExecuting}
+                  />
+                ) : (
+                  <BreadcrumbPage
+                    onClick={() => !isExecuting && setIsEditingName(true)}
+                    className={`${!isExecuting ? "cursor-pointer hover:text-primary" : "cursor-not-allowed opacity-50"}`}
+                  >
+                    {flowName}
+                  </BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           {isExecuting && (
             <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />

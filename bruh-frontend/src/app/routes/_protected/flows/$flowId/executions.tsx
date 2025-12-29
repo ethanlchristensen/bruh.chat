@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  ArrowLeft,
   Play,
   CheckCircle2,
   XCircle,
@@ -28,6 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 export const Route = createFileRoute("/_protected/flows/$flowId/executions")({
   component: FlowExecutionsPage,
@@ -95,44 +102,52 @@ function FlowExecutionsPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="container mx-auto max-w-6xl h-full flex flex-col py-8 px-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                navigate({ to: "/flows/$flowId", params: { flowId } })
-              }
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Executions</h1>
-              <p className="text-muted-foreground">
-                {flow?.name || "Loading..."}
-              </p>
-            </div>
-          </div>
+        <div className="space-y-4 mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/flows">Flows</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/flows/$flowId" params={{ flowId }}>
+                    {flow?.name || "Loading..."}
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Executions</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isLoading ? `animate-spin` : ``}`}
-              />
-            </Button>
-            <Button
-              onClick={() =>
-                navigate({ to: "/flows/$flowId", params: { flowId } })
-              }
-            >
-              <Play className="w-4 h-4 mr-2" />
-              New Run
-            </Button>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight">Executions</h1>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isLoading ? `animate-spin` : ``}`}
+                />
+              </Button>
+              <Button
+                onClick={() =>
+                  navigate({ to: "/flows/$flowId", params: { flowId } })
+                }
+              >
+                <Play className="w-4 h-4 mr-2" />
+                New Run
+              </Button>
+            </div>
           </div>
         </div>
 

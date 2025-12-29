@@ -1,6 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
   Clock,
   CheckCircle2,
   XCircle,
@@ -9,7 +8,7 @@ import {
   RouteOff,
   ChevronsUpDown,
 } from "lucide-react";
-import { useFlowExecution } from "@/features/flows/api/flows";
+import { useFlowExecution, useFlow } from "@/features/flows/api/flows";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -24,6 +23,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute(
@@ -72,8 +79,9 @@ const formatValue = (value: unknown): string => {
 
 function ExecutionDetailPage() {
   const { flowId, executionId } = Route.useParams();
-  const navigate = useNavigate();
+
   const { data: execution, isLoading } = useFlowExecution(executionId, true);
+  const { data: flow } = useFlow({ flowId });
 
   const downloadResults = () => {
     const dataStr = JSON.stringify(execution, null, 2);
@@ -158,37 +166,55 @@ function ExecutionDetailPage() {
   return (
     <div className="flex flex-col h-full overflow-auto">
       <div className="container mx-auto max-w-6xl py-8 px-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                navigate({
-                  to: "/flows/$flowId/executions",
-                  params: { flowId },
-                })
-              }
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+        <div className="space-y-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/flows">Flows</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/flows/$flowId" params={{ flowId }}>
+                    {flow?.name || "Loading..."}
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/flows/$flowId/executions" params={{ flowId }}>
+                    Executions
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{executionId.slice(0, 8)}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 Execution Details
               </h1>
               <p className="text-muted-foreground">
-                {executionId.slice(0, 8)}... • Started{" "}
+                Started{" "}
                 {formatDistanceToNow(new Date(execution.startTime), {
                   addSuffix: true,
                 })}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={downloadResults}>
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={downloadResults}>
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
           </div>
         </div>
 
