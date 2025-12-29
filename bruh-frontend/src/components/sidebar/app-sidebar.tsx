@@ -387,6 +387,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Sidebar>
 
         {/* This is the second sidebar */}
+        {/* This is the second sidebar */}
         <Sidebar
           collapsible="none"
           className="hidden flex-1 md:flex overflow-hidden border-none!"
@@ -420,110 +421,111 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </Link>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarGroup className="p-0">
-              <SidebarGroupContent className="overflow-hidden">
+            <SidebarGroup>
+              <SidebarGroupContent>
                 {isLoading ? (
-                  <div className="p-4 text-sm text-muted-foreground">
+                  <div className="p-4 text-sm text-muted-foreground text-center">
                     Loading conversations...
                   </div>
                 ) : filteredConversations.length === 0 ? (
-                  <div className="p-4 text-sm text-muted-foreground">
+                  <div className="p-4 text-sm text-muted-foreground text-center">
                     {showRecentOnly
-                      ? "No recent conversations in the last 24 hours."
-                      : "No conversations yet. Start a new chat!"}
+                      ? "No recent conversations"
+                      : "No conversations yet"}
                   </div>
                 ) : (
-                  filteredConversations.map((conversation) => {
-                    const isActive = currentConversationId === conversation.id;
-                    const isEditing = editingId === conversation.id;
+                  <SidebarMenu>
+                    {filteredConversations.map((conversation) => {
+                      const isActive =
+                        currentConversationId === conversation.id;
+                      const isEditing = editingId === conversation.id;
 
-                    return (
-                      <div
-                        key={conversation.id}
-                        className={cn(
-                          "group/item relative border-b last:border-b-0",
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        )}
-                      >
-                        {isEditing ? (
-                          <div className="flex items-center p-4 gap-2">
-                            <input
-                              type="text"
-                              value={editTitle}
-                              onChange={(e) => setEditTitle(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  handleSaveEdit(conversation.id);
-                                } else if (e.key === "Escape") {
-                                  handleCancelEdit();
-                                }
-                              }}
-                              className="flex-1 bg-background border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleSaveEdit(conversation.id)}
-                              className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5"
-                              aria-label="Save"
-                            >
-                              <Check className="h-4 w-4 text-green-600" />
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5"
-                              aria-label="Cancel"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <Link
-                              to="/"
-                              search={{ c: conversation.id }}
-                              className="flex items-center p-4 text-sm min-w-0"
-                            >
-                              <div className="flex w-full items-center gap-2 min-w-0">
-                                <span className="font-medium truncate min-w-0">
-                                  {conversation.title}
-                                </span>
-                                <span className="text-xs shrink-0 whitespace-nowrap ml-auto group-hover/item:opacity-0 transition-opacity">
-                                  <TimeAgo isoDate={conversation.updated_at} />
-                                </span>
-                              </div>
-                            </Link>
-
-                            <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden group-hover/item:flex items-center gap-1 pr-2 pl-8 bg-linear-to-r from-transparent via-sidebar-accent/80 to-sidebar-accent">
-                              <button
-                                className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5 relative z-10"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleStartEdit(conversation);
+                      return (
+                        <SidebarMenuItem key={conversation.id}>
+                          {isEditing ? (
+                            <div className="flex items-center px-2 py-1.5 gap-2">
+                              <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleSaveEdit(conversation.id);
+                                  } else if (e.key === "Escape") {
+                                    handleCancelEdit();
+                                  }
                                 }}
-                                aria-label="Rename conversation"
+                                className="flex-1 bg-background border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveEdit(conversation.id)}
+                                className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5"
+                                aria-label="Save"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Check className="h-4 w-4 text-green-600" />
                               </button>
                               <button
-                                className="hover:bg-destructive/10 rounded-sm p-1.5 text-destructive relative z-10"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleDeleteClick(conversation.id);
-                                }}
-                                aria-label="Delete conversation"
+                                onClick={handleCancelEdit}
+                                className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5"
+                                aria-label="Cancel"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <X className="h-4 w-4" />
                               </button>
                             </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })
+                          ) : (
+                            <div className="group/item relative">
+                              <SidebarMenuButton
+                                asChild
+                                isActive={isActive}
+                                className="h-auto py-2 group-hover/item:bg-sidebar-accent group-hover/item:text-sidebar-accent-foreground"
+                              >
+                                <Link
+                                  to="/"
+                                  search={{ c: conversation.id }}
+                                  className="flex flex-col items-start gap-1"
+                                >
+                                  <span className="font-medium truncate w-full">
+                                    {conversation.title}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    <TimeAgo
+                                      isoDate={conversation.updated_at}
+                                    />
+                                  </span>
+                                </Link>
+                              </SidebarMenuButton>
+
+                              <div className="absolute right-0 inset-y-0 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center gap-1 bg-linear-to-l from-sidebar-accent via-sidebar-accent to-transparent pl-16 pr-2 rounded-r-lg pointer-events-none">
+                                <button
+                                  className="hover:bg-sidebar-accent-foreground/10 rounded-sm p-1.5 pointer-events-auto"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleStartEdit(conversation);
+                                  }}
+                                  aria-label="Rename conversation"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  className="hover:bg-destructive/10 rounded-sm p-1.5 text-destructive pointer-events-auto"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteClick(conversation.id);
+                                  }}
+                                  aria-label="Delete conversation"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
                 )}
               </SidebarGroupContent>
             </SidebarGroup>

@@ -7,9 +7,15 @@ import {
   Loader2,
   Download,
   RouteOff,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useFlowExecution } from "@/features/flows/api/flows";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Card,
   CardContent,
@@ -104,6 +110,50 @@ function ExecutionDetailPage() {
   const duration = execution.totalExecutionTime
     ? `${(execution.totalExecutionTime / 1000).toFixed(2)}s`
     : "N/A";
+
+  const isImageOutput = (value: unknown): value is { imageUrl: string } => {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "imageUrl" in value &&
+      typeof (value as { imageUrl: unknown }).imageUrl === "string"
+    );
+  };
+
+  function OutputDisplay({ value }: { value: unknown }) {
+    if (isImageOutput(value)) {
+      return (
+        <div className="space-y-3">
+          <img
+            src={value.imageUrl}
+            alt="Generated output"
+            className="w-full h-auto object-cover rounded-lg border"
+            style={{
+              maxWidth: "600px",
+              maxHeight: "600px",
+            }}
+          />
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <ChevronsUpDown className="h-3 w-3" />
+              View metadata
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <pre className="text-xs font-mono overflow-x-auto max-w-full whitespace-pre-wrap">
+                {JSON.stringify(value, null, 2)}
+              </pre>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      );
+    }
+
+    return (
+      <pre className="text-xs font-mono overflow-x-auto max-w-full whitespace-pre-wrap wrap-break-word">
+        {formatValue(value)}
+      </pre>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-auto">
@@ -211,11 +261,7 @@ function ExecutionDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="bg-muted rounded-lg p-4 overflow-hidden">
-                <pre className="text-sm font-mono overflow-x-auto max-w-full whitespace-pre-wrap wrap-break-word">
-                  {typeof execution.finalOutput === "string"
-                    ? execution.finalOutput
-                    : JSON.stringify(execution.finalOutput, null, 2)}
-                </pre>
+                <OutputDisplay value={execution.finalOutput} />
               </div>
             </CardContent>
           </Card>
@@ -328,9 +374,7 @@ function ExecutionDetailPage() {
                             Output
                           </p>
                           <div className="bg-muted rounded p-3 overflow-hidden">
-                            <pre className="text-xs font-mono overflow-x-auto max-w-full whitespace-pre-wrap wrap-break-word">
-                              {formatValue(result.output) as string}
-                            </pre>
+                            <OutputDisplay value={result.output} />
                           </div>
                         </div>
                       )}

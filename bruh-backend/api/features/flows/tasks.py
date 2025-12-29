@@ -1,5 +1,5 @@
 import logging
-from celery import shared_task
+from config.celery import app
 from asgiref.sync import async_to_sync
 
 from .models import FlowExecution
@@ -8,7 +8,7 @@ from .services.flow_execution_service import FlowExecutionService
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3)
+@app.task(bind=True, max_retries=3)
 def execute_flow_task(self, execution_id: str):
     try:
         logger.info(f"Starting flow execution: {execution_id}")

@@ -11,9 +11,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import logging
 from pathlib import Path
 
 from core.services import config_service
+
+logger = logging.getLogger(__name__)
 
 CONFIG = config_service.get_config()
 
@@ -147,8 +150,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CELERY_BROKER_URL = CONFIG.celery.celery_broker_url
-CELERY_RESULT_BACKEND = CONFIG.celery.celery_result_backend
+if CONFIG and hasattr(CONFIG, "celery"):
+    CELERY_BROKER_URL = CONFIG.celery.celery_broker_url
+    CELERY_RESULT_BACKEND = CONFIG.celery.celery_result_backend
+    logger.info(f"Loaded Celery broker: {CELERY_BROKER_URL}")
+else:
+    CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+    CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+    logger.warning("CONFIG not available, using default Redis broker")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
