@@ -48,7 +48,7 @@ export const UserModelsDropdown = ({
   return (
     <div className="absolute bottom-full mb-2 left-0 w-96 bg-popover border rounded-lg shadow-lg z-50 flex flex-col max-h-96">
       {/* Header with Add Button and Search */}
-      <div className="p-3 border-b space-y-2 bg-popover">
+      <div className="p-3 border-b space-y-2 bg-popover rounded-lg">
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1">
             <h3 className="font-semibold text-sm">Your Models</h3>
