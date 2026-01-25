@@ -143,9 +143,9 @@ function FlowsListPage() {
     duplicateMutation.mutate(flowId);
   };
 
-  return (
+    return (
     <div className="flex flex-col h-full">
-      <div className="container mx-auto max-w-6xl py-8 px-4 space-y-6">
+      <div className="container mx-auto max-w-6xl py-8 px-4 flex flex-col h-full gap-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -233,9 +233,9 @@ function FlowsListPage() {
           </Card>
         )}
 
-        {data && data.items.length > 0 && (
+                {data && data.items.length > 0 && (
           <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 overflow-y-auto flex-1 min-h-0 content-start p-2">
               {data.items.map((flow) => (
                 <Link
                   key={flow.id}
