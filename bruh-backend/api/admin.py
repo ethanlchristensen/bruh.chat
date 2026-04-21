@@ -9,16 +9,16 @@ from .features.conversations.models import (
     MessageAttachment,
     Reasoning,
 )
-from .features.personas.models import Persona
-from .features.users.models import Profile, UserAddedModel
 from .features.flows.models import (
     Flow,
     FlowExecution,
+    FlowGeneratedImage,
     FlowTemplate,
     NodeExecutionLog,
     NodeTemplate,
-    FlowGeneratedImage,
 )
+from .features.personas.models import Persona
+from .features.users.models import Profile, UserAddedModel
 
 # CORE MODELS
 admin.site.register(Conversation)

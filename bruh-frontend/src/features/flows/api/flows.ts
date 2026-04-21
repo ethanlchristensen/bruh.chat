@@ -313,12 +313,8 @@ export const useExecuteFlow = () => {
       flowId: string;
       data: FlowExecutionRequest;
     }) => {
-      try {
-        const result = await executeFlow(params);
-        return result;
-      } catch (error) {
-        throw error;
-      }
+      const result = await executeFlow(params);
+      return result;
     },
     onSuccess: () => {
       toast.success("Flow execution started");

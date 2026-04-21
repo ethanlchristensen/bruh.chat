@@ -4,7 +4,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useConversation } from "../api/conversation";
 import { useCreateStreamingChat } from "../api/chat";
-import { useUserAvailableModels } from "@/components/shared/model-selector/models";
+import {
+  useUserAvailableModels,
+  getModelProvider,
+  useOpenRouterModelsByProvider,
+  useOllamaModels,
+} from "@/components/shared/model-selector/models";
 import { usePersonasQuery } from "@/features/persona/api/persona";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
@@ -32,26 +37,14 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const queryClient = useQueryClient();
   const { data: personas } = usePersonasQuery();
   const { user } = useAuth();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
     null,
   );
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+
   const justCreatedConversationRef = useRef<string | null>(null);
-
-  const [selectedModelId, setSelectedModelId] = useState<string | undefined>(
-    () => {
-      if (!conversationId) {
-        const saved = localStorage.getItem(NEW_CHAT_MODEL_KEY);
-        return saved || user?.profile?.default_model;
-      }
-      return user?.profile?.default_model;
-    },
-  );
-
-  const { data: userModels } = useUserAvailableModels();
-  const selectedModel = userModels?.find((m) => m.id === selectedModelId);
-  const provider = selectedModel?.provider;
-
   const contentBufferRef = useRef<string>("");
   const displayedContentRef = useRef<string>("");
   const animationFrameRef = useRef<number | null>(null);
@@ -66,12 +59,90 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const isReasoningActiveRef = useRef<boolean>(false);
   const newConversationIdRef = useRef<string | undefined>(undefined);
   const userMessageRef = useRef<string>("");
-  const [isScrolledUp, setIsScrolledUp] = useState(false);
   const messageListRef = useRef<{ scrollToBottom: () => void } | null>(null);
+
+  const [selectedModelId, setSelectedModelId] = useState<string | undefined>(
+    () => {
+      const saved = localStorage.getItem(NEW_CHAT_MODEL_KEY);
+      return saved || user?.profile?.default_model;
+    },
+  );
+
+  const { data: userModels } = useUserAvailableModels();
+
+  // Try to find exact match first
+  let selectedModel = userModels?.find((m) => m.id === selectedModelId);
+
+  // If no exact match, try to match the base alias (e.g. openai/gpt-5.2-20251211 -> openai/gpt-5.2)
+  if (!selectedModel && selectedModelId && userModels) {
+    const parts = selectedModelId.split("-");
+    if (parts.length > 1) {
+      // Try incrementally stripping off version tags to find a match
+      for (let i = parts.length - 1; i > 0; i--) {
+        const baseAlias = parts.slice(0, i).join("-");
+        const found = userModels.find((m) => m.id === baseAlias);
+        if (found) {
+          selectedModel = found;
+          break;
+        }
+      }
+    }
+  }
+
+  const provider =
+    selectedModel?.provider ||
+    (selectedModelId ? getModelProvider(selectedModelId) : undefined);
+
+  const isMissingModel = Boolean(
+    selectedModelId && userModels && !selectedModel,
+  );
+
+  const { data: allModelsByProvider } = useOpenRouterModelsByProvider({
+    enabled: isMissingModel && provider === "openrouter",
+  });
+
+  const { data: ollamaModelsByFamily } = useOllamaModels({
+    enabled: isMissingModel && provider === "ollama",
+  });
+
+  if (isMissingModel) {
+    if (provider === "openrouter" && allModelsByProvider) {
+      for (const models of Object.values(allModelsByProvider)) {
+        // Try exact match
+        let found = (models as any[]).find((m) => m.id === selectedModelId);
+
+        // Try alias match
+        if (!found && selectedModelId) {
+          const parts = selectedModelId.split("-");
+          for (let i = parts.length - 1; i > 0; i--) {
+            const baseAlias = parts.slice(0, i).join("-");
+            found = (models as any[]).find((m) => m.id === baseAlias);
+            if (found) break;
+          }
+        }
+
+        if (found) {
+          selectedModel = found;
+          break;
+        }
+      }
+    } else if (provider === "ollama" && ollamaModelsByFamily) {
+      for (const models of Object.values(ollamaModelsByFamily)) {
+        const found = (models as any[]).find(
+          (m) => m.id === selectedModelId || m.model === selectedModelId,
+        );
+        if (found) {
+          selectedModel = found;
+          break;
+        }
+      }
+    }
+  }
 
   const createChatMutation = useCreateStreamingChat();
 
   const shouldFetchConversation = Boolean(
+    // eslint-disable-next-line react-hooks/refs
     conversationId && conversationId !== justCreatedConversationRef.current,
   );
 
@@ -86,24 +157,43 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     messageListRef.current?.scrollToBottom();
   };
 
+  // Keep selectedModelId in sync with user default if it's not set
   useEffect(() => {
-    if (conversationData?.messages) {
-      setMessages(conversationData.messages);
-      const lastAssistantMessage = [...conversationData.messages]
-        .reverse()
-        .find((msg) => msg.role === "assistant");
-      if (lastAssistantMessage?.model_id) {
-        setSelectedModelId(lastAssistantMessage.model_id);
-      } else if (user?.profile?.default_model) {
-        setSelectedModelId(user.profile.default_model);
+    if (!selectedModelId && user?.profile?.default_model) {
+      setSelectedModelId(user.profile.default_model);
+    }
+  }, [user?.profile?.default_model, selectedModelId]);
+
+  // Handle conversation loading and model selection
+  useEffect(() => {
+    if (conversationId) {
+      if (conversationData?.messages) {
+        setMessages(conversationData.messages);
+        const lastAssistantMessage = [...conversationData.messages]
+          .reverse()
+          .find((msg) => msg.role === "assistant");
+
+        if (lastAssistantMessage?.model_id) {
+          setSelectedModelId(lastAssistantMessage.model_id);
+        } else if (user?.profile?.default_model) {
+          setSelectedModelId(user.profile.default_model);
+        }
+      } else if (conversationId !== justCreatedConversationRef.current) {
+        // Reset messages while loading a new conversation (but not if we just created it and have local state)
+        setMessages([]);
       }
-    } else if (!conversationId) {
+    } else {
+      // New chat state
       setMessages([]);
       setIsScrolledUp(false);
       const saved = localStorage.getItem(NEW_CHAT_MODEL_KEY);
       setSelectedModelId(saved || user?.profile?.default_model);
     }
-  }, [conversationId, conversationData, user?.profile?.default_model]);
+  }, [
+    conversationId,
+    conversationData?.messages,
+    user?.profile?.default_model,
+  ]);
 
   useEffect(() => {
     if (

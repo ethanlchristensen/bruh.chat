@@ -3,14 +3,14 @@ from ninja_jwt.controller import NinjaJWTDefaultController
 
 from .features.ai.controller import AIController
 from .features.conversations.controller import ConversationController
-from .features.personas.controller import PersonaController
-from .features.users.controller import AuthController, UserController
 from .features.flows.controller import (
     FlowController,
     FlowExecutionController,
     FlowTemplateController,
     NodeTemplateController,
 )
+from .features.personas.controller import PersonaController
+from .features.users.controller import AuthController, UserController
 
 api = NinjaExtraAPI()
 

@@ -1,6 +1,8 @@
 import json
-import jsonpath_ng.ext as jp
 from typing import Any, Dict
+
+import jsonpath_ng.ext as jp
+
 from .base_executor import NodeExecutor
 
 

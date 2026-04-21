@@ -1,5 +1,5 @@
-import json
 import base64
+import json
 import logging
 from functools import lru_cache
 from typing import Optional
@@ -9,8 +9,9 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.core.files.uploadedfile import UploadedFile
 
-from core.services import get_config
 from api.features.ai.models import AIResponse
+from core.services import get_config
+
 from .base import AIServiceBase
 
 logger = logging.getLogger(__name__)

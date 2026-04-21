@@ -6,7 +6,7 @@ interface TimeAgoProps {
 }
 
 export const TimeAgo = ({ isoDate }: TimeAgoProps) => {
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
     const timer = setInterval(() => {

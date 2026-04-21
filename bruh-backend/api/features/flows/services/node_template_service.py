@@ -1,6 +1,6 @@
-from typing import Dict, Any, Tuple, Optional
-from uuid import uuid4
 from functools import lru_cache
+from typing import Any, Dict, Optional, Tuple
+from uuid import uuid4
 
 from ..models import NodeTemplate
 

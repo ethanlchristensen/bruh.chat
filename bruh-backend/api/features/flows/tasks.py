@@ -1,6 +1,8 @@
 import logging
-from config.celery import app
+
 from asgiref.sync import async_to_sync
+
+from config.celery import app
 
 from .models import FlowExecution
 from .services.flow_execution_service import FlowExecutionService

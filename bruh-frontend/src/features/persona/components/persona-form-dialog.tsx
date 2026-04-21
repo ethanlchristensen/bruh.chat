@@ -54,6 +54,7 @@ export function PersonaFormDialog({
 
   useEffect(() => {
     if (persona) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         name: persona.name,
         description: persona.description || "",
@@ -64,9 +65,12 @@ export function PersonaFormDialog({
         is_public: persona.is_public,
         is_active: persona.is_active,
       });
+       
       setImagePreview(persona.persona_image || null);
+       
       setSelectedFile(null);
     } else {
+       
       setFormData({
         name: "",
         description: "",
@@ -77,10 +81,12 @@ export function PersonaFormDialog({
         is_public: false,
         is_active: true,
       });
+       
       setImagePreview(null);
+       
       setSelectedFile(null);
     }
-  }, [persona, open]);
+  }, [persona]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

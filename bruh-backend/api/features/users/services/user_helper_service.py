@@ -87,11 +87,33 @@ class UserHelperService:
         # Both services now use get_models_by_ids()
         if openrouter_ids:
             openrouter_service = get_ai_service("openrouter")
-            result["openrouter"] = await openrouter_service.get_models_by_ids(openrouter_ids)
+            found_models = await openrouter_service.get_models_by_ids(openrouter_ids)
+            result["openrouter"] = found_models
+
+            # Check for and remove deprecated models
+            found_ids = {m["id"] for m in found_models}
+            deprecated_ids = set(openrouter_ids) - found_ids
+            if deprecated_ids:
+                await sync_to_async(
+                    UserAddedModel.objects.filter(
+                        user=user, provider="openrouter", model_id__in=deprecated_ids
+                    ).delete
+                )()
 
         if ollama_ids:
             ollama_service = get_ai_service("ollama")
-            result["ollama"] = await ollama_service.get_models_by_ids(ollama_ids)
+            found_models = await ollama_service.get_models_by_ids(ollama_ids)
+            result["ollama"] = found_models
+
+            # Check for and remove deprecated models
+            found_ids = {m["id"] for m in found_models}
+            deprecated_ids = set(ollama_ids) - found_ids
+            if deprecated_ids:
+                await sync_to_async(
+                    UserAddedModel.objects.filter(
+                        user=user, provider="ollama", model_id__in=deprecated_ids
+                    ).delete
+                )()
 
         return result
 

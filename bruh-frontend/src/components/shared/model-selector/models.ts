@@ -138,12 +138,19 @@ export const useAddModel = () => {
   });
 };
 
+type RemoveModelParams = {
+  modelId: string;
+  provider: string;
+};
+
 export const useRemoveModel = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (modelId: string) => {
-      await api.delete(`/users/me/models/${modelId}`);
+    mutationFn: async ({ modelId, provider }: RemoveModelParams) => {
+      await api.delete(
+        `/users/me/models?model_id=${encodeURIComponent(modelId)}&provider=${encodeURIComponent(provider)}`,
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-available-models"] });

@@ -1,12 +1,12 @@
-from typing import List, Set, Dict, Any
-from functools import lru_cache
 import logging
+from functools import lru_cache
+from typing import Any, Dict, List, Set
 
 from ..schemas import (
+    FlowEdge,
+    FlowNode,
     FlowValidationResult,
     ValidationError,
-    FlowNode,
-    FlowEdge,
 )
 
 logger = logging.getLogger(__name__)

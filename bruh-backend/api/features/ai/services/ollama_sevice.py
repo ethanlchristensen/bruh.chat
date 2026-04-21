@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import UploadedFile
 
 from core.services import get_config
+
 from .base import AIServiceBase
 
 logger = logging.getLogger(__name__)

@@ -77,7 +77,7 @@ export const MessageInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasRestoredFromStorage = useRef(false);
-  const mountTimeRef = useRef(Date.now());
+  const [mountTime] = useState(() => Date.now());
 
   const supportsFiles = modelSupportsFileUploads(selectedModel);
 
@@ -109,7 +109,7 @@ export const MessageInput = ({
 
   // Reset to chat intent if current intent is no longer supported
   useEffect(() => {
-    const timeSinceMount = Date.now() - mountTimeRef.current;
+    const timeSinceMount = Date.now() - mountTime;
 
     if (timeSinceMount < 2000) {
       return;
@@ -120,11 +120,15 @@ export const MessageInput = ({
         (cmd) => cmd.intent === activeIntent,
       );
       if (!isSupported) {
+         
         setActiveIntent(INTENTS.CHAT);
+         
         setAspectRatio(DEFAULT_ASPECT_RATIO);
+         
         setSelectedPersonaId(undefined);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModel?.id, activeIntent, availableIntents]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

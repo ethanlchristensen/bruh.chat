@@ -9,12 +9,10 @@ from ninja.files import UploadedFile
 from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
 
-from api.features.ai.services.ollama_sevice import get_ollama_service
-from api.features.ai.services.open_router_service import get_open_router_service
 from api.features.ai.services import get_ai_service
 
-from .permissons import IsAdmin
 from .models import Profile
+from .permissons import IsAdmin
 from .schemas import (
     AddModelSchema,
     BulkAddModelsSchema,

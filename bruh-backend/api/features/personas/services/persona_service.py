@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 from functools import lru_cache
 from uuid import UUID

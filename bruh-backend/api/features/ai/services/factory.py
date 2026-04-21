@@ -1,11 +1,12 @@
-from typing import Any, AsyncGenerator, List, Tuple, Optional
+from typing import Tuple
 
 from asgiref.sync import sync_to_async
+
+from api.features.users.models import Profile
 
 from .base import AIServiceBase
 from .ollama_sevice import get_ollama_service
 from .open_router_service import get_open_router_service
-from api.features.users.models import Profile
 
 
 def get_ai_service(provider: str) -> AIServiceBase:

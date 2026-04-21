@@ -10,18 +10,18 @@ from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
 
 from .schemas import (
-    GetOpenRouterModelRequestSchema,
-    OpenRouterModelSchema,
+    GenerateConversationStartersErrorResponse,
     GenerateConversationStartersRequest,
     GenerateConversationStartersResponse,
-    GenerateConversationStartersErrorResponse,
+    GetOpenRouterModelRequestSchema,
+    OpenRouterModelSchema,
 )
 from .services import (
+    get_ai_service,
     get_chat_orchestration_service,
     get_ollama_service,
     get_open_router_service,
     get_user_aux_model,
-    get_ai_service,
 )
 
 logger = logging.getLogger(__name__)
@@ -248,7 +248,7 @@ class AIController:
             starters = payload.get("starters")
 
             if not starters:
-                return 400, {"success": False, "error": f"Starters not present in AI response"}
+                return 400, {"success": False, "error": "Starters not present in AI response"}
 
             return 200, {"success": True, "starters": starters}
 

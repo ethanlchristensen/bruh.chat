@@ -97,6 +97,7 @@ export function ThemeProvider({
         : "light";
 
       root.classList.add(systemTheme);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEffectiveTheme(systemTheme);
       return;
     }

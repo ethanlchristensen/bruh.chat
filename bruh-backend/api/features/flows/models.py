@@ -1,9 +1,9 @@
-from django.db import models
+import base64
+import uuid
+
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
-
-import uuid
-import base64
+from django.db import models
 
 
 class Flow(models.Model):

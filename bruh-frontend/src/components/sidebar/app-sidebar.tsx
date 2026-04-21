@@ -8,6 +8,7 @@ import {
   X,
   Users,
   Network,
+  SquarePen,
 } from "lucide-react";
 import {
   Link,
@@ -249,6 +250,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroup>
               <SidebarGroupContent className="px-1.5 md:px-0">
                 <SidebarMenu>
+                  {!open && !isMobile && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        tooltip={{
+                          children: "New Chat",
+                          hidden: false,
+                        }}
+                        asChild
+                        className="px-2.5 md:px-2"
+                      >
+                        <Link to="/" search={{}}>
+                          <SquarePen />
+                          <span>New Chat</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                   {data.navMain.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
@@ -416,7 +434,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               search={{}}
               className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
             >
-              <MessageCircle className="h-4 w-4" />
+              <SquarePen className="h-4 w-4" />
               New Chat
             </Link>
           </SidebarHeader>
