@@ -29,6 +29,14 @@ class Profile(models.Model):
     default_aux_model = models.TextField(blank=True, null=True)
     default_aux_model_provider = models.TextField(blank=True, null=True)
 
+    # User Approval
+    is_approved = models.BooleanField(default=False)
+
+    # AI Invocation Limits
+    daily_ai_limit = models.IntegerField(default=100)
+    last_ai_invocation_date = models.DateField(null=True, blank=True)
+    daily_ai_invocations_count = models.IntegerField(default=0)
+
     # ai title generation
     auto_generate_titles = models.BooleanField(
         default=False, help_text="Automatically generate conversation titles using AI"

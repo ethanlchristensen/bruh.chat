@@ -13,6 +13,11 @@ class ProfileSchema(Schema):
     default_aux_model_provider: Optional[str] = None
     auto_generate_titles: Optional[bool] = None
     title_generation_frequency: Optional[int] = None
+    
+    # User Approval & Quota
+    is_approved: bool = False
+    daily_ai_limit: int = 100
+    daily_ai_invocations_count: int = 0
 
     @staticmethod
     def resolve_profile_image(obj):
@@ -83,3 +88,8 @@ class UserRegistrationSchema(Schema):
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+
+
+class LoginSchema(Schema):
+    username: str
+    password: str

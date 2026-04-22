@@ -33,8 +33,12 @@ function LoginPage() {
       await login(username, password);
       // Navigate after successful login
       navigate({ to: "/" });
-    } catch (err) {
-      setError("Invalid username or password");
+    } catch (err: any) {
+      if (err.message === "Pending Approval") {
+        setError("Your account is pending administrator approval. Please try again later.");
+      } else {
+        setError("Invalid username or password");
+      }
     } finally {
       setIsLoading(false);
     }

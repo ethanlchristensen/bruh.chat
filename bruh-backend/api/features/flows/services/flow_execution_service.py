@@ -23,6 +23,12 @@ class FlowExecutionService:
         variables: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Optional[FlowExecution], Optional[str]]:
         try:
+            from api.features.users.services.quota_service import QuotaService, QuotaExceededException
+            try:
+                await sync_to_async(QuotaService.check_and_increment_quota)(user)
+            except QuotaExceededException as e:
+                return None, str(e)
+
             execution = await sync_to_async(FlowExecution.objects.create)(
                 flow=flow,
                 user=user,

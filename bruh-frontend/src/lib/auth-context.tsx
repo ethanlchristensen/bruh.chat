@@ -117,29 +117,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     console.log("[AuthProvider] Logging in user:", username);
-    const data = await api.post<{
-      username: string;
-      access: string;
-      refresh: string;
-    }>("/token/pair", { username, password });
+    try {
+      const data = await api.post<{
+        username: string;
+        access: string;
+        refresh: string;
+      }>("/auth/login", { username, password });
 
-    const expiresAt = getTokenExpiry(data.access);
+      const expiresAt = getTokenExpiry(data.access);
 
-    const authTokens: AuthTokens = {
-      access: data.access,
-      refresh: data.refresh,
-      expires_at: expiresAt,
-    };
+      const authTokens: AuthTokens = {
+        access: data.access,
+        refresh: data.refresh,
+        expires_at: expiresAt,
+      };
 
-    setTokens(authTokens);
-    localStorage.setItem("auth_tokens", JSON.stringify(authTokens));
-    console.log(
-      "[AuthProvider] Login successful! Token expires:",
-      new Date(expiresAt).toLocaleString(),
-    );
+      setTokens(authTokens);
+      localStorage.setItem("auth_tokens", JSON.stringify(authTokens));
+      console.log(
+        "[AuthProvider] Login successful! Token expires:",
+        new Date(expiresAt).toLocaleString(),
+      );
 
-    // Invalidate and refetch user data
-    await queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+      // Invalidate and refetch user data
+      await queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+    } catch (error: any) {
+      console.error("[AuthProvider] Login failed:", error);
+      if (error.response?.status === 403) {
+        throw new Error("Pending Approval");
+      }
+      const errorMessage = error.response?.data?.detail || error.message;
+      throw new Error(errorMessage);
+    }
   };
 
   const register = async (data: RegisterData) => {

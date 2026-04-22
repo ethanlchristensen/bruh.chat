@@ -22,6 +22,7 @@ from .schemas import (
     UserRegistrationSchema,
     UserSchema,
     UserUpdateSchema,
+    LoginSchema,
 )
 from .services.user_helper_service import UserHelperService
 
@@ -101,6 +102,25 @@ class UserController:
     def list_users(self, request):
         return User.objects.all()
 
+    @route.get("/unapproved", response=List[UserSchema], permissions=[IsAdmin])
+    def list_unapproved_users(self, request):
+        return User.objects.filter(profile__is_approved=False, is_superuser=False)
+
+    @route.post("/{user_id}/approve", response=UserSchema, permissions=[IsAdmin])
+    def approve_user(self, request, user_id: int):
+        user = User.objects.get(id=user_id)
+        user.profile.is_approved = True
+        user.profile.save()
+        return user
+
+    @route.delete("/{user_id}/reject", response={200: dict}, permissions=[IsAdmin])
+    def reject_user(self, request, user_id: int):
+        user = User.objects.get(id=user_id)
+        if user.is_superuser:
+            return 400, {"detail": "Cannot reject a superuser"}
+        user.delete()
+        return 200, {"message": "User rejected and deleted successfully"}
+
     @route.get("/{user_id}", response=UserSchema, permissions=[IsAdmin])
     def get_user(self, request, user_id: int):
         return User.objects.get(id=user_id)
@@ -144,6 +164,9 @@ class UserController:
         return 200, {"message": "Model removed successfully"}
 
 
+from django.contrib.auth import authenticate
+from ninja_jwt.tokens import RefreshToken
+
 @api_controller("/auth", tags=["Auth"])
 class AuthController:
     @route.post("/register", response={201: UserSchema, 400: dict})
@@ -164,3 +187,22 @@ class AuthController:
         )
 
         return 201, user
+
+    @route.post("/login", response={200: dict, 400: dict, 403: dict})
+    def login(self, request, data: LoginSchema):
+        user = authenticate(username=data.username, password=data.password)
+        if not user:
+            return 400, {"detail": "Invalid credentials"}
+            
+        if not user.is_superuser:
+            profile = getattr(user, 'profile', None)
+            if not profile or not profile.is_approved:
+                return 403, {"detail": "Pending Approval"}
+            
+        refresh = RefreshToken.for_user(user)
+        return 200, {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "username": user.username
+        }
+

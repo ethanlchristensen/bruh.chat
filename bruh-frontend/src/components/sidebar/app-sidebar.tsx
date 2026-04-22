@@ -9,6 +9,7 @@ import {
   Users,
   Network,
   SquarePen,
+  Shield,
 } from "lucide-react";
 import {
   Link,
@@ -285,6 +286,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  {user?.is_superuser && (
+                    <SidebarMenuItem key="Admin">
+                      <SidebarMenuButton
+                        tooltip={{ children: "Admin", hidden: false }}
+                        asChild
+                        isActive={location.pathname === "/admin"}
+                        className="px-2.5 md:px-2"
+                      >
+                        <Link to="/admin" search={{}}>
+                          <Shield />
+                          <span>Admin</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
               {isMobile ? (

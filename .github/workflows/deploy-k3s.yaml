@@ -1,0 +1,109 @@
+name: Deploy Pironman 5 Max K3S
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: chat-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ${{ github.repository }}-backend
+  IMAGE_FRONTEND: ${{ github.repository }}-frontend
+
+jobs:
+  build-and-push:
+    runs-on: [self-hosted, linux, arm64, RPI5]
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 1. Build Backend
+      - name: Build and push (Backend)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./bruh-backend
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+
+      # 2. Build Frontend
+      - name: Build and push (Frontend)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./bruh-frontend
+          build-args: |
+            VITE_APP_BACKEND_API_URL=
+            VITE_APP_BACKEND_API_VERSION=api
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    steps:
+      - name: Checkout Helm Charts (kubeinfra)
+        uses: actions/checkout@v4
+        with:
+          repository: ethanlchristensen/bruh.kubeinfra
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy Redis
+        run: |
+          helm upgrade --install chat-redis app-chart \
+          -f app-values/values-chat-redis.yaml \
+          -n chat \
+          --create-namespace
+
+      - name: Deploy Backend
+        run: |
+          helm upgrade --install chat-backend app-chart \
+          -f app-values/values-chat-backend.yaml \
+          --set image=${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:${{ github.sha }} \
+          -n chat \
+          --create-namespace
+          
+      - name: Deploy Celery
+        run: |
+          helm upgrade --install chat-celery app-chart \
+          -f app-values/values-chat-celery.yaml \
+          --set image=${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:${{ github.sha }} \
+          -n chat \
+          --create-namespace
+
+      - name: Deploy Frontend
+        run: |
+          helm upgrade --install chat-frontend app-chart \
+          -f app-values/values-chat-frontend.yaml \
+          --set image=${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:${{ github.sha }} \
+          -n chat \
+          --create-namespace
