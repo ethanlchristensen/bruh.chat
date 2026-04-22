@@ -95,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const currentConversationId = (search as any)?.c;
 
   const { data: conversationsData, isLoading } = useConversations();
-  const conversations = conversationsData?.conversations || [];
+
 
   const updateTitleMutation = useUpdateConversationTitle();
   const deleteMutation = useDeleteConversation();
