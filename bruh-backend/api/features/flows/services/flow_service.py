@@ -25,8 +25,10 @@ class FlowService:
         page_size: int = 20,
         search: Optional[str] = None,
     ) -> PaginatedFlowList:
-        queryset = Flow.objects.filter(user=user)
+        base_queryset = Flow.objects.filter(user=user)
+        total_flows = await sync_to_async(base_queryset.count)()
 
+        queryset = base_queryset
         if search:
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
 
@@ -53,9 +55,13 @@ class FlowService:
             for flow in flows
         ]
 
+        profile = await sync_to_async(lambda: user.profile)()
+
         return PaginatedFlowList(
             items=items,
             total=total,
+            totalFlows=total_flows,
+            flowLimit=profile.max_flows,
             page=page,
             pageSize=page_size,
             hasNext=has_next,

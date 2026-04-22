@@ -19,6 +19,12 @@ import {
 } from "@/types/image.types";
 import { type IntentCommand, getAvailableIntents } from "@/types/intent.types";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type MessageInputProps = {
   onSend: (
@@ -50,6 +56,16 @@ export const MessageInput = ({
   conversationId,
   provider,
 }: MessageInputProps) => {
+  const { user } = useAuth();
+
+  const dailyLimit = user?.profile.daily_ai_limit ?? 100;
+  const totalCount = user?.profile.daily_ai_invocations_count ?? 0;
+  const flowCount = user?.profile.daily_flow_invocations_count ?? 0;
+  const chatCount = totalCount - flowCount;
+  const isUnlimited = user?.is_superuser || dailyLimit === 0;
+  const remaining = isUnlimited ? null : Math.max(0, dailyLimit - totalCount);
+  const isLimitReached = !isUnlimited && remaining !== null && remaining <= 0;
+
   const [activeIntent, setActiveIntent] = useState<Intent>(() => {
     const saved = localStorage.getItem(TEMP_INTENT_KEY);
     if (saved && isValidIntent(saved)) {
@@ -120,15 +136,14 @@ export const MessageInput = ({
         (cmd) => cmd.intent === activeIntent,
       );
       if (!isSupported) {
-         
         setActiveIntent(INTENTS.CHAT);
-         
+
         setAspectRatio(DEFAULT_ASPECT_RATIO);
-         
+
         setSelectedPersonaId(undefined);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModel?.id, activeIntent, availableIntents]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -340,8 +355,12 @@ export const MessageInput = ({
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={getPlaceholder()}
-              disabled={disabled || !selectedModelId}
+              placeholder={
+                isLimitReached
+                  ? "Daily limit reached. Try again tomorrow."
+                  : getPlaceholder()
+              }
+              disabled={disabled || !selectedModelId || isLimitReached}
               rows={1}
               className="flex-1 bg-transparent text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-none py-2 px-2 max-h-[200px]"
             />
@@ -350,6 +369,7 @@ export const MessageInput = ({
               type="submit"
               disabled={
                 disabled ||
+                isLimitReached ||
                 (!input.trim() && selectedFiles.length === 0) ||
                 !selectedModelId ||
                 (activeIntent === INTENTS.PERSONA && !selectedPersonaId)
@@ -401,6 +421,42 @@ export const MessageInput = ({
               />
             </div>
           )}
+
+          <div className="ml-auto">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                    isLimitReached
+                      ? "bg-destructive/10 text-destructive border border-destructive/20"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {isUnlimited ? (
+                    <span className="text-sm leading-none">∞</span>
+                  ) : (
+                    <span>{remaining} left</span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {isUnlimited ? (
+                  "Unlimited access"
+                ) : isLimitReached ? (
+                  "Daily limit reached. Try again tomorrow."
+                ) : (
+                  <div className="space-y-1">
+                    <div>
+                      {remaining} of {dailyLimit} remaining today
+                    </div>
+                    <div className="text-xs opacity-75">
+                      {chatCount} chat · {flowCount} flow
+                    </div>
+                  </div>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </div>

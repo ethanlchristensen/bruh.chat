@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
 
+from api.features.users.services.quota_service import QuotaExceededException, QuotaService
+
 from .models import Flow, FlowExecution, FlowTemplate, NodeTemplate
 from .schemas import (
     FlowCreate,
@@ -47,6 +49,12 @@ class FlowController:
 
     @route.post("/", response={201: FlowResponse, 400: dict})
     async def create_flow(self, request, data: FlowCreate):
+        flow_count = await sync_to_async(Flow.objects.filter(user=request.user).count)()
+        try:
+            await sync_to_async(QuotaService.check_flow_quota)(request.user, flow_count)
+        except QuotaExceededException as e:
+            return 400, {"detail": str(e)}
+
         validation = await FlowValidationService.validate_flow(nodes=data.nodes, edges=data.edges)
 
         if not validation.valid:
@@ -91,11 +99,17 @@ class FlowController:
         await sync_to_async(flow.delete)()
         return 200, {"message": "Flow deleted successfully"}
 
-    @route.post("/{flow_id}/duplicate", response={201: FlowResponse, 404: dict})
+    @route.post("/{flow_id}/duplicate", response={201: FlowResponse, 400: dict, 404: dict})
     async def duplicate_flow(self, request, flow_id: UUID):
         source_flow = await sync_to_async(
             lambda: get_object_or_404(Flow, id=flow_id, user=request.user)
         )()
+
+        flow_count = await sync_to_async(Flow.objects.filter(user=request.user).count)()
+        try:
+            await sync_to_async(QuotaService.check_flow_quota)(request.user, flow_count)
+        except QuotaExceededException as e:
+            return 400, {"detail": str(e)}
 
         duplicated_flow = await FlowService.duplicate_flow(
             source_flow=source_flow, user=request.user

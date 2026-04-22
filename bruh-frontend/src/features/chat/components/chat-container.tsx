@@ -36,7 +36,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: personas } = usePersonasQuery();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
@@ -497,6 +497,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
           isDoneStreamingRef.current = true;
           isReasoningActiveRef.current = false;
           doneDataRef.current = data;
+          refreshUser();
         },
         onError: (data: any) => {
           console.error("Streaming error:", data.error);

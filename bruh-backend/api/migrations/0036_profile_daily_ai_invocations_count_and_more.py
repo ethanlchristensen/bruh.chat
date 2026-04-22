@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0035_airesponse_is_structured_output_and_more'),
+        ("api", "0035_airesponse_is_structured_output_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='profile',
-            name='daily_ai_invocations_count',
+            model_name="profile",
+            name="daily_ai_invocations_count",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='profile',
-            name='daily_ai_limit',
-            field=models.IntegerField(default=100),
+            model_name="profile",
+            name="daily_ai_limit",
+            field=models.IntegerField(default=50),
         ),
         migrations.AddField(
-            model_name='profile',
-            name='is_approved',
+            model_name="profile",
+            name="is_approved",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='profile',
-            name='last_ai_invocation_date',
+            model_name="profile",
+            name="last_ai_invocation_date",
             field=models.DateField(blank=True, null=True),
         ),
     ]

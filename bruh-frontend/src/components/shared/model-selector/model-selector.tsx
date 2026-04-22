@@ -90,8 +90,12 @@ export const ModelSelector = ({
         (provider === "ollama" || provider === "both"),
     });
 
-  const ollamaModelsByFamily = structuredOutputOnly ? ollamaStructuredModels : ollamaRegularModels;
-  const isLoadingOllamaModels = structuredOutputOnly ? isLoadingOllamaStructured : isLoadingOllamaRegular;
+  const ollamaModelsByFamily = structuredOutputOnly
+    ? ollamaStructuredModels
+    : ollamaRegularModels;
+  const isLoadingOllamaModels = structuredOutputOnly
+    ? isLoadingOllamaStructured
+    : isLoadingOllamaRegular;
 
   const { filteredModels } = useCombinedModels({
     allModelsByProvider,

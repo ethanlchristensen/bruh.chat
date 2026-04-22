@@ -101,10 +101,9 @@ export const MessageList = forwardRef<
     lastScrollHeight.current = currentScrollHeight;
 
     if (contentGrew && autoScroll) {
-       
       scrollToBottom("auto");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, autoScroll]);
 
   // Detect conversation switches
@@ -121,7 +120,6 @@ export const MessageList = forwardRef<
       Math.abs(currentLength - prevLength) > 1 || currentLength === 0;
 
     if (conversationSwitched || significantChange) {
-       
       setAutoScroll(true);
       onScrollStateChange?.(false);
       lastScrollHeight.current = 0;
@@ -133,7 +131,7 @@ export const MessageList = forwardRef<
 
     prevMessagesLengthRef.current = currentLength;
     prevFirstMessageIdRef.current = currentFirstId;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   // Initial scroll when messages first load
@@ -143,7 +141,7 @@ export const MessageList = forwardRef<
         scrollToBottom("auto");
       }, 50);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 
   return (

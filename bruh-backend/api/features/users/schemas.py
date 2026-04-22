@@ -13,11 +13,13 @@ class ProfileSchema(Schema):
     default_aux_model_provider: Optional[str] = None
     auto_generate_titles: Optional[bool] = None
     title_generation_frequency: Optional[int] = None
-    
+
     # User Approval & Quota
     is_approved: bool = False
     daily_ai_limit: int = 100
     daily_ai_invocations_count: int = 0
+    daily_flow_invocations_count: int = 0
+    max_flows: int = 0
 
     @staticmethod
     def resolve_profile_image(obj):

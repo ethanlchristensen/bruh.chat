@@ -35,7 +35,11 @@ class Profile(models.Model):
     # AI Invocation Limits
     daily_ai_limit = models.IntegerField(default=100)
     last_ai_invocation_date = models.DateField(null=True, blank=True)
-    daily_ai_invocations_count = models.IntegerField(default=0)
+    daily_ai_invocations_count = models.IntegerField(default=0)  # total (chat + flow)
+    daily_flow_invocations_count = models.IntegerField(default=0)  # flow-only subset
+
+    # Flow Limits (0 = unlimited)
+    max_flows = models.IntegerField(default=0)
 
     # ai title generation
     auto_generate_titles = models.BooleanField(

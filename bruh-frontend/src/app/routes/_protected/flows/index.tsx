@@ -11,6 +11,12 @@ import {
   Workflow,
   Loader2,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   useFlows,
   useCreateFlow,
@@ -64,6 +70,7 @@ export const Route = createFileRoute("/_protected/flows/")({
 
 function FlowsListPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -77,6 +84,15 @@ function FlowsListPage() {
     pageSize: 20,
     search: searchQuery || undefined,
   });
+
+  const flowLimit = data?.flowLimit ?? user?.profile.max_flows ?? 0;
+  const totalFlows = data?.totalFlows ?? 0;
+  const isFlowUnlimited = user?.is_superuser || flowLimit === 0;
+  const flowsRemaining = isFlowUnlimited
+    ? null
+    : Math.max(0, flowLimit - totalFlows);
+  const isFlowLimitReached =
+    !isFlowUnlimited && flowsRemaining !== null && flowsRemaining <= 0;
 
   const createMutation = useCreateFlow();
   const deleteMutation = useDeleteFlow();
@@ -166,17 +182,50 @@ function FlowsListPage() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={handleCreateFlow}
-            disabled={createMutation.isPending}
-          >
-            {createMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
-            New Flow
-          </Button>
+          <div className="flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                    isFlowLimitReached
+                      ? "bg-destructive/10 text-destructive border-destructive/20"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}
+                >
+                  {isFlowUnlimited ? (
+                    <>
+                      <span className="text-base leading-none">∞</span>
+                      <span>flows</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        {totalFlows}/{flowLimit} flows
+                      </span>
+                    </>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {isFlowUnlimited
+                  ? "Unlimited flows"
+                  : isFlowLimitReached
+                    ? `Flow limit reached (${flowLimit}/${flowLimit}). Delete a flow to create a new one.`
+                    : `${flowsRemaining} of ${flowLimit} flows remaining`}
+              </TooltipContent>
+            </Tooltip>
+            <Button
+              onClick={handleCreateFlow}
+              disabled={createMutation.isPending || isFlowLimitReached}
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              New Flow
+            </Button>
+          </div>
         </div>
 
         <div className="relative">
@@ -225,7 +274,7 @@ function FlowsListPage() {
               <CardDescription className="mb-4">
                 Create your first flow to get started
               </CardDescription>
-              <Button onClick={handleCreateFlow}>
+              <Button onClick={handleCreateFlow} disabled={isFlowLimitReached}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create Flow
               </Button>

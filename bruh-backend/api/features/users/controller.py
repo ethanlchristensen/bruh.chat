@@ -2,12 +2,14 @@
 from typing import List, Optional
 
 from asgiref.sync import sync_to_async
+from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from ninja import File
 from ninja.files import UploadedFile
 from ninja_extra import api_controller, route
 from ninja_jwt.authentication import JWTAuth
+from ninja_jwt.tokens import RefreshToken
 
 from api.features.ai.services import get_ai_service
 
@@ -17,12 +19,12 @@ from .schemas import (
     AddModelSchema,
     BulkAddModelsSchema,
     BulkOperationResponseSchema,
+    LoginSchema,
     ProfileUpdateSchema,
     UserAddedModelSchema,
     UserRegistrationSchema,
     UserSchema,
     UserUpdateSchema,
-    LoginSchema,
 )
 from .services.user_helper_service import UserHelperService
 
@@ -164,9 +166,6 @@ class UserController:
         return 200, {"message": "Model removed successfully"}
 
 
-from django.contrib.auth import authenticate
-from ninja_jwt.tokens import RefreshToken
-
 @api_controller("/auth", tags=["Auth"])
 class AuthController:
     @route.post("/register", response={201: UserSchema, 400: dict})
@@ -193,16 +192,15 @@ class AuthController:
         user = authenticate(username=data.username, password=data.password)
         if not user:
             return 400, {"detail": "Invalid credentials"}
-            
+
         if not user.is_superuser:
-            profile = getattr(user, 'profile', None)
+            profile = getattr(user, "profile", None)
             if not profile or not profile.is_approved:
                 return 403, {"detail": "Pending Approval"}
-            
+
         refresh = RefreshToken.for_user(user)
         return 200, {
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "username": user.username
+            "username": user.username,
         }
-

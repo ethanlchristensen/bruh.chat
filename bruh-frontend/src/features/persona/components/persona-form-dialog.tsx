@@ -65,12 +65,11 @@ export function PersonaFormDialog({
         is_public: persona.is_public,
         is_active: persona.is_active,
       });
-       
+
       setImagePreview(persona.persona_image || null);
-       
+
       setSelectedFile(null);
     } else {
-       
       setFormData({
         name: "",
         description: "",
@@ -81,9 +80,9 @@ export function PersonaFormDialog({
         is_public: false,
         is_active: true,
       });
-       
+
       setImagePreview(null);
-       
+
       setSelectedFile(null);
     }
   }, [persona]);

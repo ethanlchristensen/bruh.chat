@@ -35,6 +35,8 @@ export interface FlowListItem {
 export interface PaginatedFlowList {
   items: FlowListItem[];
   total: number;
+  totalFlows: number;
+  flowLimit: number;
   page: number;
   pageSize: number;
   hasNext: boolean;
@@ -167,8 +169,9 @@ export const useCreateFlow = () => {
       queryClient.invalidateQueries({ queryKey: ["flows"] });
       toast.success("Flow created successfully");
     },
-    onError: () => {
-      toast.error("Failed to create flow");
+    onError: (error: any) => {
+      const message = error?.data?.detail || "Failed to create flow";
+      toast.error(message);
     },
   });
 };
@@ -242,6 +245,7 @@ export const useDeleteFlow = () => {
             ...old,
             items: old.items.filter((flow) => flow.id !== flowId),
             total: old.total - 1,
+            totalFlows: Math.max(0, (old.totalFlows ?? 1) - 1),
           };
         },
       );
@@ -272,8 +276,9 @@ export const useDuplicateFlow = () => {
       queryClient.invalidateQueries({ queryKey: ["flows"] });
       toast.success("Flow duplicated successfully");
     },
-    onError: () => {
-      toast.error("Failed to duplicate flow");
+    onError: (error: any) => {
+      const message = error?.data?.detail || "Failed to duplicate flow";
+      toast.error(message);
     },
   });
 };

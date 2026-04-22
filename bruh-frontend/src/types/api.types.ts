@@ -25,6 +25,11 @@ export interface UserProfile {
   default_aux_model_provider: string;
   auto_generate_titles: boolean;
   title_generation_frequency: number;
+  is_approved: boolean;
+  daily_ai_limit: number;
+  daily_ai_invocations_count: number;
+  daily_flow_invocations_count: number;
+  max_flows: number;
 }
 
 export interface User {

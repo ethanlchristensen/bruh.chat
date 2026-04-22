@@ -181,17 +181,16 @@ function FlowBuilder() {
 
   useEffect(() => {
     if (flow) {
-       
       setNodes(flow.nodes);
-       
+
       setEdges(flow.edges);
-       
+
       setFlowName(flow.name);
       originalNodesRef.current = normalizeNodes(flow.nodes) as FlowNode[];
       originalEdgesRef.current = normalizeEdges(flow.edges) as Edge[];
       originalNameRef.current = flow.name;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow?.id]);
 
   useEffect(() => {
@@ -214,7 +213,6 @@ function FlowBuilder() {
       const nameChanged = flowName !== originalNameRef.current;
       const hasChanges = nodesChanged || edgesChanged || nameChanged;
 
-       
       setHasUnsavedChanges(hasChanges);
     }
   }, [nodes, edges, flowName, showExecutionPanel]);
@@ -222,7 +220,6 @@ function FlowBuilder() {
   useEffect(() => {
     if (!execution || !execution.nodeResults) return;
 
-     
     setNodes((currentNodes) =>
       currentNodes.map((node) => {
         const result = execution.nodeResults.find((r) => r.nodeId === node.id);

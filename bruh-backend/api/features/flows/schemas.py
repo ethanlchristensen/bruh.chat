@@ -577,6 +577,8 @@ class FlowListItem(BaseModel):
 class PaginatedFlowList(BaseModel):
     items: List[FlowListItem]
     total: int
+    totalFlows: int
+    flowLimit: int
     page: int
     pageSize: int
     hasNext: bool

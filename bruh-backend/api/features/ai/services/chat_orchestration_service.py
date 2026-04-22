@@ -116,7 +116,11 @@ class ChatOrchestrationService:
         Unified streaming that routes to chat or image generation based on intent and provider.
         """
         try:
-            from api.features.users.services.quota_service import QuotaService, QuotaExceededException
+            from api.features.users.services.quota_service import (
+                QuotaExceededException,
+                QuotaService,
+            )
+
             try:
                 await sync_to_async(QuotaService.check_and_increment_quota)(user)
             except QuotaExceededException as e:

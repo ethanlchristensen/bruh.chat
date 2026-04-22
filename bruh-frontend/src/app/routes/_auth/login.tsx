@@ -35,7 +35,9 @@ function LoginPage() {
       navigate({ to: "/" });
     } catch (err: any) {
       if (err.message === "Pending Approval") {
-        setError("Your account is pending administrator approval. Please try again later.");
+        setError(
+          "Your account is pending administrator approval. Please try again later.",
+        );
       } else {
         setError("Invalid username or password");
       }

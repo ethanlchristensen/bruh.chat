@@ -3,7 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Loader2, CheckCircle, Clock } from "lucide-react";
 import type { User } from "@/types/api.types";
 
@@ -20,7 +26,9 @@ function AdminPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
         <h1 className="text-3xl font-bold text-destructive">Access Denied</h1>
-        <p className="text-muted-foreground">You do not have permission to view this page.</p>
+        <p className="text-muted-foreground">
+          You do not have permission to view this page.
+        </p>
       </div>
     );
   }
@@ -37,7 +45,9 @@ function AdminPage() {
       return await api.post(`/users/${userId}/approve`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "unapproved-users"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "unapproved-users"],
+      });
     },
   });
 
@@ -46,15 +56,21 @@ function AdminPage() {
       return await api.delete(`/users/${userId}/reject`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "unapproved-users"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "unapproved-users"],
+      });
     },
   });
 
   return (
     <div className="container mx-auto py-8 max-w-5xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage system configurations and user approvals.</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">
+          Admin Dashboard
+        </h1>
+        <p className="text-muted-foreground">
+          Manage system configurations and user approvals.
+        </p>
       </div>
 
       <div className="grid gap-6">
@@ -76,37 +92,57 @@ function AdminPage() {
             ) : !unapprovedUsers || unapprovedUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center border rounded-lg border-dashed bg-muted/50">
                 <CheckCircle className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
-                <p className="text-muted-foreground font-medium">No pending approvals</p>
-                <p className="text-sm text-muted-foreground opacity-75">All users have been approved.</p>
+                <p className="text-muted-foreground font-medium">
+                  No pending approvals
+                </p>
+                <p className="text-sm text-muted-foreground opacity-75">
+                  All users have been approved.
+                </p>
               </div>
             ) : (
               <div className="divide-y border rounded-md">
                 {unapprovedUsers.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between p-4 bg-card hover:bg-muted/50 transition-colors">
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between p-4 bg-card hover:bg-muted/50 transition-colors"
+                  >
                     <div>
                       <p className="font-semibold">{u.username}</p>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-xs text-muted-foreground text-right hidden sm:block">
-                        Joined<br />
+                        Joined
+                        <br />
                         {new Date(u.date_joined).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button 
+                        <Button
                           onClick={() => approveMutation.mutate(u.id)}
-                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                          disabled={
+                            approveMutation.isPending ||
+                            rejectMutation.isPending
+                          }
                           size="sm"
                         >
-                          {approveMutation.isPending ? "Approving..." : "Approve"}
+                          {approveMutation.isPending
+                            ? "Approving..."
+                            : "Approve"}
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => {
-                            if (confirm(`Are you sure you want to reject and delete user ${u.username}?`)) {
+                            if (
+                              confirm(
+                                `Are you sure you want to reject and delete user ${u.username}?`,
+                              )
+                            ) {
                               rejectMutation.mutate(u.id);
                             }
                           }}
-                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                          disabled={
+                            approveMutation.isPending ||
+                            rejectMutation.isPending
+                          }
                           variant="destructive"
                           size="sm"
                         >
