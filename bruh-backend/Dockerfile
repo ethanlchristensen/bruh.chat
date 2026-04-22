@@ -30,6 +30,9 @@ ENV DJANGO_SETTINGS_MODULE=config.settings \
     SECRET_KEY=temp-secret-key-for-build
 
 RUN mkdir -p /app/static && \
+    if [ ! -f /app/config.json ]; then \
+        echo '{"open_router": {"open_router_api_key": "sk-or-dummy", "open_router_default_model": "dummy"}, "ollama": {"ollama_host": "http://localhost:11434"}, "allowed_hosts": ["localhost"], "media_root": "./media", "celery": {"celery_broker_url": "redis://localhost:6379/0", "celery_result_backend": "redis://localhost:6379/0"}}' > /app/config.json; \
+    fi && \
     python manage.py collectstatic --noinput
 
 # Flexible entrypoint that accepts commands
