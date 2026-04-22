@@ -19,7 +19,7 @@ class OpenRouterConfig(BaseModel):
 
 class OllamaConfig(BaseModel):
     ollama_host: str = Field(..., min_length=1)
-    ollama_default_model: Optional[str]
+    ollama_default_model: Optional[str] = None
 
 
 class CeleryConfig(BaseModel):
