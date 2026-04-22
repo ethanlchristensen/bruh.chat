@@ -11,6 +11,9 @@ type ModelProviderSectionProps = {
   selectedModelId?: string;
   onModelSelect: (modelId: string, provider: string) => void;
   disabled?: boolean;
+  pinnedIds?: Set<string>;
+  onPinToggle?: (modelId: string, provider: string, isPinned: boolean) => void;
+  pinPendingId?: string | null;
 };
 
 export const ModelProviderSection = ({
@@ -21,6 +24,9 @@ export const ModelProviderSection = ({
   selectedModelId,
   onModelSelect,
   disabled = false,
+  pinnedIds,
+  onPinToggle,
+  pinPendingId,
 }: ModelProviderSectionProps) => {
   return (
     <div className="mb-1">
@@ -45,15 +51,28 @@ export const ModelProviderSection = ({
 
       {isExpanded && (
         <div className="ml-6 mt-1 space-y-0.5">
-          {models.map((model) => (
-            <ModelListItem
-              key={model.id}
-              model={model}
-              isSelected={selectedModelId === model.id}
-              onClick={() => onModelSelect(model.id, model.provider)}
-              disabled={disabled}
-            />
-          ))}
+          {models.map((model) => {
+            const isPinned = pinnedIds?.has(model.id);
+            return (
+              <ModelListItem
+                key={model.id}
+                model={model}
+                isSelected={selectedModelId === model.id}
+                onClick={() => onModelSelect(model.id, model.provider)}
+                disabled={disabled}
+                isPinned={onPinToggle !== undefined ? isPinned : undefined}
+                onPinToggle={
+                  onPinToggle
+                    ? (e) => {
+                        e.stopPropagation();
+                        onPinToggle(model.id, model.provider, !!isPinned);
+                      }
+                    : undefined
+                }
+                pinLoading={pinPendingId === model.id}
+              />
+            );
+          })}
         </div>
       )}
     </div>

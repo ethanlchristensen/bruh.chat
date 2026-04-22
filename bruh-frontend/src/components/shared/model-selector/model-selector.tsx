@@ -119,7 +119,7 @@ export const ModelSelector = ({
     if (state.searchQuery.trim() && filteredModels) {
       state.setExpandedProviders(new Set(Object.keys(filteredModels)));
     }
-  }, [state.searchQuery, filteredModels]);
+  }, [state, filteredModels]);
 
   const getLabel = () => {
     if (selectedModel) return selectedModel.name;

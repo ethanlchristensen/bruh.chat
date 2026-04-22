@@ -137,7 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [showRecentOnly]);
 
   const filteredConversations = React.useMemo(() => {
-    let filtered = conversations;
+    let filtered = conversationsData?.conversations ?? [];
 
     if (showRecentOnly) {
       const now = new Date();
@@ -156,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
 
     return filtered;
-  }, [conversations, showRecentOnly, searchQuery]);
+  }, [conversationsData, showRecentOnly, searchQuery]);
 
   const activeItem = React.useMemo(() => {
     const firstSegment = location.pathname.split("/")[1];

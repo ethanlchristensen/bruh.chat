@@ -22,10 +22,10 @@ from .schemas import (
     LoginSchema,
     ProfileUpdateSchema,
     UserAddedModelSchema,
+    UserQuotaUpdateSchema,
     UserRegistrationSchema,
     UserSchema,
     UserUpdateSchema,
-    UserQuotaUpdateSchema,
 )
 from .services.user_helper_service import UserHelperService
 
@@ -107,7 +107,9 @@ class UserController:
 
     @route.get("/approved", response=List[UserSchema], permissions=[IsAdmin])
     def list_approved_users(self, request):
-        return User.objects.filter(profile__is_approved=True, is_superuser=False).select_related("profile")
+        return User.objects.filter(profile__is_approved=True, is_superuser=False).select_related(
+            "profile"
+        )
 
     @route.get("/unapproved", response=List[UserSchema], permissions=[IsAdmin])
     def list_unapproved_users(self, request):
@@ -146,7 +148,9 @@ class UserController:
         profile.save()
         return 200, user
 
-    @route.post("/{user_id}/quota/reset", response={200: UserSchema, 404: dict}, permissions=[IsAdmin])
+    @route.post(
+        "/{user_id}/quota/reset", response={200: UserSchema, 404: dict}, permissions=[IsAdmin]
+    )
     def reset_user_daily_quota(self, request, user_id: int):
         try:
             user = User.objects.select_related("profile").get(id=user_id)

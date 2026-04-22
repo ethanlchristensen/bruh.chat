@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useCallback,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -63,7 +64,7 @@ export const MessageList = forwardRef<
     },
   }));
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (isScrollingToBottom.current) return;
 
     const nearBottom = checkIfNearBottom();
@@ -80,7 +81,7 @@ export const MessageList = forwardRef<
       setAutoScroll(true);
       onScrollStateChange?.(false);
     }
-  };
+  }, [autoScroll, onScrollStateChange]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -88,7 +89,7 @@ export const MessageList = forwardRef<
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [isStreaming, autoScroll]);
+  }, [isStreaming, autoScroll, handleScroll]);
 
   // Handle scrolling during updates
   useEffect(() => {
