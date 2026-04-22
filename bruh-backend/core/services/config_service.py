@@ -33,6 +33,7 @@ class Config(BaseModel):
     allowed_hosts: List[str]
     media_root: str
     celery: CeleryConfig
+    debug: bool = False
 
 
 class ConfigService:
