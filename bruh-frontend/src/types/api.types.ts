@@ -29,6 +29,8 @@ export interface UserProfile {
   daily_ai_limit: number;
   daily_ai_invocations_count: number;
   daily_flow_invocations_count: number;
+  total_ai_invocations_count: number;
+  total_flow_invocations_count: number;
   max_flows: number;
 }
 

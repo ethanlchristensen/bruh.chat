@@ -19,6 +19,8 @@ class ProfileSchema(Schema):
     daily_ai_limit: int = 100
     daily_ai_invocations_count: int = 0
     daily_flow_invocations_count: int = 0
+    total_ai_invocations_count: int = 0
+    total_flow_invocations_count: int = 0
     max_flows: int = 0
 
     @staticmethod
@@ -95,3 +97,8 @@ class UserRegistrationSchema(Schema):
 class LoginSchema(Schema):
     username: str
     password: str
+
+
+class UserQuotaUpdateSchema(Schema):
+    daily_ai_limit: Optional[int] = None
+    max_flows: Optional[int] = None

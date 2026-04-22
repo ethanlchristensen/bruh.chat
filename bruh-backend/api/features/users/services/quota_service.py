@@ -35,8 +35,10 @@ class QuotaService:
             )
 
         profile.daily_ai_invocations_count += 1
+        profile.total_ai_invocations_count += 1
         if source == "flow":
             profile.daily_flow_invocations_count += 1
+            profile.total_flow_invocations_count += 1
 
         profile.save()
         return True

@@ -25,6 +25,7 @@ from .schemas import (
     UserRegistrationSchema,
     UserSchema,
     UserUpdateSchema,
+    UserQuotaUpdateSchema,
 )
 from .services.user_helper_service import UserHelperService
 
@@ -104,6 +105,10 @@ class UserController:
     def list_users(self, request):
         return User.objects.all()
 
+    @route.get("/approved", response=List[UserSchema], permissions=[IsAdmin])
+    def list_approved_users(self, request):
+        return User.objects.filter(profile__is_approved=True, is_superuser=False).select_related("profile")
+
     @route.get("/unapproved", response=List[UserSchema], permissions=[IsAdmin])
     def list_unapproved_users(self, request):
         return User.objects.filter(profile__is_approved=False, is_superuser=False)
@@ -126,6 +131,33 @@ class UserController:
     @route.get("/{user_id}", response=UserSchema, permissions=[IsAdmin])
     def get_user(self, request, user_id: int):
         return User.objects.get(id=user_id)
+
+    @route.patch("/{user_id}/quota", response={200: UserSchema, 404: dict}, permissions=[IsAdmin])
+    def update_user_quota(self, request, user_id: int, data: UserQuotaUpdateSchema):
+        try:
+            user = User.objects.select_related("profile").get(id=user_id)
+        except User.DoesNotExist:
+            return 404, {"detail": "User not found"}
+        profile = user.profile
+        if data.daily_ai_limit is not None:
+            profile.daily_ai_limit = data.daily_ai_limit
+        if data.max_flows is not None:
+            profile.max_flows = data.max_flows
+        profile.save()
+        return 200, user
+
+    @route.post("/{user_id}/quota/reset", response={200: UserSchema, 404: dict}, permissions=[IsAdmin])
+    def reset_user_daily_quota(self, request, user_id: int):
+        try:
+            user = User.objects.select_related("profile").get(id=user_id)
+        except User.DoesNotExist:
+            return 404, {"detail": "User not found"}
+        profile = user.profile
+        profile.daily_ai_invocations_count = 0
+        profile.daily_flow_invocations_count = 0
+        profile.last_ai_invocation_date = None
+        profile.save()
+        return 200, user
 
     @route.get("/me/models", response=List[UserAddedModelSchema])
     def get_user_added_models(self, request, provider: Optional[str] = None):
