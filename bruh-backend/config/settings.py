@@ -69,6 +69,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://chat.etchris.dev",
+]
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
