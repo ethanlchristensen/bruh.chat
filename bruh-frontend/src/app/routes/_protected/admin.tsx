@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, Clock } from "lucide-react";
 import type { User } from "@/types/api.types";
 
 export const Route = createFileRoute("/_protected/admin")({
