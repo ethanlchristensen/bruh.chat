@@ -167,6 +167,35 @@ export const MessageInput = ({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    let hasImage = false;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        hasImage = true;
+        break;
+      }
+    }
+
+    if (hasImage) {
+      if (!supportsFiles) {
+        toast.error(
+          `${selectedModel?.name || "This model"} does not support image uploads.`,
+        );
+        return;
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            setSelectedFiles((prev) => [...prev, file]);
+          }
+        }
+      }
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -355,6 +384,7 @@ export const MessageInput = ({
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={
                 isLimitReached
                   ? "Daily limit reached. Try again tomorrow."
