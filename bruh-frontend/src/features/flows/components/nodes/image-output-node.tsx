@@ -1,10 +1,11 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { Image, Download, Loader2 } from "lucide-react";
 import type { ImageOutputNodeData } from "@/types/flow.types";
 import { NodeContainer } from "./shared/node-container";
 import { NodeHeader } from "./shared/node-header";
 import { NodeStatusFooter } from "./shared/node-status-footer";
+import { ImageViewer } from "@/components/shared/image-viewer";
 
 type ImageOutputNode = Node<ImageOutputNodeData>;
 
@@ -50,6 +51,8 @@ export const ImageOutputNode = memo(
     const prompt = imageData?.prompt;
     const aspectRatio = imageData?.aspectRatio;
 
+    const [viewerSrc, setViewerSrc] = useState<string | null>(null);
+
     const handleDownload = async () => {
       if (!imageUrl) return;
       try {
@@ -77,7 +80,8 @@ export const ImageOutputNode = memo(
                 <img
                   src={imageUrl}
                   alt={data.alt || "Generated image"}
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
+                  onClick={() => setViewerSrc(imageUrl)}
                   style={{
                     maxWidth: data.maxWidth ? `${data.maxWidth}px` : undefined,
                     maxHeight: data.maxHeight
@@ -146,6 +150,15 @@ export const ImageOutputNode = memo(
           id="input"
           className="bg-primary! w-3.5! h-3.5! border-4! border-background! shadow-sm"
         />
+
+        {viewerSrc && (
+          <ImageViewer
+            src={viewerSrc}
+            alt={data.alt || "Generated image"}
+            isOpen={true}
+            onClose={() => setViewerSrc(null)}
+          />
+        )}
       </NodeContainer>
     );
   },

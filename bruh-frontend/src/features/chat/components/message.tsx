@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { User, Bot, Download, Users } from "lucide-react";
 import type { Message as MessageType } from "@/types/api.types";
 import { MarkdownRenderer } from "@/components/markdown/markdown";
 import { ReasoningSection } from "./reasoning-section";
+import { ImageViewer } from "@/components/shared/image-viewer";
 
 type MessageProps = {
   message: MessageType;
@@ -22,6 +24,9 @@ export const Message = ({ message }: MessageProps) => {
   } = message;
   const isUser = role === "user";
   const hasPersona = !isUser && persona;
+
+  const [viewerSrc, setViewerSrc] = useState<string | null>(null);
+  const [viewerAlt, setViewerAlt] = useState<string>("");
 
   const displayDate = created_at
     ? new Date(created_at).toLocaleDateString([], {
@@ -47,6 +52,11 @@ export const Message = ({ message }: MessageProps) => {
   const isImageAttachment = (mimeType?: string) => {
     if (!mimeType || typeof mimeType !== "string") return false;
     return mimeType.startsWith("image/");
+  };
+
+  const openImageViewer = (src: string, alt: string) => {
+    setViewerSrc(src);
+    setViewerAlt(alt);
   };
 
   return (
@@ -122,7 +132,8 @@ export const Message = ({ message }: MessageProps) => {
                     <img
                       src={getAttachmentUrl(attachment.file_url)}
                       alt={attachment.file_name || "Attachment"}
-                      className="max-w-xs max-h-64 object-contain bg-muted"
+                      className="max-w-xs max-h-64 object-contain bg-muted cursor-zoom-in hover:opacity-90 transition-opacity"
+                      onClick={() => openImageViewer(getAttachmentUrl(attachment.file_url), attachment.file_name || "Attachment")}
                       onError={(e) => {
                         console.error(
                           "Image failed to load:",
@@ -170,6 +181,7 @@ export const Message = ({ message }: MessageProps) => {
               content={reasoning.content}
               images={reasoning.generated_reasoning_images}
               isActive={isStreaming}
+              onImageClick={openImageViewer}
             />
           )}
 
@@ -199,7 +211,8 @@ export const Message = ({ message }: MessageProps) => {
                   <img
                     src={getAttachmentUrl(genImage.image_url)}
                     alt={genImage.prompt || "Generated image"}
-                    className="max-w-md max-h-96 object-contain"
+                    className="max-w-md max-h-96 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
+                    onClick={() => openImageViewer(getAttachmentUrl(genImage.image_url), genImage.prompt || "Generated image")}
                     onError={(e) => {
                       console.error(
                         "Generated image failed to load:",
@@ -219,6 +232,15 @@ export const Message = ({ message }: MessageProps) => {
           </div>
         )}
       </div>
+
+      {viewerSrc && (
+        <ImageViewer
+          src={viewerSrc}
+          alt={viewerAlt}
+          isOpen={true}
+          onClose={() => setViewerSrc(null)}
+        />
+      )}
     </div>
   );
 };

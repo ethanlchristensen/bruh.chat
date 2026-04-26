@@ -8,6 +8,7 @@ type ReasoningSectionProps = {
   images?: GeneratedReasoningImage[];
   streamingImages?: Array<{ id: string; data: string }>;
   isActive?: boolean;
+  onImageClick?: (src: string, alt: string) => void;
 };
 
 export const ReasoningSection = ({
@@ -15,6 +16,7 @@ export const ReasoningSection = ({
   images = [],
   streamingImages = [],
   isActive = false,
+  onImageClick,
 }: ReasoningSectionProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -88,7 +90,8 @@ export const ReasoningSection = ({
                   <img
                     src={`data:image/png;base64,${image.data}`}
                     alt="Reasoning visualization"
-                    className="rounded max-w-full max-h-64 object-contain"
+                    className="rounded max-w-full max-h-64 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
+                    onClick={() => onImageClick?.(`data:image/png;base64,${image.data}`, "Reasoning visualization")}
                   />
                 </div>
               ))}
@@ -103,7 +106,8 @@ export const ReasoningSection = ({
                   <img
                     src={getImageUrl(image)}
                     alt="Reasoning visualization"
-                    className="rounded max-w-full max-h-64 object-contain"
+                    className="rounded max-w-full max-h-64 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
+                    onClick={() => onImageClick?.(getImageUrl(image), "Reasoning visualization")}
                     onError={(e) => {
                       console.error(
                         "Reasoning image failed to load:",
