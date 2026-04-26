@@ -99,7 +99,7 @@ export const ImageViewer = ({ src, alt, isOpen, onClose }: ImageViewerProps) => 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="max-w-[100vw] max-h-[100vh] w-full h-full p-0 border-none bg-black/90 rounded-none overflow-hidden flex flex-col items-center justify-center data-[state=open]:duration-300"
+        className="max-w-none sm:max-w-none md:max-w-none lg:max-w-none w-screen h-screen p-0 m-0 border-none bg-black/95 rounded-none overflow-hidden flex flex-col items-center justify-center data-[state=open]:duration-300"
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">Image Viewer</DialogTitle>
